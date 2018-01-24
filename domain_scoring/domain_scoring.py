@@ -29,7 +29,7 @@ class DomainScoring():
         clf = clf.fit(X_rated, Y_rated)
         Y_unrated = clf.predict(X_unrated)
         domain_values = self.transform_to_domain_values(Y_rated.extend(Y_unrated))
-        explanation = Explanation(X=corpus, Y=domain_values)
+        explanation = Explanation(meta_paths=corpus, domain_value=domain_values)
 
     def transform_to_domain_values(self, inferred_ratings) -> List:
         """
