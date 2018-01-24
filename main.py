@@ -3,6 +3,9 @@ from domain_scoring.domain_scoring import DomainScoring
 from explanation.explanation import Explanation
 import argparse
 
+RESEARCH_MODE = "research"
+BASELINE_MODE = "baseline"
+
 if __name__ == '__main__':
     print("Starting system...")
 
@@ -24,7 +27,7 @@ if __name__ == '__main__':
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode",
-                        choices=["baseline", "research"],
+                        choices=[BASELINE_MODE, RESEARCH_MODE],
                         help="Run the baseline or our research prototype")
 
     return parser.parse_args()

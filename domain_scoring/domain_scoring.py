@@ -1,9 +1,10 @@
 from explanation.explanation import Explanation
 from typing import List
+from main import RESEARCH_MODE
 
 
 class DomainScoring():
-    def __init__(self, weighted_metapaths: List, mode: str = 'research'):
+    def __init__(self, weighted_metapaths: List, mode: str = RESEARCH_MODE):
         """
 
         :param weighted_metapaths: A list of lists, each inner list element represents one user weighting round.
