@@ -15,16 +15,15 @@ class DomainScoring():
         raise NotImplementedError()
 
     def score(self):
-        rated_metapaths = ["SNP IN POSITIONWINDOW NEXT POSITIONWINDOW IN LOCUS POS TRANSCRIPT",
-                           "SNP IN POSITIONWINDOW IN LOCUS POS TRANSCRIPT"]
-        unrated_metapaths = []
+        rated_metapaths = [[["SNP IN POSITIONWINDOW NEXT POSITIONWINDOW IN LOCUS POS TRANSCRIPT", 0.1],
+                            ["SNP IN POSITIONWINDOW IN LOCUS POS TRANSCRIPT", 0.2]]]
+        unrated_metapaths = [["SNP IN POSITIONWINDOW NEXT POSITIONWINDOW IN POSITIONWINDOW IN LOCUS POS TRANSCRIPT"]]
         corpus = rated_metapaths.extend(unrated_metapaths)
         vectorizer = TfidfVectorizer(analyzer='word').fit(corpus)
         # Pay attention that the argument to transform() has to be a list, otherwise sklearn iterates over the string
         X_rated = vectorizer.transform(rated_metapaths)
         X_unrated = vectorizer.transform(unrated_metapaths)
-        # TODO: What is Y?
-        Y_rated = []
+        Y_rated = self.extract_preference_learning_labels(rated_metapaths)
         clf = DecisionTreeClassifier()
         clf = clf.fit(X_rated, Y_rated)
         Y_unrated = clf.predict(X_unrated)
@@ -38,4 +37,7 @@ class DomainScoring():
         :return: Total order of all meta-paths with values in [0,1]
         """
         raise NotImplementedError()
+        return []
+
+    def extract_preference_learning_labels(self) -> List:
         return []
