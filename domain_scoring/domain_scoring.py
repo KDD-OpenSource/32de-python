@@ -50,7 +50,7 @@ class DomainScoring():
         """
         vectors = []
         for datum in data:
-            vectors.append(self.vectorizer.transform(datum[0]) + self.vectorizer.transform(datum[1]))
+            vectors.append(self.vectorizer.transform(str(datum[0])) + self.vectorizer.transform(str(datum[1])))
 
         return vectors
 
