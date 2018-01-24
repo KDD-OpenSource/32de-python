@@ -3,14 +3,13 @@ import domain_scoring.domain_scoring as domain_scoring
 import explanation.explanation as explanation
 from api import server
 import argparse
+import util.config as config
 
-RESEARCH_MODE = "research"
-BASELINE_MODE = "baseline"
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode",
-                        choices=[BASELINE_MODE, RESEARCH_MODE],
+                        choices=[config.BASELINE_MODE, config.RESEARCH_MODE],
                         help="Run the baseline or our research prototype")
     parser.add_argument("--port",
                         type=int,
