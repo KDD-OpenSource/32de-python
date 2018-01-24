@@ -2,28 +2,30 @@ from explanation.explanation import Explanation
 from typing import List
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.tree import DecisionTreeClassifier
+from util.datastructures import UserOrderedMetaPaths, MetaPath
 
 
 class DomainScoring():
-    def __init__(self, rated_metapaths: List):
+    rated_metapaths = None
+    unrated_metapaths = None
+
+    def __init__(self, rated_metapaths: List[UserOrderedMetaPaths], unrated_metapaths: List[MetaPath]):
         """
 
         :param rated_metapaths: A list of lists, each inner list element represents one user weighting round.
         Each user weighting is itself a list where we care about the ordering (represents ordering on UI) and
         it contains the distance to the next element.
         """
-        raise NotImplementedError()
+        self.rated_metapaths = rated_metapaths
+        self.unrated_metapaths = unrated_metapaths
 
     def score(self):
-        rated_metapaths = [[["SNP IN POSITIONWINDOW NEXT POSITIONWINDOW IN LOCUS POS TRANSCRIPT", 0.1],
-                            ["SNP IN POSITIONWINDOW IN LOCUS POS TRANSCRIPT", 0.2]]]
-        unrated_metapaths = [["SNP IN POSITIONWINDOW NEXT POSITIONWINDOW IN POSITIONWINDOW IN LOCUS POS TRANSCRIPT"]]
-        corpus = rated_metapaths.extend(unrated_metapaths)
+        corpus = self.rated_metapaths.extend(self.unrated_metapaths)
         vectorizer = TfidfVectorizer(analyzer='word').fit(corpus)
         # Pay attention that the argument to transform() has to be a list, otherwise sklearn iterates over the string
-        X_rated = vectorizer.transform(rated_metapaths)
-        X_unrated = vectorizer.transform(unrated_metapaths)
-        Y_rated = self.extract_preference_learning_labels(rated_metapaths)
+        X_rated = vectorizer.transform(self.rated_metapaths)
+        X_unrated = vectorizer.transform(self.unrated_metapaths)
+        Y_rated = self.extract_preference_learning_labels(self.rated_metapaths)
         clf = DecisionTreeClassifier()
         clf = clf.fit(X_rated, Y_rated)
         Y_unrated = clf.predict(X_unrated)
