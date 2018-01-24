@@ -1,7 +1,7 @@
 from domain_scoring.domain_scoring import DomainScoring
 
 
-class InformationGain():
+class ActiveLearner():
     def __init__(self):
         raise NotImplementedError()
 
