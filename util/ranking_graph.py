@@ -1,6 +1,8 @@
-from typing import List
+from typing import List, Generic, TypeVar
 
-class RankingGraph:
+T = TypeVar('T')
+
+class RankingGraph(Generic[T]):
 
     def __init__(self):
         """
@@ -8,7 +10,7 @@ class RankingGraph:
         """
         raise NotImplementedError
 
-    def all_nodes(self) -> List:
+    def all_nodes(self) -> List[T]:
         """
 
         :return: A list of all nodes in the graph.
@@ -16,7 +18,7 @@ class RankingGraph:
         raise NotImplementedError
         return []
 
-    def transitive_closure(self) -> List:
+    def transitive_closure(self) -> List[List[T]]:
         """
 
         :return: A list containing all transitive closures, where each closure is a list starting with the node
