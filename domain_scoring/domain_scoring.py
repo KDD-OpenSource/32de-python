@@ -1,6 +1,7 @@
 from explanation.explanation import Explanation
 from typing import List, Tuple
 from util.ranking_graph import RankingGraph
+from util.datastructures import MetaPath
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.tree import DecisionTreeClassifier
 
@@ -16,7 +17,7 @@ class DomainScoring():
         self.vectorizer = TfidfVectorizer(analyzer='word')
 
 
-    def score(self, metapath_graph: RankingGraph, unknown: List):
+    def score(self, metapath_graph: RankingGraph, metapath_unrated: List[MetaPath]):
         # TODO: Remove this legacy - it is kept as a reference for now.
         # rated_metapaths = [[["SNP IN POSITIONWINDOW NEXT POSITIONWINDOW IN LOCUS POS TRANSCRIPT", 0.1],
         #                     ["SNP IN POSITIONWINDOW IN LOCUS POS TRANSCRIPT", 0.2]]]
@@ -25,7 +26,7 @@ class DomainScoring():
 
         self.fit_vectorizer(metapath_graph)
         x_train, y_train = self.extract_features_labels(metapath_graph)
-        x_predict = self.all_pairs(unknown)
+        x_predict = self.all_pairs(metapath_unrated)
 
         clf = DecisionTreeClassifier()
         clf = clf.fit(self.preprocess(x_train), y_train)
