@@ -25,3 +25,12 @@ class MetaPath:
 
     def __str__(self):
         return ';'.join(map(str,self.as_list()))
+
+
+class MetaPathRating:
+    meta_path = None
+    structural_value = None
+    domain_value = None
+
+    def __init__(self, meta_path: MetaPath):
+        self.meta_path = meta_path
