@@ -9,7 +9,7 @@ from sklearn.tree import DecisionTreeClassifier
 
 
 class DomainScoring():
-    def __init__(self, rated_metapaths: List, mode: str = RESEARCH_MODE):
+    def __init__(self, mode: str = RESEARCH_MODE):
         """
 
         :param rated_metapaths: A list of lists, each inner list element represents one user weighting round.
@@ -17,29 +17,32 @@ class DomainScoring():
         it contains the distance to the next element.
         """
         self.vectorizer = TfidfVectorizer(analyzer='word')
+        self.clf = DecisionTreeClassifier()
 
 
-    def score(self, metapath_graph: RankingGraph, metapath_unrated: List[MetaPath]):
+    def score(self, metapath_graph: RankingGraph):
         # TODO: Remove this legacy - it is kept as a reference for now.
         # rated_metapaths = [[["SNP IN POSITIONWINDOW NEXT POSITIONWINDOW IN LOCUS POS TRANSCRIPT", 0.1],
         #                     ["SNP IN POSITIONWINDOW IN LOCUS POS TRANSCRIPT", 0.2]]]
         # unrated_metapaths = [["SNP IN POSITIONWINDOW NEXT POSITIONWINDOW IN POSITIONWINDOW IN LOCUS POS TRANSCRIPT"]]
         # corpus = rated_metapaths.extend(unrated_metapaths)
 
-        self.fit_vectorizer(metapath_graph)
-        x_train, y_train = self.extract_features_labels(metapath_graph)
-        x_predict = self.all_pairs(metapath_unrated)
+        self._fit_vectorizer(metapath_graph)
+        x_train, y_train = self._extract_features_labels(metapath_graph)
 
-        clf = DecisionTreeClassifier()
-        clf = clf.fit(self.preprocess(x_train), y_train)
+        self.clf.fit(self._preprocess(x_train), y_train)
 
-        y_predict = clf.predict(self.preprocess(x_predict))
+
+
+    def predict(self, metapath_unrated: List[MetaPath]):
+        x_predict = self._all_pairs(metapath_unrated)
+        y_predict = self.clf.predict(self._preprocess(x_predict))
 
         # TODO:
         # corpus, domain_values = self.transform_to_domain_values(Y_rated.extend(Y_unrated))
         # explanation = Explanation(meta_paths=corpus, domain_value=domain_values)
 
-    def preprocess(self, data: List[Tuple]) -> List:
+    def _preprocess(self, data: List[Tuple[MetaPath]]) -> List[List[int]]:
         """
         Takes a list of metapaths pairs (a, b) and vectorizes a and b and joins them to one element for training.
         :param data: the data to preprocess.
@@ -51,7 +54,7 @@ class DomainScoring():
 
         return vectors
 
-    def all_pairs(self, list: List, inverse: bool = False) -> List[Tuple]:
+    def _all_pairs(self, list: List) -> List[Tuple]:
         """
 
         :param list: the list from which the elements are taken.
@@ -62,13 +65,14 @@ class DomainScoring():
         pairs = []
         for element in list:
             for successor in list:
+                if element is successor:
+                    continue
+
                 pairs.append((element, successor))
-                if inverse:
-                    pairs.append((successor, element))
         return pairs
 
 
-    def transform_to_domain_values(self, inferred_ratings) -> List:
+    def _transform_to_domain_values(self, inferred_ratings) -> List:
         """
 
         :param inferred_ratings: user-defined and inferred rating for all meta-paths
@@ -77,7 +81,7 @@ class DomainScoring():
         raise NotImplementedError()
         return []
 
-    def fit_vectorizer(self, metapath_graph: RankingGraph) -> None:
+    def _fit_vectorizer(self, metapath_graph: RankingGraph) -> None:
         """
 
         :param metapath_graph: metapaths based on which to train the vectorizer.
@@ -85,7 +89,7 @@ class DomainScoring():
         """
         self.vectorizer.fit([str(node) for node in metapath_graph.all_nodes()])
 
-    def extract_features_labels(self, metapath_graph: RankingGraph) -> (List[Tuple], List):
+    def _extract_features_labels(self, metapath_graph: RankingGraph) -> (List[Tuple[MetaPath]], List[int]):
         """
         Computes all pairwise tuples (a, b) of the meta-paths with their feature vector. If a is ranked higher than b
         a > b then the label is 1, 0 otherwise.
