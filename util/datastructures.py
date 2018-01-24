@@ -48,10 +48,13 @@ class MetaPathRatingGraph:
     g = None
 
     def __init__(self):
-        self.g = Graph(directed=False)
+        self.g = Graph(directed=True)
         self.distance = self.g.new_edge_property("double")
         self.meta_paths_map = {}
 
+    """
+    :param a: The index of the meta-path will be retrieved or the meta-path is mapped to a new index.
+    """
     def add_meta_path(self, a: MetaPath) -> None:
         if a in self.meta_paths_map:
             v = self.meta_paths_map[a]
@@ -60,6 +63,11 @@ class MetaPathRatingGraph:
             self.meta_paths_map[a] = v
         return v
 
+    """
+    :param a: The meta-path, which was rated higher compared to b.
+    :param b: The meta-path, which was rated lower compared to a.
+    :param distance: The distance between meta-paths a and b. 
+    """
     def add_user_rating(self, a: MetaPath, b: MetaPath, distance: float):
         id_a = self.add_meta_path(a)
         id_b = self.add_meta_path(b)
@@ -67,5 +75,11 @@ class MetaPathRatingGraph:
         new_edge = self.g.add_edge(id_a, id_b)
         self.distance[new_edge] = distance
 
-    def all_nodes(self):
-        return self.meta_paths_map.values()
+    def all_nodes(self) -> List[MetaPath]:
+        return list(self.meta_paths_map.keys())
+
+
+    def transitive_closure(self) -> List[List[MetaPath]]:
+        # TODO: we also have to update the distance map.
+        tc = transitive_closure(g)
+
