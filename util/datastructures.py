@@ -37,3 +37,33 @@ class MetaPathRating:
 
     def __init__(self, meta_path: MetaPath):
         self.meta_path = meta_path
+
+
+class UserOrderedMetaPaths:
+    meta_paths = None
+    distances = None
+
+    def __init__(self, meta_paths: List[MetaPath]):
+        """
+
+        :param meta_paths: All meta-paths as ordered by the user
+        which were rated in one "session" (between each click on "Next five")
+        """
+        if self.distances:
+            assert len(meta_paths) == len(
+                self.distances), 'Number of meta-paths which is {} doesn\'t match number of passed distances which is {}'.format(
+                len(meta_paths), len(self.distances))
+        self.meta_paths = meta_paths
+
+    def __init__(self, meta_paths: List[MetaPath], distances: List[float]):
+        """
+
+        :param distances: Distances between meta-paths on UI
+        :param meta_paths: All meta-paths as ordered by the user
+        which were rated in one "session" (between each click on "Next five")
+        """
+        assert len(meta_paths) == len(
+            distances), 'Number of meta-paths which is {} doesn\'t match number of passed distances which is {}'.format(
+            len(meta_paths), len(distances))
+        self.meta_paths = meta_paths
+        self.distances = distances
