@@ -1,6 +1,6 @@
-import active_learning
-import domain_scoring
-import explanation
+import active_learning.active_learning as active_learning
+import domain_scoring.domain_scoring as domain_scoring
+import explanation.explanation as explanation
 from api import server
 import argparse
 
