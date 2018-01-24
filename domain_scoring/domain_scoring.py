@@ -2,17 +2,22 @@ from explanation.explanation import Explanation
 from typing import List
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.tree import DecisionTreeClassifier
+from util.datastructures import UserOrderedMetaPaths, MetaPath
 
 
 class DomainScoring():
-    def __init__(self, rated_metapaths: List):
+    rated_metapaths = None
+    unrated_metapaths = None
+
+    def __init__(self, rated_metapaths: List[UserOrderedMetaPaths], unrated_metapaths: List[MetaPath]):
         """
 
         :param rated_metapaths: A list of lists, each inner list element represents one user weighting round.
         Each user weighting is itself a list where we care about the ordering (represents ordering on UI) and
         it contains the distance to the next element.
         """
-        raise NotImplementedError()
+        self.rated_metapaths = rated_metapaths
+        self.unrated_metapaths = unrated_metapaths
 
     def score(self):
         rated_metapaths = [[["SNP IN POSITIONWINDOW NEXT POSITIONWINDOW IN LOCUS POS TRANSCRIPT", 0.1],
