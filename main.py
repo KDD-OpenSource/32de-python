@@ -6,6 +6,15 @@ import argparse
 RESEARCH_MODE = "research"
 BASELINE_MODE = "baseline"
 
+def parse_arguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--mode",
+                        choices=[BASELINE_MODE, RESEARCH_MODE],
+                        help="Run the baseline or our research prototype")
+
+    return parser.parse_args()
+
+
 if __name__ == '__main__':
     print("Starting system...")
 
@@ -22,12 +31,3 @@ if __name__ == '__main__':
     explanation = Explanation()
 
     print("...did everything.")
-
-
-def parse_arguments():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--mode",
-                        choices=[BASELINE_MODE, RESEARCH_MODE],
-                        help="Run the baseline or our research prototype")
-
-    return parser.parse_args()
