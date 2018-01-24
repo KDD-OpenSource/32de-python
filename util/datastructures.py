@@ -1,4 +1,5 @@
 from typing import List
+from graph_tool.all import *
 
 
 class MetaPath:
@@ -10,7 +11,8 @@ class MetaPath:
         self.nodes = []
 
     def __init__(self, nodes, edges):
-        assert (len(nodes) - 1 == len(edges)) or (len(nodes) == 0 and len(edges) == 0), "Path is not valid, number of edges and nodes does not compse a path"
+        assert (len(nodes) - 1 == len(edges)) or (
+        len(nodes) == 0 and len(edges) == 0), "Path is not valid, number of edges and nodes does not compse a path"
         self.edges = edges
         self.nodes = nodes
 
@@ -27,7 +29,7 @@ class MetaPath:
         return len(self.edges) + len(self.nodes)
 
     def __str__(self) -> str:
-        return ';'.join(map(str,self.as_list()))
+        return ';'.join(map(str, self.as_list()))
 
 
 class MetaPathRating:
@@ -39,31 +41,31 @@ class MetaPathRating:
         self.meta_path = meta_path
 
 
-class UserOrderedMetaPaths:
-    meta_paths = None
-    distances = None
+class MetaPathRatingGraph:
 
-    def __init__(self, meta_paths: List[MetaPath]):
-        """
+    meta_paths_map = None
+    distance = None
+    g = None
 
-        :param meta_paths: All meta-paths as ordered by the user
-        which were rated in one "session" (between each click on "Next five")
-        """
-        if self.distances:
-            assert len(meta_paths) == len(
-                self.distances), 'Number of meta-paths which is {} doesn\'t match number of passed distances which is {}'.format(
-                len(meta_paths), len(self.distances))
-        self.meta_paths = meta_paths
+    def __init__(self):
+        self.g = Graph(directed=False)
+        self.distance = self.g.new_edge_property("double")
+        self.meta_paths_map = {}
 
-    def __init__(self, meta_paths: List[MetaPath], distances: List[float]):
-        """
+    def add_meta_path(self, a: MetaPath) -> None:
+        if a in self.meta_paths_map:
+            v = self.meta_paths_map[a]
+        else:
+            v = self.g.add_vertex()
+            self.meta_paths_map[a] = v
+        return v
 
-        :param distances: Distances between meta-paths on UI
-        :param meta_paths: All meta-paths as ordered by the user
-        which were rated in one "session" (between each click on "Next five")
-        """
-        assert len(meta_paths) == len(
-            distances), 'Number of meta-paths which is {} doesn\'t match number of passed distances which is {}'.format(
-            len(meta_paths), len(distances))
-        self.meta_paths = meta_paths
-        self.distances = distances
+    def add_user_rating(self, a: MetaPath, b: MetaPath, distance: float):
+        id_a = self.add_meta_path(a)
+        id_b = self.add_meta_path(b)
+
+        new_edge = self.g.add_edge(id_a, id_b)
+        self.distance[new_edge] = distance
+
+    def all_nodes(self):
+        return self.meta_paths_map.values()
