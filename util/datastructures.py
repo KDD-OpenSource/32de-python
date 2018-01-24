@@ -7,7 +7,8 @@ class MetaPath:
         self.nodes = []
 
     def __init__(self, nodes, edges):
-        assert (len(nodes) - 1 == len(edges)) or (len(nodes) == 0 and len(edges) == 0), "Path is not valid, number of edges and nodes does not compse a path"
+        assert (len(nodes) - 1 == len(edges)) or (len(nodes) == 0 and len(
+            edges) == 0), "Path is not valid, number of edges and nodes does not compse a path"
         self.edges = edges
         self.nodes = nodes
 
@@ -24,4 +25,4 @@ class MetaPath:
         return len(self.edges) + len(self.nodes)
 
     def __str__(self):
-        return ';'.join(map(str,self.as_list()))
+        return ';'.join(map(str, self.as_list()))
