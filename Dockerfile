@@ -1,5 +1,5 @@
 FROM ubuntu:17.10
-RUN apt-get update && apt-get install -y python3-pip python3-dev
+RUN apt-get update && apt-get install -y python3-pip python3-dev git
 # TODO: Remove -b when on master
 RUN git clone -b configure-docker https://github.com/KDD-OpenSource/32de-python.git
 WORKDIR 32de-python
