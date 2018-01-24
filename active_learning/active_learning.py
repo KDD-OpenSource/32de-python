@@ -14,6 +14,7 @@ class Oracle:
     Abstract class for the Oracle the Active Learner interacts with. 
     """
 
+    # TODO Think about whether exclusion is own class or 0
     def rate_meta_path(self, meta_path: MetaPath) -> float:
         raise NotImplementedError("Should have implemented this.")
 
@@ -21,9 +22,26 @@ class Oracle:
         raise NotImplementedError("Sould have implemented this.")
 
 
+class CmdLineOracle(Oracle):
+    """
+    CmdLineOracle interacts with the command line.
+    """
+
+    def rate_meta_path(self, meta_path):
+        print("Please rate this meta-path: {}".format(meta_path))
+        rating = input()
+        return float(rating)
+
+    def wants_to_continue(self):
+        print("Do you want to continue rating? [y/n]")
+        keep_going = input()
+        if keep_going in 'no':
+            return False
+        return True
+
 class MockOracle(Oracle):
     """
-    MockOracle rates all meta-paths with 1 and never wants to continue to rate more
+    MockOracle rates all meta-paths with 1 and never wants to continue to rate more.
     """
 
     def rate_meta_path(self, meta_path):
@@ -35,22 +53,23 @@ class MockOracle(Oracle):
 
 class ActiveLearner:
     meta_paths = None
-    algorithm = None
+    algorithm_type = None
     oracle = None
     batch_size = None
 
     def __init__(self, oracle=MockOracle(), algorithm=NO_RATING, batch_size=5):
         self.meta_paths = self.fetch_meta_paths()
         self.oracle = oracle
-        self.algorithm = algorithm
+        self.algorithm_type = algorithm
         self.batch_size = batch_size
 
     def retrieve_user_rating(self):
-        if self.algorithm == NO_RATING:
+        # TODO: How to compare???
+        if self.algorithm_type == NO_RATING:
             # do let the user rate any meta_paths
             return []
-        if self.algorithm == BASELINE:
-            # take first 5
+        if self.algorithm_type == BASELINE:
+            # take first batch
             interesting_meta_paths = self.meta_paths[:self.batch_size]
             ratings = map(self.oracle.rate_meta_path, interesting_meta_paths)
             return zip(ratings, interesting_meta_paths)

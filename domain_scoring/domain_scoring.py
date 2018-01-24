@@ -1,4 +1,6 @@
 from explanation.explanation import Explanation
+from typing import List
+from main import RESEARCH_MODE
 from typing import List, Tuple
 from util.ranking_graph import RankingGraph
 from util.datastructures import MetaPath
@@ -7,7 +9,7 @@ from sklearn.tree import DecisionTreeClassifier
 
 
 class DomainScoring():
-    def __init__(self, rated_metapaths: List):
+    def __init__(self, rated_metapaths: List, mode: str = RESEARCH_MODE):
         """
 
         :param rated_metapaths: A list of lists, each inner list element represents one user weighting round.
