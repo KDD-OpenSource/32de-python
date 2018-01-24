@@ -28,7 +28,7 @@ class MetaPath:
         return len(self.edges) + len(self.nodes)
 
     def __str__(self) -> str:
-        return ';'.join(map(str, self.as_list()))
+        return ' '.join(map(str, self.as_list()))
 
 
 class MetaPathRating:
