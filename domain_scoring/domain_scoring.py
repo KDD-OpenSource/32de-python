@@ -3,7 +3,7 @@ from typing import List
 
 
 class DomainScoring():
-    def __init__(self, weighted_metapaths: List):
+    def __init__(self, weighted_metapaths: List, mode: str = 'research'):
         """
 
         :param weighted_metapaths: A list of lists, each inner list element represents one user weighting round.
