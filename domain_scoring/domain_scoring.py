@@ -20,15 +20,12 @@ class DomainScoring():
         self.unrated_metapaths = unrated_metapaths
 
     def score(self):
-        rated_metapaths = [[["SNP IN POSITIONWINDOW NEXT POSITIONWINDOW IN LOCUS POS TRANSCRIPT", 0.1],
-                            ["SNP IN POSITIONWINDOW IN LOCUS POS TRANSCRIPT", 0.2]]]
-        unrated_metapaths = [["SNP IN POSITIONWINDOW NEXT POSITIONWINDOW IN POSITIONWINDOW IN LOCUS POS TRANSCRIPT"]]
-        corpus = rated_metapaths.extend(unrated_metapaths)
+        corpus = self.rated_metapaths.extend(self.unrated_metapaths)
         vectorizer = TfidfVectorizer(analyzer='word').fit(corpus)
         # Pay attention that the argument to transform() has to be a list, otherwise sklearn iterates over the string
-        X_rated = vectorizer.transform(rated_metapaths)
-        X_unrated = vectorizer.transform(unrated_metapaths)
-        Y_rated = self.extract_preference_learning_labels(rated_metapaths)
+        X_rated = vectorizer.transform(self.rated_metapaths)
+        X_unrated = vectorizer.transform(self.unrated_metapaths)
+        Y_rated = self.extract_preference_learning_labels(self.rated_metapaths)
         clf = DecisionTreeClassifier()
         clf = clf.fit(X_rated, Y_rated)
         Y_unrated = clf.predict(X_unrated)
