@@ -9,7 +9,7 @@ docker run \
     neo4j:3.3-enterprise
 
 # How to integrate our neo4j code changes (meta-path computation)?
-
+# TODO: Remove -b when on master
 git clone -b configure-docker https://github.com/KDD-OpenSource/32de-python.git
 cd 32de-python/
 docker build -t server -f Dockerfile .
