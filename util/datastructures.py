@@ -25,4 +25,4 @@ class MetaPath:
         return len(self.edges) + len(self.nodes)
 
     def __str__(self):
-        return ';'.join(map(str, self.as_list()))
+        return ' '.join(map(str, self.as_list()))
