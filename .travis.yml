@@ -1,16 +1,20 @@
 language: python
+
+services:
+  - docker
+
 python:
   - "3.4"
   - "3.5"
   - "3.6"
-before_script:
-  - sudo apt-key adv --keyserver pgp.skewed.de --recv-key 612DEFB798507F25
-  - echo "deb http://downloads.skewed.de/apt/xenial xenial universe" | sudo tee -a /etc/apt/sources.list
-  - echo "deb-src http://downloads.skewed.de/apt/xenial xenial universe" | sudo tee -a /etc/apt/sources.list
-  - sudo apt-get update -qq
-  - sudo apt-get install boost coal cairomm python-cairo
-  - sudo apt-get install python3-graph-tool -y
-install:
-  - pip install -r requirements.txt
+
+before_install:
+  - docker build -t server -f Dockerfile .
+  - docker run -d --name app-container server
+  - docker ps -a
+
 script:
-  - pytest
+  - docker exec app-container pytest
+
+after_script:
+- docker rm -f app
