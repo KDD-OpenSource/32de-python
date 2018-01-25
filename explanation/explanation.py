@@ -14,6 +14,7 @@ class Explanation:
 	def __init__(self):
 		raise NotImplementedError()
 
+
 class SimilarityScore():
 	meta_paths = None
 	similarity_score = None
