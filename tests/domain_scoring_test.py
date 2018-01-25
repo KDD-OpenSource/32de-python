@@ -26,7 +26,7 @@ class MyTestCase(unittest.TestCase):
 
         self.assertEqual(
             ([("A", "B"), ("B", "A"), ("A", "C"), ("C", "A"), ("B", "C"), ("C", "B")], [0, 1, 0, 1, 0, 1]),
-            self.ds._extract_features_labels(self.ranking_graph))
+            self.ds._extract_training_data_labels(self.ranking_graph))
 
     def test_fit_vectorizer(self):
         self.assertIsNone(self.ds._fit_vectorizer(self.ranking_graph))

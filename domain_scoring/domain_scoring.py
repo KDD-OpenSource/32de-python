@@ -14,7 +14,7 @@ class DomainScoring():
         """
         # The token_pattern also allows single character strings which the default doesn't allow
         self.vectorizer = TfidfVectorizer(analyzer='word', token_pattern='\\b\\w+\\b')
-        self.clf = DecisionTreeClassifier()
+        self.classifier = DecisionTreeClassifier()
 
 
     def fit(self, metapath_graph: RankingGraph) -> None:
@@ -24,9 +24,9 @@ class DomainScoring():
         :return: Nothing.
         """
         self._fit_vectorizer(metapath_graph)
-        x_train, y_train = self._extract_features_labels(metapath_graph)
+        x_train, y_train = self._extract_training_data_labels(metapath_graph)
 
-        self.clf.fit(self._preprocess(x_train), y_train)
+        self.classifier.fit(self._preprocess(x_train), y_train)
 
 
 
@@ -37,7 +37,7 @@ class DomainScoring():
         :return: A list of tuples with the metapath and their predicted domain value.
         """
         x_predict = self._all_pairs(metapath_unrated)
-        y_predict = self.clf.predict(self._preprocess(x_predict))
+        y_predict = self.classifier.predict(self._preprocess(x_predict))
 
         # TODO:
         # corpus, domain_values = self.transform_to_domain_values(Y_rated.extend(Y_unrated))
@@ -97,7 +97,7 @@ class DomainScoring():
         """
         self.vectorizer.fit([str(node) for node in metapath_graph.all_nodes()])
 
-    def _extract_features_labels(self, metapath_graph: RankingGraph) -> (List[Tuple[MetaPath]], List[int]):
+    def _extract_training_data_labels(self, metapath_graph: RankingGraph) -> (List[Tuple[MetaPath]], List[int]):
         """
         Computes all pairwise tuples (a, b) of the meta-paths with their feature vector. If a is ranked higher than b
         a > b then the label is 1, 0 otherwise.
