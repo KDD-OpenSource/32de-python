@@ -16,7 +16,8 @@ docker run \
     --env=NEO4J_ACCEPT_LICENSE_AGREEMENT=yes \
     -d \
     --name neo4j-graph-algo-container \
-    neo4j-graph-algo
+    neo4j-graph-algo \
+    -d /plugins
 
 docker build --no-cache -t server -f Dockerfile .
 docker run --name server-container \
