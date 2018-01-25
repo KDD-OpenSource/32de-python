@@ -39,8 +39,6 @@ class MetaPathRatingTest(unittest.TestCase):
 
         for node in rating_graph.all_nodes():
             rating_graph_result = rating_graph.all_pair_distances()[rating_graph.meta_paths_map[node]]
-            print(list(rating_graph_result))
-            print(expected_distances[node])
             for distance in expected_distances[node]:
                 self.assertIn(distance, list(rating_graph_result))
 
