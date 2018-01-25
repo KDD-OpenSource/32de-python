@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Iterator
 from graph_tool.all import *
 
 
@@ -10,9 +10,9 @@ class MetaPath:
         self.edges = []
         self.nodes = []
 
-    def __init__(self, nodes, edges):
+    def __init__(self, nodes:List, edges:List):
         assert (len(nodes) - 1 == len(edges)) or (
-        len(nodes) == 0 and len(edges) == 0), "Path is not valid, number of edges and nodes does not compse a path"
+        len(nodes) == 0 and len(edges) == 0), "Path is not valid, number of edges and nodes does not compose a path"
         self.edges = edges
         self.nodes = nodes
 
@@ -55,7 +55,7 @@ class MetaPathRatingGraph:
     """
     :param a: The index of the meta-path will be retrieved or the meta-path is mapped to a new index.
     """
-    def add_meta_path(self, a: MetaPath) -> None:
+    def __add_meta_path(self, a: MetaPath) -> None:
         if a in self.meta_paths_map:
             v = self.meta_paths_map[a]
         else:
@@ -69,8 +69,8 @@ class MetaPathRatingGraph:
     :param distance: The distance between meta-paths a and b. 
     """
     def add_user_rating(self, a: MetaPath, b: MetaPath, distance: float):
-        id_a = self.add_meta_path(a)
-        id_b = self.add_meta_path(b)
+        id_a = self.__add_meta_path(a)
+        id_b = self.__add_meta_path(b)
 
         new_edge = self.g.add_edge(id_a, id_b)
         self.distance[new_edge] = distance
@@ -79,7 +79,7 @@ class MetaPathRatingGraph:
         return list(self.meta_paths_map.keys())
 
 
-    def transitive_closure(self) -> List[List[MetaPath]]:
+    def all_pair_distances(self) -> Iterator[]:
         # TODO: we also have to update the distance map.
-        tc = transitive_closure(g)
+        return shortest_distance(self.g, weights=self.distance, directed=True)
 
