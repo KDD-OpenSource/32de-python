@@ -25,6 +25,15 @@ class MetaPath:
         representation[1::2] = self.edges
         return representation
 
+    @staticmethod
+    def from_list(self, meta_path: List):
+        assert len(meta_path) % 2 != 0 or len(meta_path) == 0
+        return MetaPath(meta_path[::2], meta_path[1::2])
+
+    @staticmethod
+    def from_string(self, meta_path: str, sep=' '):
+        return MetaPath.from_list(meta_path.split(sep))
+
     def __len__(self) -> int:
         return len(self.edges) + len(self.nodes)
 
@@ -42,7 +51,6 @@ class MetaPathRating:
 
 
 class MetaPathRatingGraph:
-
     meta_paths_map = None
     distance = None
     g = None
@@ -55,6 +63,7 @@ class MetaPathRatingGraph:
     """
     :param a: The index of the meta-path will be retrieved or the meta-path is mapped to a new index.
     """
+
     def __add_meta_path(self, a: MetaPath) -> None:
         if a in self.meta_paths_map:
             v = self.meta_paths_map[a]
@@ -68,6 +77,7 @@ class MetaPathRatingGraph:
     :param b: The meta-path, which was rated lower compared to a.
     :param distance: The distance between meta-paths a and b. 
     """
+
     def add_user_rating(self, a: MetaPath, b: MetaPath, distance: float):
         id_a = self.__add_meta_path(a)
         id_b = self.__add_meta_path(b)
@@ -78,8 +88,6 @@ class MetaPathRatingGraph:
     def all_nodes(self) -> List[MetaPath]:
         return list(self.meta_paths_map.keys())
 
-
-    def all_pair_distances(self) -> Iterator[]:
+def all_pair_distances(self) -> Iterator[]:
         # TODO: we also have to update the distance map.
         return shortest_distance(self.g, weights=self.distance, directed=True)
-
