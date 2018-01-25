@@ -1,5 +1,5 @@
 from typing import List
-from graph_tool.all import Graph, shortest_distance
+from graph_tool.all import *
 import numpy
 
 class MetaPath:
@@ -62,63 +62,59 @@ class UserOrderedMetaPaths:
 class MetaPathRatingGraph:
 
     def __init__(self):
-        self.g = Graph(directed=True)
-        self.distance = self.g.new_edge_property("double")
+        self.graph = Graph(directed=True)
+        self.distance = self.graph.new_edge_property("double")
         self.meta_path_to_vertex = {}
         self.vertex_to_meta_path = {}
 
-
-    def __add_meta_path(self, meta_path: MetaPath):
+    def __add_meta_path(self, meta_path: MetaPath) -> Vertex:
         """
-        :param a: The index of the meta-path will be retrieved or the meta-path is mapped to a new index.
+        :param meta_path: The index of the meta-path will be retrieved or the meta-path is mapped to a new index.
+        :return: Return the vertex corresponding to the meta-path
         """
         if meta_path in self.meta_path_to_vertex:
             meta_path_vertex = self.meta_path_to_vertex[meta_path]
         else:
-            meta_path_vertex = self.g.add_vertex()
+            meta_path_vertex = self.graph.add_vertex()
             self.meta_path_to_vertex[meta_path] = meta_path_vertex
             self.vertex_to_meta_path[meta_path_vertex] = meta_path
         return meta_path_vertex
 
-
-
-    def add_user_rating(self, superior_meta_path: MetaPath, inferior_meta_path: MetaPath, distance: float):
+    def add_user_rating(self, superior_meta_path: MetaPath, inferior_meta_path: MetaPath, distance: float) -> None:
         """
-           :param a: The meta-path, which was rated higher compared to b.
-           :param b: The meta-path, which was rated lower compared to a.
+           :param superior_meta_path: The meta-path, which was rated higher compared to b.
+           :param inferior_meta_path: The meta-path, which was rated lower compared to a.
            :param distance: The distance between meta-paths a and b.
         """
         assert (distance >= 0), "Distance may not be negative"
-        superior_meta_path_index = self.__add_meta_path(superior_meta_path)
-        inferior_meta_path_index = self.__add_meta_path(inferior_meta_path)
+        superior_meta_path_vertex = self.__add_meta_path(superior_meta_path)
+        inferior_meta_path_vertex = self.__add_meta_path(inferior_meta_path)
 
-        new_edge_positive = self.g.add_edge(superior_meta_path_index, inferior_meta_path_index)
+        new_edge_positive = self.graph.add_edge(superior_meta_path_vertex, inferior_meta_path_vertex)
         self.distance[new_edge_positive] = distance
 
-
     def number_of_edges(self) -> int:
-        return self.g.num_edges()
+        return self.graph.num_edges()
 
     def number_of_nodes(self) -> int:
-        return self.g.num_vertices()
+        return self.graph.num_vertices()
 
     def all_nodes(self) -> List[MetaPath]:
         return list(self.meta_path_to_vertex.keys())
 
-    def all_pair_distances(self):
+    def all_pair_distances(self) -> PropertyMap:
         """
         :return: A Property Map with raw all-pair distances in it.
         """
-        return shortest_distance(self.g, weights=self.distance, directed=True)
+        return shortest_distance(self.graph, weights=self.distance, directed=True)
 
-    def stream_meta_path_distances(self):
+    def stream_meta_path_distances(self) -> (MetaPath, MetaPath, float):
         """
         :return: A stream of MetaPath-Distance-Triple.
         """
-        dist_map = self.g.new_vp("double", numpy.inf)
-        for node in self.g.vertices():
-            distances_from_source = shortest_distance(self.g, source=node, weights=self.distance, directed=True, dist_map=dist_map)
+        dist_map = self.graph.new_vp("double", numpy.inf)
+        for node in self.graph.vertices():
+            distances_from_source = shortest_distance(self.graph, source=node, weights=self.distance, directed=True, dist_map=dist_map)
             for target_index, distance in enumerate(distances_from_source):
                 if not numpy.isinf(distance) and distance != 0:
-                    yield self.vertex_to_meta_path[node], self.vertex_to_meta_path[self.g.vertex(target_index)], distance
-
+                    yield self.vertex_to_meta_path[node], self.vertex_to_meta_path[self.graph.vertex(target_index)], distance

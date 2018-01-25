@@ -3,6 +3,11 @@ python:
   - "3.4"
   - "3.5"
   - "3.6"
+before_script:
+  - sudo apt-key adv --keyserver pgp.skewed.de --recv-key 612DEFB798507F25
+  - echo "deb http://downloads.skewed.de/apt/trusty trusty universe" | sudo tee -a /etc/apt/sources.list
+  - sudo apt-get update -qq
+  - sudo apt-get install python3-graph-tool -y
 install:
   - pip install -r requirements.txt
 script:
