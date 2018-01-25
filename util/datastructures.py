@@ -72,14 +72,18 @@ class MetaPathRatingGraph:
         id_a = self.__add_meta_path(a)
         id_b = self.__add_meta_path(b)
 
-        new_edge = self.g.add_edge(id_a, id_b)
-        self.distance[new_edge] = distance
+        new_edge_positive = self.g.add_edge(id_a, id_b)
+        self.distance[new_edge_positive] = distance
+
+    def number_of_edges(self) -> int:
+        return self.g.num_edges()
+
+    def number_of_nodes(self) -> int:
+        return self.g.num_vertices()
 
     def all_nodes(self) -> List[MetaPath]:
         return list(self.meta_paths_map.keys())
 
-
-    def all_pair_distances(self) -> Iterator[]:
-        # TODO: we also have to update the distance map.
+    def all_pair_distances(self):
         return shortest_distance(self.g, weights=self.distance, directed=True)
 
