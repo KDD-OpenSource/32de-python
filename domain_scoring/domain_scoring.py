@@ -47,7 +47,7 @@ class DomainScoring():
 
         return []
 
-    def _preprocess(self, data: List[Tuple[MetaPath]]) -> List[List[int]]:
+    def _preprocess(self, data: List[Tuple[MetaPath, MetaPath]]) -> List[List[int]]:
         """
         Takes a list of metapaths pairs (a, b) and vectorizes a and b and joins them to one element for training.
         :param data: the data to preprocess.
