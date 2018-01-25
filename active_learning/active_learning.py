@@ -22,9 +22,26 @@ class Oracle:
         raise NotImplementedError("Sould have implemented this.")
 
 
+class CmdLineOracle(Oracle):
+    """
+    CmdLineOracle interacts with the command line.
+    """
+
+    def rate_meta_path(self, meta_path):
+        print("Please rate this meta-path: {}".format(meta_path))
+        rating = input()
+        return float(rating)
+
+    def wants_to_continue(self):
+        print("Do you want to continue rating? [y/n]")
+        keep_going = input()
+        if keep_going in 'no':
+            return False
+        return True
+
 class MockOracle(Oracle):
     """
-    MockOracle rates all meta-paths with 1 and never wants to continue to rate more
+    MockOracle rates all meta-paths with 1 and never wants to continue to rate more.
     """
 
     def rate_meta_path(self, meta_path):
