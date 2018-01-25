@@ -3,19 +3,18 @@ from util.datastructures import MetaPath
 import numpy as np
 
 # mock data
-mock_paths = [MetaPath([1, 2], [3], 3, 1), MetaPath([1, 2, 1], [3, 4], 1, 3), MetaPath([1, 3, 2], [1, 1], 5,2),
-              MetaPath([1, 3, 2], [1, 1], 4, 7), MetaPath([1, 3, 2], [1, 1], 6,3)]
+mock_paths = [MetaPath([1, 2], [3], 3, 1), MetaPath([1, 2, 1], [3, 4], 1, 3), MetaPath([1, 3, 2], [1, 1], 5, 2),
+			  MetaPath([1, 3, 2], [1, 1], 4, 7), MetaPath([1, 3, 2], [1, 1], 6, 3)]
 
 # algorithm types
 BASELINE = 'baseline'
 
-class Explanation():
 
-    def __init__(self):
-        raise NotImplementedError()
+class Explanation:
+	def __init__(self):
+		raise NotImplementedError()
 
 class SimilarityScore():
-
 	meta_paths = None
 	similarity_score = None
 
