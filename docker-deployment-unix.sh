@@ -6,7 +6,7 @@ cd tmp/
 git clone -b configure-docker https://github.com/KDD-OpenSource/32de-python.git
 cd 32de-python/
 
-docker build -t neo4j -f Dockerfile-neo4j-graph-algorithms .
+docker build -t neo4j-graph-algo -f Dockerfile-neo4j-graph-algorithms .
 docker run \
     --publish=7474:7474 --publish=7687:7687 \
     --volume=$HOME/neo4j/data:/data \
@@ -14,8 +14,8 @@ docker run \
     --volume=$HOME/neo4j/plugins:/plugins \
     --env=NEO4J_ACCEPT_LICENSE_AGREEMENT=yes \
     -d \
-    --name neo4j-container \
-    neo4j
+    --name neo4j-graph-algo-container \
+    neo4j-graph-algo
 
 docker build -t server -f Dockerfile .
 docker run --name server-container \
