@@ -6,6 +6,6 @@ RUN mvn -Dmaven.test.skip=true clean install
 RUN cp algo/target/graph-algorithms-*.jar /var/lib/neo4j/plugins/
 
 # TODO: I think we would have to use the file from the neo4j repo
-# ENTRYPOINT ["/docker-entrypoint.sh"]
+ENTRYPOINT ["/docker-entrypoint.sh"]
 # CMD ["neo4j console"]
-ENTRYPOINT ["neo4j", "console"]
+#ENTRYPOINT ["neo4j", "console"]
