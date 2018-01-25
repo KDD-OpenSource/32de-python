@@ -6,6 +6,8 @@ cd tmp/
 git clone -b configure-docker https://github.com/KDD-OpenSource/32de-python.git
 cd 32de-python/
 
+mkdir $HOME/neo4j/plugins
+
 # TODO: Is there a nicer way than --no-cache? Maybe clone outside
 docker build --no-cache -t neo4j-graph-algo -f Dockerfile-neo4j-graph-algorithms .
 docker run \
@@ -36,4 +38,5 @@ docker run --name ui-container \
 cd ..
 read -p "Press enter to terminate the containers"
 cd ..
+rm -rf $HOME/neo4j/plugins
 rm -rf tmp/
