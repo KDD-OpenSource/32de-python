@@ -1,4 +1,8 @@
 #!/bin/bash
+docker rm neo4j-graph-algo-container
+docker rm server-container
+docker rm ui-container
+
 mkdir tmp/
 cd tmp/
 
