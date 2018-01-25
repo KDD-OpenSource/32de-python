@@ -8,4 +8,4 @@ RUN git clone -b configure-docker https://github.com/KDD-OpenSource/32de-python.
 WORKDIR 32de-python
 RUN pip3 install -r requirements.txt
 RUN pip3 install -r deployment.txt
-RUN gunicorn --bind 0.0.0.0:8000 api.server:app
+ENTRYPOINT ["gunicorn", "--bind 0.0.0.0:8000", "api.server:app"]
