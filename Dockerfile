@@ -1,4 +1,5 @@
 FROM ubuntu:17.10
+EXPOSE 8000
 # TODO: Do we really need python3-dev?
 RUN apt-get update && apt-get install -y python3-pip python3-dev git
 # TODO: Remove -b when on master
