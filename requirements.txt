@@ -1,3 +1,7 @@
 # List of packages which are needed for development and deployment
 numpy==1.14.0
 sklearn
+typing
+pytest
+flask
+scipy
