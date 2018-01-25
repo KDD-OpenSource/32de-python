@@ -1,1 +1,2 @@
+# List of packages which are only needed for deployment
 gunicorn
