@@ -1,4 +1,4 @@
-from typing import List, Iterator
+from typing import List
 from graph_tool.all import *
 
 
@@ -64,7 +64,7 @@ class MetaPathRatingGraph:
     :param a: The index of the meta-path will be retrieved or the meta-path is mapped to a new index.
     """
 
-    def __add_meta_path(self, a: MetaPath) -> None:
+    def __add_meta_path(self, a: MetaPath):
         if a in self.meta_paths_map:
             v = self.meta_paths_map[a]
         else:

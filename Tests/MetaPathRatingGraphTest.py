@@ -1,7 +1,7 @@
 import unittest
-from typing import List, Iterable
+from typing import List
 from util.datastructures import MetaPathRatingGraph, MetaPath
-import numpy
+
 
 class MetaPathRatingTest(unittest.TestCase):
 
@@ -16,7 +16,7 @@ class MetaPathRatingTest(unittest.TestCase):
 
     def test_filling(self):
         rating_graph = MetaPathRatingGraph()
-        pairs = [(1,2)]
+        pairs = [(1, 2)]
         distances = [10]
         self.fill_rating_graph(graph=rating_graph, pairs=pairs, distances=distances)
 
@@ -25,7 +25,7 @@ class MetaPathRatingTest(unittest.TestCase):
 
     def test_distance_extraction(self):
         rating_graph = MetaPathRatingGraph()
-        pairs = [(1,2), (2,3), (3,5), (1,4)]
+        pairs = [(1, 2), (2, 3), (3, 5), (1, 4)]
         distances = [4.2, 6, 1, 3]
         self.fill_rating_graph(graph=rating_graph, pairs=pairs, distances=distances)
 
@@ -44,7 +44,7 @@ class MetaPathRatingTest(unittest.TestCase):
 
     def test_get_metapaths(self):
         rating_graph = MetaPathRatingGraph()
-        pairs = [(0,1), (1,2), (2,3), (3,4), (4,5)]
+        pairs = [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5)]
         distances = [1, 1, 1, 1, 1]
         self.fill_rating_graph(graph=rating_graph, pairs=pairs, distances=distances)
 
