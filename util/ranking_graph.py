@@ -8,7 +8,7 @@ class RankingGraph(Generic[T]):
         """
 
         """
-        raise NotImplementedError
+        # raise NotImplementedError
 
     def all_nodes(self) -> List[T]:
         """
@@ -18,7 +18,7 @@ class RankingGraph(Generic[T]):
         raise NotImplementedError
         return []
 
-    def transitive_closure(self) -> List[List[T]]:
+    def transitive_closures(self) -> List[List[T]]:
         """
 
         :return: A list containing all transitive closures, where each closure is a list starting with the node
