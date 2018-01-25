@@ -1,6 +1,6 @@
 from typing import List
-from graph_tool.all import *
-
+from graph_tool.all import Graph, shortest_distance
+import numpy
 
 class MetaPath:
     edges = None
@@ -51,39 +51,41 @@ class MetaPathRating:
 
 
 class MetaPathRatingGraph:
-    meta_paths_map = None
-    distance = None
-    g = None
 
     def __init__(self):
         self.g = Graph(directed=True)
         self.distance = self.g.new_edge_property("double")
-        self.meta_paths_map = {}
+        self.meta_path_to_vertex = {}
+        self.vertex_to_meta_path = {}
 
-    """
-    :param a: The index of the meta-path will be retrieved or the meta-path is mapped to a new index.
-    """
 
-    def __add_meta_path(self, a: MetaPath):
-        if a in self.meta_paths_map:
-            v = self.meta_paths_map[a]
+    def __add_meta_path(self, meta_path: MetaPath):
+        """
+        :param a: The index of the meta-path will be retrieved or the meta-path is mapped to a new index.
+        """
+        if meta_path in self.meta_path_to_vertex:
+            meta_path_vertex = self.meta_path_to_vertex[meta_path]
         else:
-            v = self.g.add_vertex()
-            self.meta_paths_map[a] = v
-        return v
+            meta_path_vertex = self.g.add_vertex()
+            self.meta_path_to_vertex[meta_path] = meta_path_vertex
+            self.vertex_to_meta_path[meta_path_vertex] = meta_path
+        return meta_path_vertex
 
-    """
-    :param a: The meta-path, which was rated higher compared to b.
-    :param b: The meta-path, which was rated lower compared to a.
-    :param distance: The distance between meta-paths a and b. 
-    """
 
-    def add_user_rating(self, a: MetaPath, b: MetaPath, distance: float):
-        id_a = self.__add_meta_path(a)
-        id_b = self.__add_meta_path(b)
 
-        new_edge_positive = self.g.add_edge(id_a, id_b)
+    def add_user_rating(self, superior_meta_path: MetaPath, inferior_meta_path: MetaPath, distance: float):
+        """
+           :param a: The meta-path, which was rated higher compared to b.
+           :param b: The meta-path, which was rated lower compared to a.
+           :param distance: The distance between meta-paths a and b.
+        """
+        assert (distance >= 0), "Distance may not be negative"
+        superior_meta_path_index = self.__add_meta_path(superior_meta_path)
+        inferior_meta_path_index = self.__add_meta_path(inferior_meta_path)
+
+        new_edge_positive = self.g.add_edge(superior_meta_path_index, inferior_meta_path_index)
         self.distance[new_edge_positive] = distance
+
 
     def number_of_edges(self) -> int:
         return self.g.num_edges()
@@ -92,7 +94,22 @@ class MetaPathRatingGraph:
         return self.g.num_vertices()
 
     def all_nodes(self) -> List[MetaPath]:
-        return list(self.meta_paths_map.keys())
+        return list(self.meta_path_to_vertex.keys())
 
     def all_pair_distances(self):
+        """
+        :return: A Property Map with raw all-pair distances in it.
+        """
         return shortest_distance(self.g, weights=self.distance, directed=True)
+
+    def stream_meta_path_distances(self):
+        """
+        :return: A stream of MetaPath-Distance-Triple.
+        """
+        dist_map = self.g.new_vp("double", numpy.inf)
+        for node in self.g.vertices():
+            distances_from_source = shortest_distance(self.g, source=node, weights=self.distance, directed=True, dist_map=dist_map)
+            for target_index, distance in enumerate(distances_from_source):
+                if not numpy.isinf(distance) and distance != 0:
+                    yield self.vertex_to_meta_path[node], self.vertex_to_meta_path[self.g.vertex(target_index)], distance
+
