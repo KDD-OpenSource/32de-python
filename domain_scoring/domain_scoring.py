@@ -1,4 +1,5 @@
 from typing import List, Tuple
+import numpy
 from util.ranking_graph import RankingGraph
 from util.datastructures import MetaPath
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -7,25 +8,21 @@ import util.config as config
 
 
 class DomainScoring():
-    def __init__(self, mode: str = config.RESEARCH_MODE):
+    def __init__(self):
         """
-
-        :param rated_metapaths: A list of lists, each inner list element represents one user weighting round.
-        Each user weighting is itself a list where we care about the ordering (represents ordering on UI) and
-        it contains the distance to the next element.
+        Classifies the ordering and extracts the domain value of meta-paths.
         """
         # The token_pattern also allows single character strings which the default doesn't allow
         self.vectorizer = TfidfVectorizer(analyzer='word', token_pattern='\\b\\w+\\b')
         self.clf = DecisionTreeClassifier()
 
 
-    def score(self, metapath_graph: RankingGraph):
-        # TODO: Remove this legacy - it is kept as a reference for now.
-        # rated_metapaths = [[["SNP IN POSITIONWINDOW NEXT POSITIONWINDOW IN LOCUS POS TRANSCRIPT", 0.1],
-        #                     ["SNP IN POSITIONWINDOW IN LOCUS POS TRANSCRIPT", 0.2]]]
-        # unrated_metapaths = [["SNP IN POSITIONWINDOW NEXT POSITIONWINDOW IN POSITIONWINDOW IN LOCUS POS TRANSCRIPT"]]
-        # corpus = rated_metapaths.extend(unrated_metapaths)
-
+    def fit(self, metapath_graph: RankingGraph) -> None:
+        """
+        Fits a classifier to predict a meta-path ordering.
+        :param metapath_graph: already ordered meta-path used as a training set.
+        :return: Nothing.
+        """
         self._fit_vectorizer(metapath_graph)
         x_train, y_train = self._extract_features_labels(metapath_graph)
 
@@ -33,13 +30,22 @@ class DomainScoring():
 
 
 
-    def predict(self, metapath_unrated: List[MetaPath]):
+    def predict(self, metapath_unrated: List[MetaPath]) -> List[Tuple[MetaPath, int]]:
+        """
+        Predict the domain value of the given meta-paths.
+        :param metapath_unrated: The meta-paths to be ordered.
+        :return: A list of tuples with the metapath and their predicted domain value.
+        """
         x_predict = self._all_pairs(metapath_unrated)
         y_predict = self.clf.predict(self._preprocess(x_predict))
 
         # TODO:
         # corpus, domain_values = self.transform_to_domain_values(Y_rated.extend(Y_unrated))
         # explanation = Explanation(meta_paths=corpus, domain_value=domain_values)
+
+        raise NotImplementedError()
+
+        return []
 
     def _preprocess(self, data: List[Tuple[MetaPath]]) -> List[List[int]]:
         """
@@ -49,11 +55,12 @@ class DomainScoring():
         """
         vectors = []
         for datum in data:
-            vectors.append(self.vectorizer.transform(str(datum[0])) + self.vectorizer.transform(str(datum[1])))
+            feature_matrix = numpy.concatenate(self.vectorizer.transform(map(str, datum)).toarray())
+            vectors.append(feature_matrix.tolist())
 
         return vectors
 
-    def _all_pairs(self, list: List) -> List[Tuple]:
+    def _all_pairs(self, list: List, inverse: bool = False) -> List[Tuple]:
         """
 
         :param list: the list from which the elements are taken.
@@ -62,8 +69,10 @@ class DomainScoring():
         """
 
         pairs = []
-        for element in list:
-            for successor in list:
+        for key in range(len(list)):
+            element = list[key]
+            lower = 0 if inverse else key
+            for successor in list[lower:]:
                 if element is successor:
                     continue
 
