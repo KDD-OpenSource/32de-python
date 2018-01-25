@@ -1,15 +1,13 @@
-from explanation.explanation import Explanation
-from typing import List
-from main import RESEARCH_MODE
 from typing import List, Tuple
 from util.ranking_graph import RankingGraph
 from util.datastructures import MetaPath
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.tree import DecisionTreeClassifier
+import util.config as config
 
 
 class DomainScoring():
-    def __init__(self, mode: str = RESEARCH_MODE):
+    def __init__(self, mode: str = config.RESEARCH_MODE):
         """
 
         :param rated_metapaths: A list of lists, each inner list element represents one user weighting round.
