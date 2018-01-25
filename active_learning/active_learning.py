@@ -57,8 +57,8 @@ class ActiveLearner:
     oracle = None
     batch_size = None
 
-    def __init__(self, oracle=MockOracle(), algorithm=NO_RATING, batch_size=5):
-        self.meta_paths = self.fetch_meta_paths()
+    def __init__(self, oracle=MockOracle(), algorithm=NO_RATING, batch_size=5,dataset=False):
+        self.meta_paths = dataset if dataset else self.fetch_meta_paths()
         self.oracle = oracle
         self.algorithm_type = algorithm
         self.batch_size = batch_size
