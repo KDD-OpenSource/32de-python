@@ -4,3 +4,6 @@ RUN git clone -b alpha-dev https://github.com/KDD-OpenSource/neo4j-graph-algorit
 WORKDIR neo4j-graph-algorithms
 RUN mvn -Dmaven.test.skip=true clean install
 RUN cp algo/target/graph-algorithms-*.jar /var/lib/neo4j/plugins/
+
+ENTRYPOINT ["/docker-entrypoint.sh"]
+CMD ["neo4j"]
