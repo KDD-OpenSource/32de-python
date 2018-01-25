@@ -1,5 +1,5 @@
 FROM neo4j:3.3-enterprise
-RUN apk update && apk add -y git maven
+RUN apk --update add git maven openjdk8-jre
 RUN git clone -b alpha-dev https://github.com/KDD-OpenSource/neo4j-graph-algorithms.git
 WORKDIR neo4j-graph-algorithms
 RUN mvn clean install
