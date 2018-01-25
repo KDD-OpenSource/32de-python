@@ -5,11 +5,11 @@ services:
 
 before_install:
   - docker build -t server -f Dockerfile .
-  - docker run -d --name app-container server
+  - docker run -d --name server-container server
   - docker ps -a
 
 script:
-  - docker exec app-container pytest
+  - docker exec server-container pytest
 
 after_script:
-- docker rm -f app
+  - docker rm -f app
