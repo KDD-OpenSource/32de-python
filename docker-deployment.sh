@@ -9,17 +9,15 @@ cd 32de-python/
 mkdir $HOME/neo4j/plugins
 
 # TODO: Is there a nicer way than --no-cache? Maybe clone outside
-docker build --no-cache -t neo4j-graph-algo -f Dockerfile-neo4j-graph-algorithms .
+docker build --no-cache -t neo4j-graph-algorithms -f Dockerfile-neo4j-graph-algorithms .
 docker run \
     --publish=7474:7474 --publish=7687:7687 \
     --volume=$HOME/neo4j/data:/data \
     --volume=$HOME/neo4j/logs:/logs \
-    --volume=$HOME/neo4j/plugins:/plugins \
     --env=NEO4J_ACCEPT_LICENSE_AGREEMENT=yes \
     -d \
     --name neo4j-graph-algo-container \
-    neo4j-graph-algo \
-    -d /plugins
+    neo4j-graph-algorithms
 
 docker build --no-cache -t server -f Dockerfile .
 docker run --name server-container \

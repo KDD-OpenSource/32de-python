@@ -3,4 +3,4 @@ RUN apk --update add git maven openjdk8
 RUN git clone -b alpha-dev https://github.com/KDD-OpenSource/neo4j-graph-algorithms.git
 WORKDIR neo4j-graph-algorithms
 RUN mvn -Dmaven.test.skip=true clean install
-RUN cp algo/target/graph-algorithms-*.jar /plugins/
+RUN cp algo/target/graph-algorithms-*.jar /var/lib/neo4j/plugins/
