@@ -32,6 +32,7 @@ class MetaPath:
 
 
 class MetaPathRating:
+    # TODO: Define methods
     meta_path = None
     structural_value = None
     domain_value = None
@@ -44,27 +45,19 @@ class UserOrderedMetaPaths:
     meta_paths = None
     distances = None
 
-    def __init__(self, meta_paths: List[MetaPath]):
-        """
-
-        :param meta_paths: All meta-paths as ordered by the user
-        which were rated in one "session" (between each click on "Next five")
-        """
-        if self.distances:
-            assert len(meta_paths) == len(
-                self.distances), 'Number of meta-paths which is {} doesn\'t match number of passed distances which is {}'.format(
-                len(meta_paths), len(self.distances))
-        self.meta_paths = meta_paths
-
-    def __init__(self, meta_paths: List[MetaPath], distances: List[float]):
+    def __init__(self, meta_paths: List[MetaPath], distances: List[float] = None):
         """
 
         :param distances: Distances between meta-paths on UI
         :param meta_paths: All meta-paths as ordered by the user
         which were rated in one "session" (between each click on "Next five")
         """
-        assert len(meta_paths) == len(
-            distances), 'Number of meta-paths which is {} doesn\'t match number of passed distances which is {}'.format(
-            len(meta_paths), len(distances))
         self.meta_paths = meta_paths
+        self.set_distances(distances)
+
+
+    def set_distances(self, distances: List[float]) -> None:
+        assert distances is None or len(self.meta_paths) == len(
+            distances), 'Number of meta-paths which is {} doesn\'t match number of passed distances which is {}'.format(
+            len(self.meta_paths), len(distances))
         self.distances = distances
