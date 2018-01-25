@@ -14,7 +14,8 @@ class DomainScoring():
         Each user weighting is itself a list where we care about the ordering (represents ordering on UI) and
         it contains the distance to the next element.
         """
-        self.vectorizer = TfidfVectorizer(analyzer='word')
+        # The token_pattern also allows single character strings which the default doesn't allow
+        self.vectorizer = TfidfVectorizer(analyzer='word', token_pattern='\\b\\w+\\b')
         self.clf = DecisionTreeClassifier()
 
 
