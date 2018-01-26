@@ -12,4 +12,4 @@ script:
   - docker exec server-container pytest
 
 after_script:
-  - docker rm -f app
+  - docker rm -f server-container
