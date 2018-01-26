@@ -6,14 +6,12 @@ docker rm ui-container
 mkdir tmp/
 cd tmp/
 
-# TODO: Remove -b when on master
-git clone -b configure-docker https://github.com/KDD-OpenSource/32de-python.git
-cd 32de-python/
 
-mkdir $HOME/neo4j/plugins
+########### neo4j-graph-algorithms
+git clone -b alpha-dev https://github.com/KDD-OpenSource/neo4j-graph-algorithms.git
+cd neo4j-graph-algorithms/
 
-# TODO: Is there a nicer way than --no-cache? Maybe clone outside
-docker build --no-cache -t neo4j-graph-algorithms -f Dockerfile-neo4j-graph-algorithms .
+docker build -t neo4j-graph-algorithms -f Dockerfile .
 docker run \
     --publish=7474:7474 --publish=7687:7687 \
     --volume=$HOME/neo4j/data:/data \
@@ -22,17 +20,24 @@ docker run \
     -d \
     --name neo4j-graph-algo-container \
     neo4j-graph-algorithms
+cd ..
 
-docker build --no-cache -t server -f Dockerfile .
+########### 32de-python
+git clone https://github.com/KDD-OpenSource/32de-python.git
+cd 32de-python/
+
+docker build -t server -f Dockerfile .
 docker run --name server-container \
            --publish=8000:8000 \
            -d \
            server
 cd ..
 
+########### 32de-UI
 git clone https://github.com/KDD-OpenSource/32de-UI.git
 cd 32de-UI/
-docker build --no-cache -t ui -f Dockerfile .
+
+docker build -t ui -f Dockerfile .
 docker run --name ui-container \
            --publish=80:80 \
            -d \
@@ -40,5 +45,7 @@ docker run --name ui-container \
 cd ..
 read -p "Press enter to terminate the containers"
 cd ..
-rm -rf $HOME/neo4j/plugins
 rm -rf tmp/
+docker rm neo4j-graph-algo-container
+docker rm server-container
+docker rm ui-container
