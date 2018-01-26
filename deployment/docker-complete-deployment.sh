@@ -12,7 +12,7 @@ cd tmp/
 ########### 32de-python
 git clone -b configure-docker https://github.com/KDD-OpenSource/32de-python.git
 cd 32de-python/
-deployment/build-server.sh
+deployment/build-server.sh .
 deployment/run-server.sh
 
 cd ..
@@ -21,7 +21,7 @@ cd ..
 git clone -b alpha-dev https://github.com/KDD-OpenSource/neo4j-graph-algorithms.git
 cd neo4j-graph-algorithms/
 
-../32de-python/deployment/build-neo4j.sh
+../32de-python/deployment/build-neo4j.sh .
 ../32de-python/deployment/run-neo4j.sh
 cd ..
 
@@ -29,7 +29,7 @@ cd ..
 git clone https://github.com/KDD-OpenSource/32de-UI.git
 cd 32de-UI/
 
-../32de-python/deployment/build-ui.sh
+../32de-python/deployment/build-ui.sh .
 ../32de-python/deployment/run-ui.sh
 
 cd ..
