@@ -4,8 +4,8 @@ services:
   - docker
 
 before_install:
-  - docker build -t server -f Dockerfile .
-  - docker run -d --name server-container server
+  - deployment/build-server.sh .
+  - deployment/run-server.sh
   - docker ps -a
 
 script:
