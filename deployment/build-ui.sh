@@ -1,2 +1,2 @@
 #!/bin/bash
-docker build -t ui -f Dockerfile ..
+docker build -t ui -f Dockerfile .
