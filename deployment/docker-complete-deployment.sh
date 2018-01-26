@@ -1,6 +1,4 @@
 #!/bin/bash
-DIR="${BASH_SOURCE%/*}"
-if [[ ! -d "$DIR" ]]; then DIR="$PWD"; fi
 
 docker rm neo4j-graph-algo-container
 docker rm server-container
