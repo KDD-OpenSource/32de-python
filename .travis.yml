@@ -1,9 +1,15 @@
-language: python
-python:
-  - "3.4"
-  - "3.5"
-  - "3.6"
-install:
-  - pip install -r requirements.txt
+sudo: required
+
+services:
+  - docker
+
+before_install:
+  - deployment/build-server.sh .
+  - deployment/run-server.sh
+  - docker ps -a
+
 script:
-  - pytest
+  - docker exec server-container pytest
+
+after_script:
+  - docker rm -f server-container
