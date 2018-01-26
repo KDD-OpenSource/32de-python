@@ -9,7 +9,7 @@ RUN echo "deb-src http://downloads.skewed.de/apt/xenial xenial universe" | tee -
 RUN apt-get update && apt-get install -y libboost-all-dev
 RUN apt-get update -qq && apt-get install -y python3-graph-tool
 
-ADD * /32de-python/
+COPY . /32de-python/
 
 WORKDIR /32de-python
 RUN pip3 install -r requirements.txt
