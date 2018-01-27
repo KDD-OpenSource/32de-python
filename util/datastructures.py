@@ -6,9 +6,11 @@ class MetaPath:
     _edges = None
     _nodes = None
 
-    def __init__(self, nodes: List[str] = [], edges: List[str] = []):
-        assert (len(nodes) - 1 == len(edges)) or (len(nodes) == 0 and len(
-            edges) == 0), "Invalid path: number of edges and nodes do not match."
+
+
+    def __init__(self, nodes:List[str] = [], edges:List[str] = []):
+        assert (len(nodes) - 1 == len(edges)) or (
+        len(nodes) == 0 and len(edges) == 0), "Invalid path: number of edges and nodes do not match."
         self._edges = edges
         self._nodes = nodes
 
@@ -130,3 +132,10 @@ class MetaPathRatingGraph:
 
     def __str__(self):
         return "MetaPathRating with {} rating(s)".format(len(self.g.get_edges()))
+
+    def draw(self, filename='log/rating.png'):
+        layout = arf_layout(self.g, max_iter=0)
+        # TODO: maybe add weights
+        graph_draw(self.g, pos=layout, vertex_fill_color=[0, 0, 1.0, 1.0],
+                   output=filename)  # , edge_pen_width=pen_width)
+        print('Printed rating to file {}'.format(filename))
