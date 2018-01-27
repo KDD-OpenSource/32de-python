@@ -35,7 +35,7 @@ class CmdLineOracle(Oracle):
     CmdLineOracle interacts with the command line.
     """
 
-    def rate_meta_path(self, meta_path):
+    def _rate_meta_path(self, meta_path):
         print("Please rate this meta-path: {}".format(meta_path))
         rating = input()
         return float(rating)
