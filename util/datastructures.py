@@ -21,6 +21,15 @@ class MetaPath:
         representation[1::2] = self._edges
         return representation
 
+    @staticmethod
+    def from_list(meta_path: List):
+        assert len(meta_path) % 2 != 0 or len(meta_path) == 0
+        return MetaPath(meta_path[::2], meta_path[1::2])
+
+    @staticmethod
+    def from_string(meta_path: str, sep=' '):
+        return MetaPath.from_list(meta_path.split(sep))
+
     def __len__(self) -> int:
         return len(self._edges) + len(self._nodes)
 
@@ -118,3 +127,6 @@ class MetaPathRatingGraph:
             for target_index, distance in enumerate(distances_from_source):
                 if not numpy.isinf(distance) and distance != 0:
                     yield self.vertex_to_meta_path[node], self.vertex_to_meta_path[self.graph.vertex(target_index)], distance
+
+    def __str__(self):
+        return "MetaPathRating with {} rating(s)".format(len(self.g.get_edges()))
