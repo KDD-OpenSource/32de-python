@@ -74,7 +74,6 @@ class ActiveLearner:
         self.rating = MetaPathRatingGraph()
 
     def retrieve_user_rating(self):
-        print(self.rating)
         self._rate_paths()
         self.rating.all_pair_distances()
         return self.rating
