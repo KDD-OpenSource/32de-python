@@ -50,9 +50,14 @@ class ActiveLearningTest(unittest.TestCase):
         complete_user_rating = self._eval_complete_dataset_on(MockOracle(),self.data_set)
         print(achieved_user_rating)
         print(complete_user_rating)
+        achieved_user_rating.draw(filename='log/achieved_rating.png')
+        complete_user_rating.draw(filename='log/complete_rating.png')
 
         # TODO compare achieved and compelete?
-
+        # method one: precision
+        # since the model does not lie (we use the same instance)
+        # we will never get false positives (might change in real-world-scenerio...)
+        # so how can we evaluate? => only in combination with preference leared from our suggestion!
 
 if __name__ == '__main__':
     unittest.main()
