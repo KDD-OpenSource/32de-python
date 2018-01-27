@@ -1,7 +1,7 @@
 import unittest
 import pandas as pd
 import os
-from active_learning.active_learning import ActiveLearner, MockOracle
+from active_learning.active_learning import *
 from util.datastructures import MetaPath
 
 
@@ -36,12 +36,22 @@ class ActiveLearningTest(unittest.TestCase):
             meta_paths.append(mp)
         return meta_paths
 
+    def _eval_complete_dataset_on(self,oracle,meta_paths):
+        rating = MetaPathRatingGraph()
+        ratings = map(oracle.rate_meta_path, meta_paths)
+        ordered = sorted(zip(ratings, meta_paths), key=lambda tuple: tuple[0])
+        list(map(lambda x, y: rating.add_user_rating(x[1], y[1], y[0] - x[0]), ordered[:-1], ordered[1:]))
+        return rating
+
     def test_eval_dataset(self):
         # TODO: parametrize for several different oracles, learning algorithms
-        active_learner = ActiveLearner(oracle=MockOracle(), dataset=self.data_set)
-        user_rating = active_learner.retrieve_user_rating()
+        active_learner = ActiveLearner(oracle=MockOracle(), algorithm=BASELINE, data_set=self.data_set)
+        achieved_user_rating = active_learner.retrieve_user_rating()
+        complete_user_rating = self._eval_complete_dataset_on(MockOracle(),self.data_set)
+        print(achieved_user_rating)
+        print(complete_user_rating)
 
-        # TODO: compare user rating to actual user rating
+        # TODO compare achieved and compelete?
 
 
 if __name__ == '__main__':
