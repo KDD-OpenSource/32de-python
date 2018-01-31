@@ -4,8 +4,8 @@ from util.ranking_graph import RankingGraph
 from util.datastructures import MetaPath
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.tree import DecisionTreeClassifier
+from domain_scoring.domain_value_transformer import NaiveTransformer, SMALLER, LARGER
 import util.config as config
-
 
 class DomainScoring():
     def __init__(self):
@@ -15,6 +15,7 @@ class DomainScoring():
         # The token_pattern also allows single character strings which the default doesn't allow
         self.vectorizer = TfidfVectorizer(analyzer='word', token_pattern='\\b\\w+\\b')
         self.classifier = DecisionTreeClassifier()
+        self.domain_value_transformer = NaiveTransformer()
 
 
     def fit(self, metapath_graph: RankingGraph) -> None:
@@ -39,13 +40,8 @@ class DomainScoring():
         x_predict = self._all_pairs(metapath_unrated)
         y_predict = self.classifier.predict(self._preprocess(x_predict))
 
-        # TODO:
-        # corpus, domain_values = self.transform_to_domain_values(Y_rated.extend(Y_unrated))
-        # explanation = Explanation(meta_paths=corpus, domain_value=domain_values)
 
-        raise NotImplementedError()
-
-        return []
+        return self.transform_to_domain_values(x_predict, y_predict)
 
     def _preprocess(self, data: List[Tuple[MetaPath, MetaPath]]) -> List[List[int]]:
         """
@@ -80,14 +76,15 @@ class DomainScoring():
         return pairs
 
 
-    def _transform_to_domain_values(self, inferred_ratings) -> List:
+    def _transform_to_domain_values(self, metapaths_pairs: List[Tuple[MetaPath, MetaPath]], classification: List[int]) -> List:
         """
+        Transforms the classified ordering of all meta-paths pairs to the domain values.
 
         :param inferred_ratings: user-defined and inferred rating for all meta-paths
-        :return: Total order of all meta-paths with values in [0,1]
+        :return: Total order of all meta-paths with values in [0,10]
         """
-        raise NotImplementedError()
-        return []
+
+        return self.domain_value_transformer(metapaths_pairs, classification)
 
     def _fit_vectorizer(self, metapath_graph: RankingGraph) -> None:
         """
@@ -110,15 +107,15 @@ class DomainScoring():
         metapath_labels = []
 
         for closure in metapath_graph.transitive_closures():
-            node_vector = closure.pop(0)
+            node_vector = closure.pop(0) # pop first element
             for successor in closure:
                 successor_vector = successor
 
                 metapath_pairs.append((node_vector, successor_vector))
-                metapath_labels.append(0)
+                metapath_labels.append(SMALLER) # <
 
                 metapath_pairs.append((successor_vector, node_vector))
-                metapath_labels.append(1)
+                metapath_labels.append(LARGER) # >
 
 
         return metapath_pairs, metapath_labels
