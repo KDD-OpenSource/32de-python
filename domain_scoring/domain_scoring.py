@@ -65,7 +65,7 @@ class DomainScoring():
         :return: Total order of all meta-paths with values in [0,10]
         """
 
-        return self.domain_value_transformer(metapaths_pairs, classification)
+        return self.domain_value_transformer.transform(metapaths_pairs, classification)
 
     def _fit_vectorizer(self, metapath_graph: RankingGraph) -> None:
         """
