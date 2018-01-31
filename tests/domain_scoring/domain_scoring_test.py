@@ -3,7 +3,7 @@ from domain_scoring.domain_scoring import DomainScoring
 from util.ranking_graph import RankingGraph
 from util.datastructures import MetaPath
 
-class MyTestCase(unittest.TestCase):
+class DomainScoringTest(unittest.TestCase):
 
     def setUp(self):
         self.ds = DomainScoring()
