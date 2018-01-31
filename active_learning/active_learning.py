@@ -9,14 +9,16 @@ class Oracle:
     """
     Abstract class for the Oracle the Active Learner interacts with. 
     """
-    number_of_calls = None
+
+    # statistics on the iteraction with the oracle
+    number_of_instances_labeled = None  # keep track of how many times the oracle was asked to label a meta-path
 
     def __init__(self):
-        self.number_of_calls = 0
+        self.number_of_instances_labeled = 0
 
     # TODO Think about whether exclusion is own class or 0
     def rate_meta_path(self, meta_path: MetaPath) -> float:
-        self.number_of_calls += 1
+        self.number_of_instances_labeled += 1
         return self._rate_meta_path(meta_path)
 
     def _rate_meta_path(self, meta_path: MetaPath) -> float:
@@ -52,7 +54,7 @@ class MockOracle(Oracle):
         return 1.0
 
     def wants_to_continue(self) -> bool:
-        return self.number_of_calls < 5
+        return self.number_of_instances_labeled < 5
 
 
 class ActiveLearner:
