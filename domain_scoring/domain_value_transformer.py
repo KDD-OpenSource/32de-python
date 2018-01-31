@@ -1,10 +1,6 @@
 from typing import List, Tuple, Dict
-import numpy
-from util.ranking_graph import RankingGraph
+from numpy import arange
 from util.datastructures import MetaPath
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.tree import DecisionTreeClassifier
-import util.config as config
 
 SMALLER = 0
 LARGER = 1
@@ -37,7 +33,7 @@ class NaiveTransformer(DomainValueTransformer):
         Then all meta-paths receive the value by spreading all nodes evenly between [1, 10].
         :param metapaths_pairs: TODO
         :param classification: TODO
-        :param all_metapaths: A list of all meta-paths occuring in the pairs that need to be ordered.
+        :param all_metapaths: A list of all meta-paths occurring in the pairs that need to be ordered.
                               If this is None it is automatically extracted.
         :return: Total order of all meta-paths with values in [0,1]
         """
@@ -88,14 +84,16 @@ class NaiveTransformer(DomainValueTransformer):
         :return: An ordered merged list of left and right based on the oracle.
         """
         ordered_paths = []
-        range = len(left) if len(left) < len(right) else len(right)
-        for i in range(range):
-            left_element = left.pop(0) # pop first element from left list
-            right_element = right.pop(0)
-            if oracle[(left_element, right_element)] == SMALLER:
-                ordered_paths.append(left_element)
+        while len(left) > 0 and len(right) > 0:
+            comparer = SMALLER
+            key = (left[0], right[0])
+            if key not in oracle:
+                comparer = LARGER
+                key = (right[0], left[0])
+            if oracle[key] == comparer:
+                ordered_paths.append(left.pop(0))
             else:
-                ordered_paths.append(right_element)
+                ordered_paths.append(right.pop(0))
         for element in left + right:
             ordered_paths.append(element)
         return ordered_paths
@@ -103,8 +101,8 @@ class NaiveTransformer(DomainValueTransformer):
 
 
     def _spread_domain_value(self, ordered_paths: List[MetaPath]) -> List[Tuple[MetaPath, float]]:
-
-        return []
+        weights = arange(10, 0, -10./len(ordered_paths))[::-1]
+        return list(zip(ordered_paths, weights))
 
 
 
