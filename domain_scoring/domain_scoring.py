@@ -2,6 +2,7 @@ from typing import List, Tuple
 import numpy
 from util.ranking_graph import RankingGraph
 from util.datastructures import MetaPath
+from util.lists import all_pairs
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.tree import DecisionTreeClassifier
 from domain_scoring.domain_value_transformer import NaiveTransformer, SMALLER, LARGER
@@ -37,7 +38,7 @@ class DomainScoring():
         :param metapath_unrated: The meta-paths to be ordered.
         :return: A list of tuples with the metapath and their predicted domain value.
         """
-        x_predict = self._all_pairs(metapath_unrated)
+        x_predict = all_pairs(metapath_unrated)
         y_predict = self.classifier.predict(self._preprocess(x_predict))
 
 
@@ -55,26 +56,6 @@ class DomainScoring():
             vectors.append(feature_matrix.tolist())
 
         return vectors
-
-    def _all_pairs(self, list: List, inverse: bool = False) -> List[Tuple]:
-        """
-
-        :param list: the list from which the elements are taken.
-        :param inverse: if True also the inverse pairs are added.
-        :return: All pairs found in the input list.
-        """
-
-        pairs = []
-        for key in range(len(list)):
-            element = list[key]
-            lower = 0 if inverse else key
-            for successor in list[lower:]:
-                if element is successor:
-                    continue
-
-                pairs.append((element, successor))
-        return pairs
-
 
     def _transform_to_domain_values(self, metapaths_pairs: List[Tuple[MetaPath, MetaPath]], classification: List[int]) -> List:
         """

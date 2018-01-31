@@ -12,15 +12,6 @@ class MyTestCase(unittest.TestCase):
         self.ranking_graph.transitive_closures = lambda: [[1, "B", "C"], ["B", "C"]]
         self.ranking_graph.all_nodes = lambda: [1, "B", "C"]
 
-    def test_all_pairs(self):
-        list = [1, 2, 3]
-        all_pairs = [(1, 2), (1, 3), (2, 3)]
-        all_pairs_inverse = [(1, 2), (1, 3), (2, 1), (2, 3), (3, 1), (3, 2)]
-
-
-        self.assertEqual(all_pairs, self.ds._all_pairs(list))
-        self.assertEqual(all_pairs_inverse, self.ds._all_pairs(list, True))
-
     def test_extract_features_labels(self):
         self.assertEqual(
             ([(1, "B"), ("B", 1), (1, "C"), ("C", 1), ("B", "C"), ("C", "B")], [0, 1, 0, 1, 0, 1]),
