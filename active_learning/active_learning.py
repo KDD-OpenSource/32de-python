@@ -1,9 +1,5 @@
 from util.datastructures import MetaPath, MetaPathRatingGraph
 
-# mock data
-mock_paths = [MetaPath([1, 2], [3]), MetaPath([1, 2, 1], [3, 4]), MetaPath([1, 3, 2], [1, 1]),
-              MetaPath([1, 3, 2], [1, 1]), MetaPath([1, 3, 2], [1, 1])]
-
 # algorithm types
 NO_USER_FEEDBACK = 'no_user_feedback'
 ITERATIVE_BATCHING = 'baseline'
@@ -99,4 +95,6 @@ class ActiveLearner:
 
     def fetch_meta_paths(self):
         # TODO: use java API via cypher
+        mock_paths = [MetaPath([1, 2], [3]), MetaPath([1, 2, 1], [3, 4]), MetaPath([1, 3, 2], [1, 1]),
+                      MetaPath([1, 3, 2], [1, 1]), MetaPath([1, 3, 2], [1, 1])]
         return mock_paths
