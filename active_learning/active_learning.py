@@ -6,7 +6,7 @@ mock_paths = [MetaPath([1, 2], [3]), MetaPath([1, 2, 1], [3, 4]), MetaPath([1, 3
 
 # algorithm types
 NO_USER_FEEDBACK = 'no_user_feedback'
-BASELINE = 'baseline'
+ITERATIVE_BATCHING = 'baseline'
 
 
 class Oracle:
@@ -35,12 +35,12 @@ class CmdLineOracle(Oracle):
     CmdLineOracle interacts with the command line.
     """
 
-    def _rate_meta_path(self, meta_path):
+    def _rate_meta_path(self, meta_path: MetaPath) -> float:
         print("Please rate this meta-path: {}".format(meta_path))
         rating = input()
         return float(rating)
 
-    def wants_to_continue(self):
+    def wants_to_continue(self) -> bool:
         print("Do you want to continue rating? [y/n]")
         keep_going = input()
         if keep_going in 'no':
@@ -52,10 +52,10 @@ class MockOracle(Oracle):
     MockOracle rates all meta-paths with 1 and never wants to continue to rate more.
     """
 
-    def _rate_meta_path(self, meta_path):
+    def _rate_meta_path(self, meta_path: MetaPath) -> float:
         return 1.0
 
-    def wants_to_continue(self):
+    def wants_to_continue(self) -> bool:
         return self.number_of_calls < 5
 
 
@@ -83,7 +83,7 @@ class ActiveLearner:
         if self.algorithm_type == NO_USER_FEEDBACK:
             # do not let the user rate any meta_paths
             pass
-        if self.algorithm_type == BASELINE:
+        if self.algorithm_type == ITERATIVE_BATCHING:
             # produce rating of batches in random order, until user wants to stop
             interesting_meta_paths = self.meta_paths[:self.batch_size]
 
