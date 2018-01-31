@@ -1,4 +1,5 @@
 from util.datastructures import MetaPath
+from typing import Dict
 
 
 class Oracle:
@@ -52,3 +53,23 @@ class MockOracle(Oracle):
 
     def wants_to_continue(self) -> bool:
         return self.number_of_instances_labeled < 5
+
+
+class SpecialistOracle(Oracle):
+    """
+    A  SpecialistOracle rates all meta-paths according to its rating dictionary.
+    """
+
+    rating = None
+    maximal_queries = None  # maximal number of queries tolerated by the oracle
+
+    def __init__(self, rating: Dict[MetaPath, float], maximal_queries: int):
+        super.__init__(self)
+        self.rating = rating
+        self.maximal_queries = maximal_queries
+
+    def _rate_meta_path(self, meta_path: MetaPath) -> float:
+        return self.rating[meta_path]
+
+    def wants_to_continue(self) -> bool:
+        return self.number_of_instances_labeled < self.maximal_queries
