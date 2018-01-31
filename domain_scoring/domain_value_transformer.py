@@ -94,7 +94,7 @@ class NaiveTransformer(DomainValueTransformer):
             right_element = right.pop(0)
             if oracle[(left_element, right_element)] == SMALLER:
                 ordered_paths.append(left_element)
-            else
+            else:
                 ordered_paths.append(right_element)
         for element in left + right:
             ordered_paths.append(element)
