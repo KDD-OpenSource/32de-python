@@ -3,7 +3,8 @@ from util.datastructures import MetaPath, MetaPathRatingGraph
 
 # algorithm types
 NO_USER_FEEDBACK = 'no_user_feedback'
-ITERATIVE_BATCHING = 'baseline'
+ITERATIVE_BATCHING = 'iterative_batching'
+COLLECT_ALL = 'collect_all'
 
 
 class ActiveLearner:
@@ -25,6 +26,7 @@ class ActiveLearner:
 
     def retrieve_user_rating(self):
         self._rate_paths()
+        # TODO: Transitive closure
         self.rating.all_pair_distances()
         return self.rating
 
@@ -45,9 +47,14 @@ class ActiveLearner:
                 ratings = map(self.oracle.rate_meta_path, interesting_meta_paths)
                 ordered = sorted(zip(ratings, interesting_meta_paths), key=lambda tuple: tuple[0])
                 list(map(lambda rated_mp_1, rated_mp_2: self.rating.add_user_rating(rated_mp_1[1], rated_mp_2[1], rated_mp_2[0] - rated_mp_1[0]), ordered[:-1], ordered[1:]))
-
-        # TODO: Transitive closure
-
+        if self.algorithm_type == COLLECT_ALL:
+            # disregard wishes of oracle and ask until every rating for each metapath is known
+            nteresting_meta_paths = self.meta_paths
+            ratings = map(self.oracle.rate_meta_path, interesting_meta_paths)
+            ordered = sorted(zip(ratings, interesting_meta_paths), key=lambda tuple: tuple[0])
+            list(map(lambda rated_mp_1, rated_mp_2: self.rating.add_user_rating(rated_mp_1[1], rated_mp_2[1],
+                                                                                rated_mp_2[0] - rated_mp_1[0]),
+                     ordered[:-1], ordered[1:]))
 
     def fetch_meta_paths(self):
         # TODO: use java API via cypher
