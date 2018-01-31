@@ -31,8 +31,8 @@ class NaiveTransformer(DomainValueTransformer):
         Transforms the classified ordering of all meta-paths pairs to the domain values.
         This is done in two steps: First all the tuples are combined and flattened to a single ordered list.
         Then all meta-paths receive the value by spreading all nodes evenly between [1, 10].
-        :param metapaths_pairs: TODO
-        :param classification: TODO
+        :param metapaths_pairs: All the metapath pairs that should be ordered and weighted.
+        :param classification: The classificatin whether a pair is in the correct order or not.
         :param all_metapaths: A list of all meta-paths occurring in the pairs that need to be ordered.
                               If this is None it is automatically extracted.
         :return: Total order of all meta-paths with values in [0,1]
