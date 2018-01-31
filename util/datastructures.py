@@ -72,11 +72,16 @@ class UserOrderedMetaPaths:
 
 class MetaPathRatingGraph:
 
-    def __init__(self):
+    def __init__(self,rating=None):
         self.graph = Graph(directed=True)
         self.distance = self.graph.new_edge_property("double")
         self.meta_path_to_vertex = {}
         self.vertex_to_meta_path = {}
+        if rating is not None:
+            ordered = sorted(rating.items(), key=lambda tuple: tuple[1])
+            list(map(lambda rated_mp_1, rated_mp_2: self.add_user_rating(rated_mp_1[0], rated_mp_2[0],
+                                                                                rated_mp_2[1] - rated_mp_1[1]),
+                     ordered[:-1], ordered[1:]))
 
     def __add_meta_path(self, meta_path: MetaPath) -> Vertex:
         """

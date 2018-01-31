@@ -49,7 +49,7 @@ class ActiveLearningTest(unittest.TestCase):
     def test_eval_dataset(self):
         # TODO: parametrize for several different oracles, learning algorithms
         active_learner = ActiveLearner(oracle=MockOracle(), algorithm=ITERATIVE_BATCHING, data_set=self.data_set)
-        achieved_user_rating = active_learner.retrieve_user_rating()
+        achieved_user_rating = active_learner.retrieve_rating()
         complete_user_rating = self._eval_complete_dataset_on(MockOracle(),self.data_set)
         print(achieved_user_rating)
         print(complete_user_rating)
