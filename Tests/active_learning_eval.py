@@ -59,5 +59,16 @@ class ActiveLearningTest(unittest.TestCase):
         # we will never get false positives (might change in real-world-scenerio...)
         # so how can we evaluate? => only in combination with preference leared from our suggestion!
 
+        # random oracle for relative scoring?
+
+        # statistical methods/ aggregation
+        # min/max values and outlier => are the interest 'groupings' similar
+
+        # after preference learning complete comparison
+        # MSE (relative?)
+        # ranking similarity
+
+        #
+
 if __name__ == '__main__':
     unittest.main()
