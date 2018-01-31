@@ -25,7 +25,7 @@ class Oracle:
         raise NotImplementedError("Should have implemented this.")
 
     def wants_to_continue(self) -> bool:
-        raise NotImplementedError("Sould have implemented this.")
+        raise NotImplementedError("Should have implemented this.")
 
 
 class CmdLineOracle(Oracle):
@@ -58,6 +58,9 @@ class MockOracle(Oracle):
 
 
 class ActiveLearner:
+    """
+    Active Learner retrieves a rating for meta-paths by interacting with an oracle.
+    """
     meta_paths = None
     algorithm_type = None
     oracle = None
@@ -77,6 +80,9 @@ class ActiveLearner:
         return self.rating
 
     def _rate_paths(self):
+        """
+        Execute the specified algorithm on the current rating to retrieve a user rating.  
+        """
         # consult oracle
         if self.algorithm_type == NO_USER_FEEDBACK:
             # do not let the user rate any meta_paths
@@ -89,10 +95,9 @@ class ActiveLearner:
                 interesting_meta_paths = self.meta_paths[:self.batch_size]
                 ratings = map(self.oracle.rate_meta_path, interesting_meta_paths)
                 ordered = sorted(zip(ratings, interesting_meta_paths), key=lambda tuple: tuple[0])
-                list(map(lambda x, y: self.rating.add_user_rating(x[1], y[1], y[0] - x[0]), ordered[:-1], ordered[1:]))
+                list(map(lambda rated_mp_1, rated_mp_2: self.rating.add_user_rating(rated_mp_1[1], rated_mp_2[1], rated_mp_2[0] - rated_mp_1[0]), ordered[:-1], ordered[1:]))
 
         # TODO: Transitive closure
-        return self.rating
 
 
     def fetch_meta_paths(self):
