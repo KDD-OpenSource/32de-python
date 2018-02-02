@@ -11,8 +11,8 @@ before_install:
 script:
   - docker exec server-container pytest --cov-report term-missing --cov
 
+after_success:
+  - docker exec server-container coveralls
+
 after_script:
   - docker rm -f server-container
-
-after_success:
-  - coveralls
