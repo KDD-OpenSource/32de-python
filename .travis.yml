@@ -9,7 +9,7 @@ before_install:
   - docker ps -a
 
 script:
-  - docker exec server-container pytest --cov coveralls
+  - docker exec server-container pytest --cov
 
 after_script:
   - docker rm -f server-container

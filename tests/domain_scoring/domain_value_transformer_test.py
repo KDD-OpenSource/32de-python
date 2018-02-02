@@ -27,7 +27,6 @@ class NaiveDomainValueTransformerTest(unittest.TestCase):
             self.transformer._spread_domain_value([1]))
 
     def test_order_pairs(self):
-        print(self.oracle)
         self.assertEqual([0, 1, 2, 3, 4, 5], self.transformer._order_pairs(self.oracle, [5, 3, 1, 0, 2, 4]))
         self.assertEqual([1, 2, 3, 4, 5], self.transformer._order_pairs(self.oracle, [5, 3, 1, 2, 4]))
 
