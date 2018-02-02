@@ -5,5 +5,5 @@ typing
 pytest
 flask
 scipy
-coveralls
+python-coveralls
 pytest-cov
