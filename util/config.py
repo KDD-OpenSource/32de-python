@@ -1,2 +1,3 @@
 RESEARCH_MODE = "research"
 BASELINE_MODE = "baseline"
+REACT_PORT = '3000'
