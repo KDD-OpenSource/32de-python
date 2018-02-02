@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/KDD-OpenSource/32de-python.svg?branch=master)](https://travis-ci.org/KDD-OpenSource/32de-python)
+[![Coverage Status](https://coveralls.io/repos/github/KDD-OpenSource/32de-python/badge.svg?branch=master)](https://coveralls.io/github/KDD-OpenSource/32de-python?branch=master)
 
 To deploy our system including neo4j, the neo4j graph algorithm component, the UI and our server install docker on your system and run `deployment/docker-deployment.sh`.
 This will install a clean version from the alpha-dev and the master branches and doesn't include your local code changes.
