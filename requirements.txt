@@ -4,6 +4,8 @@ sklearn
 typing
 pytest
 flask
+pandas
+flask-cors
 scipy
 # TODO: Introduct deployment dependencies
 pytest-cov
