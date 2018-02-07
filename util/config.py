@@ -8,4 +8,4 @@ API_PORT = 8000
 # Configuration for sessions saved on the file system
 SESSION_CACHE_DIR = '../tmp/sessions/'
 SESSION_THRESHOLD = 500
-SESSION_MODE = '0600'
+SESSION_MODE = '0700'
