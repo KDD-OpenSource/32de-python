@@ -45,11 +45,13 @@ def send_next_metapaths_to_rate():
 
 
 # TODO: Maybe post each rated meta-path
-@app.route("/next-meta-paths", methods=["POST"])
+@app.route("/rate-meta-paths", methods=["POST"])
 def receive_rated_metapaths():
     # TODO: Check if necessary information is in request object
     if not request.json:
         abort(400)
+    rated_metapaths = request.get_json()
+    return 'OK'
 
 
 @app.route("/results", methods=["GET"])
