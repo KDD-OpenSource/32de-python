@@ -7,5 +7,5 @@ flask
 pandas
 flask-cors
 scipy
-# TODO: Introduct deployment dependencies
+# TODO: Introduct development (non-deployment) dependencies
 pytest-cov
