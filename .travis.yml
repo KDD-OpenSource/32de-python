@@ -1,0 +1,15 @@
+sudo: required
+
+services:
+  - docker
+
+before_install:
+  - deployment/build-server.sh .
+  - deployment/run-server.sh
+  - docker ps -a
+
+script:
+  - docker exec server-container pytest
+
+after_script:
+  - docker rm -f server-container
