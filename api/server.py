@@ -1,9 +1,9 @@
 from flask import Flask, jsonify, request, abort
 from flask_cors import CORS
-from util.config import REACT_PORT
+from util.config import REACT_PORT, API_PORT
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "http://localhost:" + REACT_PORT}})
+CORS(app, resources={r"/*": {"origins": "http://localhost:{}".format(REACT_PORT)}})
 
 
 def run(port, hostname, debug_mode):
@@ -59,4 +59,4 @@ def send_results():
 
 
 if __name__ == '__main__':
-    app.run(port=8000)
+    app.run(port=API_PORT)
