@@ -5,3 +5,5 @@ typing
 pytest
 flask
 scipy
+# TODO: Introduct deployment dependencies
+pytest-cov
