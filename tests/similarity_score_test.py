@@ -1,5 +1,5 @@
 import unittest
-from util.datastructures import MetaPath
+from util.datastructures import MetaPath, MetaPathRating
 from explanation.explanation import SimilarityScore
 
 
@@ -10,8 +10,10 @@ class SimilarityTestCase(unittest.TestCase):
         self.sim_score = SimilarityScore()
 
     def test_similarity_calculation(self):
-        test_paths = [MetaPath([1, 2], [3], 3, 1), MetaPath([1, 2, 1], [3, 4], 1, 3), MetaPath([1, 3, 2], [1, 1], 5, 2),
-                      MetaPath([1, 3, 2], [1, 1], 4, 7), MetaPath([1, 3, 2], [1, 1], 6, 3)]
+        test_paths = \
+            [MetaPathRating(MetaPath([1, 2], [3]), 3, 1), MetaPathRating(MetaPath([1, 2, 1], [3, 4]), 1, 3),
+             MetaPathRating(MetaPath([1, 3, 2], [1, 1]), 5, 2), MetaPathRating(MetaPath([1, 3, 2], [1, 1]), 4, 7),
+             MetaPathRating(MetaPath([1, 3, 2], [1, 1]), 6, 3)]
 
         similarity = SimilarityScore.calculate_similarity(test_paths)
 

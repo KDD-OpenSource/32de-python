@@ -1,10 +1,11 @@
-from util.datastructures import MetaPath
+from util.datastructures import MetaPath, MetaPathRating
 
 import numpy as np
 
 # mock data
-mock_paths = [MetaPath([1, 2], [3], 3, 1), MetaPath([1, 2, 1], [3, 4], 1, 3), MetaPath([1, 3, 2], [1, 1], 5, 2),
-              MetaPath([1, 3, 2], [1, 1], 4, 7), MetaPath([1, 3, 2], [1, 1], 6, 3)]
+mock_paths = [MetaPathRating(MetaPath([1, 2], [3]), 3, 1), MetaPathRating(MetaPath([1, 2, 1], [3, 4]), 1, 3),
+              MetaPathRating(MetaPath([1, 3, 2], [1, 1]), 5, 2), MetaPathRating(MetaPath([1, 3, 2], [1, 1]), 4, 7),
+              MetaPathRating(MetaPath([1, 3, 2], [1, 1]), 6, 3)]
 
 # algorithm types
 BASELINE = 'baseline'
@@ -15,42 +16,26 @@ class Explanation:
         raise NotImplementedError()
 
 
-class SimilarityScore():
+class SimilarityScore:
     meta_paths = None
     similarity_score = None
 
     def __init__(self, algorithm_type=BASELINE):
         self.algorithm_type = algorithm_type
 
-    def evaluate_similarity(self):
-        self.setup_meta_paths()
-        self.compute_similarity_score()
-        self.display_similarity_score()
-
-    def setup_meta_paths(self):
-        self.meta_paths = self.fetch_meta_paths()
-
-    def compute_similarity_score(self):
-        self.similarity_score = self.calculate_similarity(self.meta_paths)
-
-    def display_similarity_score(self):
-        if self.similarity_score is None:
-            raise ValueError("Compute similarity score first!")
-
-        print("Similarity Score: {}".format(self.similarity_score))
-
+    @staticmethod
     def fetch_meta_paths(self):
         return mock_paths
 
     @staticmethod
-    def calculate_similarity(meta_paths):
-        structural_scores = np.array([])
-        domain_scores = np.array([])
+    def calculate_similarity(meta_path_ratings):
+        structural_values = np.array([])
+        domain_values = np.array([])
 
-        for meta_path in meta_paths:
-            structural_scores = np.append(structural_scores, [meta_path.structural_score])
-            domain_scores = np.append(domain_scores, [meta_path.domain_score])
+        for meta_path_rating in meta_path_ratings:
+            structural_values = np.append(structural_values, [meta_path_rating.structural_value])
+            domain_values = np.append(domain_values, [meta_path_rating.domain_value])
 
-        return np.sum(structural_scores * domain_scores) / len(meta_paths)
+        return np.sum(structural_values * domain_values) / len(meta_path_ratings)
 
 
