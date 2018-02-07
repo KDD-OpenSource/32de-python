@@ -65,7 +65,7 @@ class DomainScoring():
         Transforms the classified ordering of all meta-paths pairs to the domain values.
 
         :param inferred_ratings: user-defined and inferred rating for all meta-paths
-        :return: Total order of all meta-paths with values in [0,10]
+        :return: Total order of all meta-paths with values in [0,1]
         """
 
         return self.domain_value_transformer.transform(metapaths_pairs, classification)
