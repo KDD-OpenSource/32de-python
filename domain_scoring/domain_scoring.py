@@ -6,7 +6,8 @@ from util.lists import all_pairs
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.tree import DecisionTreeClassifier
 from domain_scoring.domain_value_transformer import NaiveTransformer, SMALLER, LARGER
-import util.config as config
+
+Ranking = Tuple[MetaPath, float]
 
 class DomainScoring():
     def __init__(self):
@@ -57,7 +58,9 @@ class DomainScoring():
 
         return vectors
 
-    def _transform_to_domain_values(self, metapaths_pairs: List[Tuple[MetaPath, MetaPath]], classification: List[int]) -> List:
+    def _transform_to_domain_values(self,
+                                    metapaths_pairs: List[Tuple[MetaPath, MetaPath]],
+                                    classification: List[int]) -> List[Ranking]:
         """
         Transforms the classified ordering of all meta-paths pairs to the domain values.
 
