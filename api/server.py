@@ -1,10 +1,11 @@
 from flask import Flask, jsonify, request, abort
 from flask_cors import CORS
+from util.config import REACT_PORT
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "http://localhost:" + REACT_PORT}})
 
-#TODO CORS
+
 def run(port, hostname, debug_mode):
     app.run(host=hostname, port=port, debug=debug_mode)
 
@@ -30,13 +31,17 @@ def receive_edge_node_types():
     if not request.json:
         abort(400)
 
-
+mock_id = 1
 @app.route("/next-meta-paths", methods=["GET"])
 def send_next_metapaths_to_rate():
+    global mock_id
+    batchsize = 5
+    paths = [{'id': i,
+              'path': ['Phenotype', 'HAS', 'Association', 'HAS', 'SNP', 'HAS', 'Phenotype'],
+              'rating': 0.5} for i in range(mock_id, mock_id + batchsize)]
+    mock_id += batchsize
     # TODO: Call fitting method in active_learning
-    return jsonify([{'id': 32,
-                    'path': ['Phenotype', 'HAS', 'Association', 'HAS', 'SNP', 'HAS', 'Phenotype'],
-                    'rating': 0.5}])
+    return jsonify(paths)
 
 
 # TODO: Maybe post each rated meta-path
@@ -51,6 +56,7 @@ def receive_rated_metapaths():
 def send_results():
     # TODO: Call fitting method in explanation
     return jsonify("Hello world")
+
 
 if __name__ == '__main__':
     app.run(port=8000)
