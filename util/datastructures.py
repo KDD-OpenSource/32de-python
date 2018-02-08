@@ -98,8 +98,8 @@ class MetaPathRatingGraph:
 
     def add_user_rating(self, superior_meta_path: MetaPath, inferior_meta_path: MetaPath, distance: float) -> None:
         """
-           :param superior_meta_path: The meta-path, which was rated higher compared to b.
-           :param inferior_meta_path: The meta-path, which was rated lower compared to a.
+           :param superior_meta_path: The meta-path, which was rated higher.
+           :param inferior_meta_path: The meta-path, which was rated lower.
            :param distance: The distance between meta-paths a and b.
         """
         assert (distance >= 0), "Distance may not be negative"

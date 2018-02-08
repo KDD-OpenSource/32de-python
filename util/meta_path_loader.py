@@ -5,22 +5,6 @@ import pandas as pd
 from .config import ROTTEN_TOMATO_PATH
 import os
 
-class MetaPathLoaderDispatcher():
-
-    available_datasets = ['Rotten Tomato']
-    dataset_to_loader = {
-        'Rotten Tomato': RottenTomatoMetaPathLoader()
-    }
-
-    def get_available_datasets(self) -> List[str]:
-        return self.available_datasets
-
-    def get_loader(self, dataset) -> AbstractMetaPathLoader:
-        try:
-            return self.dataset_to_loader[dataset]
-        except KeyError as e:
-            print("The data set is not available! ", str(e))
-
 class AbstractMetaPathLoader(ABC):
 
     @abstractmethod
@@ -35,7 +19,6 @@ class AbstractMetaPathLoader(ABC):
                 return True
         return NotImplemented
 
-    @staticmethod
     def string_to_meta_path(self, node_types, edge_types):
         nodes = [item[0] for item in eval(node_types)]
         edges = eval(edge_types)
@@ -62,3 +45,22 @@ class RottenTomatoMetaPathLoader(AbstractMetaPathLoader):
             mp = self.string_to_meta_path(nodes, edges)
             meta_paths.append(mp)
         return meta_paths
+
+class MetaPathLoaderDispatcher():
+
+    available_datasets = [{'name': 'Rotten Tomato',
+                           'description': 'Have you ever wondered how similar Arnold Schwarzenegger and all german'
+                                          'actors who have appeared in a Sci-Fi movie are? Rotten Tomato is the perfect '
+                                          'data set for you!'}]
+    dataset_to_loader = {
+        'Rotten Tomato': RottenTomatoMetaPathLoader()
+    }
+
+    def get_available_datasets(self) -> List[str]:
+        return self.available_datasets
+
+    def get_loader(self, dataset) -> AbstractMetaPathLoader:
+        try:
+            return self.dataset_to_loader[dataset]
+        except KeyError as e:
+            print("The data set is not available! ", str(e))

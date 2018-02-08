@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, request, abort, session
-from flask.ext.session import Session
+from flask_session import Session
 from flask_cors import CORS
 from util.config import REACT_PORT, API_PORT, SESSION_CACHE_DIR, SESSION_MODE, SESSION_THRESHOLD
 from util.meta_path_loader import MetaPathLoaderDispatcher
@@ -27,12 +27,22 @@ CORS(app, resources={r"/*": {"origins": "http://localhost:{}".format(REACT_PORT)
 def run(port, hostname, debug_mode):
     app.run(host=hostname, port=port, debug=debug_mode)
 
-@app.route('/login', methods=["POST"])
+@app.route('/login', methods=["POST", "GET"])
 def login():
-    session['username'] = request.json['username']
-    meta_path_loader = MetaPathLoaderDispatcher().get_loader("Rotten Tomato")
-    meta_paths = meta_path_loader.load_meta_paths()
-    session['meta_path_distributer'] = RandomMetaPathSelector(meta_paths=meta_paths)
+    if request.method == 'POST':
+        session['username'] = request.form['username']
+        meta_path_loader = MetaPathLoaderDispatcher().get_loader("Rotten Tomato")
+        meta_paths = meta_path_loader.load_meta_paths()
+        session['meta_path_distributor'] = RandomMetaPathSelector(meta_paths=meta_paths)
+        session['meta_path_id'] = 1
+        print(session['username'])
+        print(session['meta_path_distributor'])
+    return '''
+        <form method="post">
+            <p><input type=text name=username>
+            <p><input type=submit value=Login>
+        </form>
+    '''
 
 @app.route('/logout')
 def logout():
@@ -62,24 +72,24 @@ def receive_edge_node_types():
     if not request.json:
         abort(400)
 
-
-mock_id = 1
 @app.route("/next-meta-paths", methods=["GET"])
 def send_next_metapaths_to_rate():
     # TODO: See lines of 'receive_node_sets()' regarding session for how to use the session variables
     # TODO: Check if necessary information is in request object
-    global mock_id
     batch_size = 5
-    next_batch = session['meta_path_distributer'].get_next(size=batch_size)
+    meta_path_id = session['meta_path_id']
+    print(session['meta_path_distributor'])
+    print(session['username'])
+    next_batch = session['meta_path_distributor'].get_next(size=batch_size)
     paths = [{'id': id,
-              'meta_path': meta_path,
-              'rating': 0.5} for id, meta_path in zip(range(mock_id, mock_id + batch_size), next_batch)]
-    mock_id += batch_size
+              'meta_path': meta_path.as_list(),
+              'rating': 0.5} for id, meta_path in zip(range(meta_path_id, meta_path_id + batch_size), next_batch)]
+    meta_path_id += batch_size
     return jsonify(paths)
 
 @app.route("/get-available-datasets", methods=["GET"])
 def get_available_datasets():
-    return MetaPathLoaderDispatcher().get_available_datasets()
+    return jsonify(MetaPathLoaderDispatcher().get_available_datasets())
 
 # TODO: Maybe post each rated meta-path
 @app.route("/rate-meta-paths", methods=["POST"])
@@ -89,7 +99,7 @@ def receive_rated_metapaths():
     rated_metapaths = request.get_json()
     if not all(key in rated_metapaths for key in ['id', 'meta_path', 'rating']):
         abort(400)
-    # TODO: the filename should be unique
+    # TODO: BUGGGG
     json.dump('rated_data_{}.json'.format(session.get('username', 'fail')), rated_metapaths)
     return 'OK'
 
