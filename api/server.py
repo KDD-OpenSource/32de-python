@@ -70,15 +70,12 @@ def send_node_sets():
 # TODO: If meta-paths for A and B will be written in Java, they will need this information in Java
 @app.route("/types", methods=["POST"])
 def receive_edge_node_types():
-    # TODO: See lines of 'receive_node_sets()' regarding session for how to use the session variables
     # TODO: Check if necessary information is in request object
     if not request.json:
         abort(400)
 
 @app.route("/next-meta-paths", methods=["GET"])
 def send_next_metapaths_to_rate():
-    # TODO: See lines of 'receive_node_sets()' regarding session for how to use the session variables
-    # TODO: Check if necessary information is in request object
     batch_size = 5
     meta_path_id = session['meta_path_id']
     next_batch = session['meta_path_distributor'].get_next(size=batch_size)
@@ -86,6 +83,7 @@ def send_next_metapaths_to_rate():
               'meta_path': meta_path.as_list(),
               'rating': 0.5} for id, meta_path in zip(range(meta_path_id, meta_path_id + batch_size), next_batch)]
     meta_path_id += batch_size
+    session['meta_path_id'] = meta_path_id
     return jsonify(paths)
 
 @app.route("/get-available-datasets", methods=["GET"])
