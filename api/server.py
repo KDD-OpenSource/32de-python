@@ -18,7 +18,6 @@ SESSION_FILE_MODE = int(SESSION_MODE, 8)
 SESSION_PERMANENT = True
 app.config.from_object(__name__)
 # TODO: Change for deployment, e.g. use environment variable
-
 app.config["SECRET_KEY"] = "37Y,=i9.,U3RxTx92@9j9Z[}"
 Session(app)
 
@@ -30,21 +29,17 @@ def run(port, hostname, debug_mode):
 @app.route('/login', methods=["POST", "GET"])
 def login():
     if request.method == 'POST':
-        session['username'] = request.form['username']
-        session['dataset'] = request.form['dataset']
-        session['purpose'] = request.form['purpose']
+        data = request.get_json()
+        session['username'] = data['username']
+        session['dataset'] = 'Rotten'
+        session['purpose'] = 'none'
         meta_path_loader = MetaPathLoaderDispatcher().get_loader("Rotten Tomato")
         meta_paths = meta_path_loader.load_meta_paths()
         session['meta_path_distributor'] = RandomMetaPathSelector(meta_paths=meta_paths)
         session['meta_path_id'] = 1
-    return '''
-        <form method="post">
-            <p><input type=text name=username>
-            <p><input type=text name=dataset>
-            <p><input type=text name=purpose>
-            <p><input type=submit value=Login>
-        </form>
-    '''
+        session['rated_meta_paths'] = []
+    return jsonify({'status': 200})
+
 
 @app.route('/logout')
 def logout():
@@ -82,15 +77,17 @@ def send_next_metapaths_to_rate():
     meta_path_id = session['meta_path_id']
     next_batch = session['meta_path_distributor'].get_next(size=batch_size)
     paths = [{'id': id,
-              'meta_path': meta_path.as_list(),
+              'metapath': meta_path.as_list(),
               'rating': 0.5} for id, meta_path in zip(range(meta_path_id, meta_path_id + batch_size), next_batch)]
     meta_path_id += batch_size
     session['meta_path_id'] = meta_path_id
     return jsonify(paths)
 
+
 @app.route("/get-available-datasets", methods=["GET"])
 def get_available_datasets():
     return jsonify(MetaPathLoaderDispatcher().get_available_datasets())
+
 
 # TODO: Maybe post each rated meta-path
 @app.route("/rate-meta-paths", methods=["POST"])
@@ -98,9 +95,11 @@ def receive_rated_metapaths():
     if not request.is_json:
         abort(400)
     rated_metapaths = request.get_json()
-    if not all(key in rated_metapaths for key in ['id', 'meta_path', 'rating']):
-        abort(400)
-    session['rated_meta_paths'] = rated_metapaths
+    print(rated_metapaths)
+    for datapoint in rated_metapaths:
+        if not all(key in datapoint for key in ['id', 'metapath', 'rating']):
+            abort(400)  # malformed input
+    session['rated_meta_paths'] = session['rated_meta_paths'] + rated_metapaths
     return 'OK'
 
 
