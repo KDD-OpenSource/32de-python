@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, request, abort, session
 from flask_cors import CORS
-from flask.ext.session import Session
+from flask_session import Session
 from util.config import REACT_PORT, API_PORT
 from util.config import SESSION_CACHE_DIR, SESSION_MODE, SESSION_THRESHOLD
 import time
