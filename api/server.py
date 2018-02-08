@@ -30,9 +30,11 @@ def run(port, hostname, debug_mode):
 def login():
     if request.method == 'POST':
         data = request.get_json()
+        print(data)
         session['username'] = data['username']
-        session['dataset'] = 'Rotten'
-        session['purpose'] = 'none'
+        session['dataset'] = data['dataset']
+        session['purpose'] = data['purpose']
+        # TODO use key from dataset to select data
         meta_path_loader = MetaPathLoaderDispatcher().get_loader("Rotten Tomato")
         meta_paths = meta_path_loader.load_meta_paths()
         session['meta_path_distributor'] = RandomMetaPathSelector(meta_paths=meta_paths)
@@ -43,10 +45,11 @@ def login():
 
 @app.route('/logout')
 def logout():
-    json.dump(session['rated_meta_paths'], os.path.join(RATED_DATASETS_PATH, '{}_{}_{}.json'.format(session['dataset'],
-                                                                                                    session['purpose'],
-                                                                                                    session['username'])))
+    filename = '{}_{}_{}.json'.format(session['dataset'],session['purpose'],session['username'])
+    path = os.path.join(RATED_DATASETS_PATH, filename)
+    json.dump(session['rated_meta_paths'], open(path,"w", encoding="utf8"))
     session.clear()
+    return 'OK'
 
 # TODO: If meta-paths for A and B will be written in Java, they will need this information in Java
 @app.route("/node-sets", methods=["POST"])
