@@ -24,7 +24,7 @@ Session(app)
 CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://localhost:{}".format(REACT_PORT)}})
 
 def run(port, hostname, debug_mode):
-    app.run(host=hostname, port=port, debug=debug_mode)
+    app.run(host=hostname, port=port, debug=debug_mode, threaded=True)
 
 @app.route('/login', methods=["POST", "GET"])
 def login():
