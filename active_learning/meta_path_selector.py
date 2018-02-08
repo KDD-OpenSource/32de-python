@@ -56,5 +56,5 @@ class RandomMetaPathSelector(AbstractMetaPathSelector):
     """
     Functions
     """
-    def _prob_  e_meta_path(self) -> np.ndarray:
+    def _probe_meta_path(self) -> np.ndarray:
         return self.visited / sum(self.visited)
