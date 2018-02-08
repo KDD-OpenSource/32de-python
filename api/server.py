@@ -18,10 +18,11 @@ SESSION_FILE_MODE = int(SESSION_MODE, 8)
 SESSION_PERMANENT = True
 app.config.from_object(__name__)
 # TODO: Change for deployment, e.g. use environment variable
-app.config["SECRET_KEY"] = "grgrersg346879468"
+
+app.config["SECRET_KEY"] = "37Y,=i9.,U3RxTx92@9j9Z[}"
+Session(app)
 
 CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://localhost:{}".format(REACT_PORT)}})
-Session(app)
 
 def run(port, hostname, debug_mode):
     app.run(host=hostname, port=port, debug=debug_mode)
@@ -63,6 +64,8 @@ def receive_node_sets():
 @app.route("/node-sets", methods=["GET"])
 def send_node_sets():
     # TODO: Call fitting method in active_learning
+    # TODO: Check if necessary information is in request object
+
     return jsonify("Hello world")
 
 
@@ -103,7 +106,6 @@ def receive_rated_metapaths():
 
 @app.route("/results", methods=["GET"])
 def send_results():
-    # TODO: See lines of 'receive_node_sets()' regarding session for how to use the session variables
     # TODO: Call fitting method in explanation
     return jsonify("Hello world")
 
