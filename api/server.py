@@ -25,6 +25,7 @@ def receive_node_sets():
     # TODO: Check if necessary information is in request object
     if not request.json:
         abort(400)
+    raise NotImplementedError("This API endpoint isn't implemented in the moment")
 
 
 @app.route("/node-sets", methods=["GET"])
@@ -34,6 +35,7 @@ def send_node_sets():
     """
     # TODO: Does active_learning really needs this endpoint? Does someone needs this endpoint?
     # TODO: Call fitting method in active_learning
+    raise NotImplementedError("This API endpoint isn't implemented in the moment")
     return jsonify("Hello world")
 
 
@@ -46,6 +48,7 @@ def receive_edge_node_types():
     # TODO: Check if necessary information is in request object
     if not request.json:
         abort(400)
+    raise NotImplementedError("This API endpoint isn't implemented in the moment")
 
 mock_id = 1
 @app.route("/next-meta-paths", methods=["GET"])
@@ -91,6 +94,7 @@ def send_results():
     TODO: Endpoint needs to be specified by team delta
     """
     # TODO: Call fitting method in explanation
+    raise NotImplementedError("This API endpoint isn't implemented in the moment")
     return jsonify("Hello world")
 
 
