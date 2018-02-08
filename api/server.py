@@ -45,6 +45,7 @@ def login():
 
 @app.route('/logout')
 def logout():
+    # TODO better filenaming
     filename = '{}_{}_{}.json'.format(session['dataset'],session['purpose'],session['username'])
     path = os.path.join(RATED_DATASETS_PATH, filename)
     json.dump(session['rated_meta_paths'], open(path,"w", encoding="utf8"))
