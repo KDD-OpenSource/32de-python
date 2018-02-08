@@ -19,10 +19,9 @@ SESSION_PERMANENT = True
 app.config.from_object(__name__)
 # TODO: Change for deployment, e.g. use environment variable
 app.config["SECRET_KEY"] = "grgrersg346879468"
+
+CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://localhost:{}".format(REACT_PORT)}})
 Session(app)
-
-CORS(app, resources={r"/*": {"origins": "http://localhost:{}".format(REACT_PORT)}})
-
 
 def run(port, hostname, debug_mode):
     app.run(host=hostname, port=port, debug=debug_mode)
@@ -110,4 +109,4 @@ def send_results():
 
 
 if __name__ == '__main__':
-    app.run(port=API_PORT)
+    app.run(port=API_PORT, threaded=True)
