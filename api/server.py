@@ -1,8 +1,24 @@
-from flask import Flask, jsonify, request, abort
+from flask import Flask, jsonify, request, abort, session
 from flask_cors import CORS
+from flask_session import Session
 from util.config import REACT_PORT, API_PORT
+from util.config import SESSION_CACHE_DIR, SESSION_MODE, SESSION_THRESHOLD
+import time
 
 app = Flask(__name__)
+
+# TODO: Change if we have a database in the background
+SESSION_TYPE = 'filesystem'
+SESSION_FILE_DIR = SESSION_CACHE_DIR
+SESSION_FILE_THRESHOLD = SESSION_THRESHOLD
+# We need leading zeros on the modifier
+SESSION_FILE_MODE = int(SESSION_MODE, 8)
+SESSION_PERMANENT = True
+app.config.from_object(__name__)
+# TODO: Change for deployment, e.g. use environment variable
+app.config["SECRET_KEY"] = "37Y,=i9.,U3RxTx92@9j9Z[}"
+Session(app)
+
 CORS(app, resources={r"/*": {"origins": "http://localhost:{}".format(REACT_PORT)}})
 
 
@@ -35,6 +51,7 @@ def send_node_sets():
     """
     # TODO: Does active_learning really needs this endpoint? Does someone needs this endpoint?
     # TODO: Call fitting method in active_learning
+    # TODO: Check if necessary information is in request object
     raise NotImplementedError("This API endpoint isn't implemented in the moment")
     return jsonify("Hello world")
 
@@ -61,6 +78,7 @@ def send_next_metapaths_to_rate():
     'path': ['Phenotype', 'HAS', 'Association', 'HAS', 'SNP', 'HAS', 'Phenotype'],
     'rating': 0.6}
     """
+    # TODO: Check if necessary information is in request object
     global mock_id
     batchsize = 5
     paths = [{'id': i,
