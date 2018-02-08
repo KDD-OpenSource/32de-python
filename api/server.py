@@ -83,11 +83,12 @@ def send_next_metapaths_to_rate():
     session['meta_path_id'] = meta_path_id
     return jsonify(paths)
 
-"""
-    Deliver all available data sets for rating and a short description of each.
-"""
+
 @app.route("/get-available-datasets", methods=["GET"])
 def get_available_datasets():
+    """
+        Deliver all available data sets for rating and a short description of each.
+    """
     return jsonify(MetaPathLoaderDispatcher().get_available_datasets())
 
 
