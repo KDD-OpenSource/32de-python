@@ -75,8 +75,8 @@ def send_next_metapaths_to_rate():
 
     Metapaths are formated like this:
     {'id': 3,
-    'path': ['Phenotype', 'HAS', 'Association', 'HAS', 'SNP', 'HAS', 'Phenotype'],
-    'rating': 0.6}
+    'metapath': ['Phenotype', 'HAS', 'Association', 'HAS', 'SNP', 'HAS', 'Phenotype'],
+    'rating': 0.5}
     """
     # TODO: Check if necessary information is in request object
     global mock_id
@@ -97,6 +97,7 @@ def receive_rated_metapaths():
 
     Meta-paths are formated like this:
     {'id': 3,
+    'metapath': ['Phenotype', 'HAS', 'Association', 'HAS', 'SNP', 'HAS', 'Phenotype'],
     'rating': 0.75}
     """
     # TODO: Check if necessary information is in request object
