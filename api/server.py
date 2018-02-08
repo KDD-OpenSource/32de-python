@@ -89,6 +89,9 @@ def send_next_metapaths_to_rate():
 
 @app.route("/get-available-datasets", methods=["GET"])
 def get_available_datasets():
+    """
+        Deliver all available data sets for rating and a short description of each.
+    """
     return jsonify(MetaPathLoaderDispatcher().get_available_datasets())
 
 
