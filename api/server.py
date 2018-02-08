@@ -43,17 +43,6 @@ def logout():
 # TODO: If meta-paths for A and B will be written in Java, they will need this information in Java
 @app.route("/node-sets", methods=["POST"])
 def receive_node_sets():
-    if 'id' not in session.keys():
-        # TODO: Create user id
-        pass
-    if 'node-sets' in session.keys():
-        # TODO: Append necessary information to session entry
-        id_following_node_set = 0
-        session['node-sets'] = session['node-sets'].append(id_following_node_set)
-    else:
-        # TODO: Add necessary information to first session entry
-        id_first_node_set = 0
-        session['node-sets'] = id_first_node_set
     # TODO: Check if necessary information is in request object
     if not request.json:
         abort(400)
@@ -61,20 +50,7 @@ def receive_node_sets():
 
 @app.route("/node-sets", methods=["GET"])
 def send_node_sets():
-    # TODO: See lines of 'receive_node_sets()' regarding session for how to use the session variables
     # TODO: Call fitting method in active_learning
-    if 'id' not in session.keys():
-        # TODO: Create user id
-        session['id'] = time.time()
-    if 'node-sets' in session.keys():
-        # TODO: Append necessary information to session entry
-        id_following_node_set = 1
-        session['node-sets'] = session['node-sets'] + (id_following_node_set)
-    else:
-        # TODO: Add necessary information to first session entry
-        id_first_node_set = 0
-        session['node-sets'] = id_first_node_set
-    # TODO: Check if necessary information is in request object
     return jsonify("Hello world")
 
 
