@@ -26,18 +26,18 @@ CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://local
 def run(port, hostname, debug_mode):
     app.run(host=hostname, port=port, debug=debug_mode, threaded=True)
 
-@app.route('/login', methods=["POST", "GET"])
+@app.route('/login', methods=["POST"])
 def login():
-    if request.method == 'POST':
-        data = request.get_json()
-        session['username'] = data['username']
-        session['dataset'] = 'Rotten'
-        session['purpose'] = 'none'
-        meta_path_loader = MetaPathLoaderDispatcher().get_loader("Rotten Tomato")
-        meta_paths = meta_path_loader.load_meta_paths()
-        session['meta_path_distributor'] = RandomMetaPathSelector(meta_paths=meta_paths)
-        session['meta_path_id'] = 1
-        session['rated_meta_paths'] = []
+    data = request.get_json()
+    session['username'] = data['username']
+    # TODO: data set and purpose is for now hardcoded, but should be set by the user.
+    session['dataset'] = 'Rotten Tomato'
+    session['purpose'] = 'none'
+    meta_path_loader = MetaPathLoaderDispatcher().get_loader(session['dataset'])
+    meta_paths = meta_path_loader.load_meta_paths()
+    session['meta_path_distributor'] = RandomMetaPathSelector(meta_paths=meta_paths)
+    session['meta_path_id'] = 1
+    session['rated_meta_paths'] = []
     return jsonify({'status': 200})
 
 
@@ -83,7 +83,9 @@ def send_next_metapaths_to_rate():
     session['meta_path_id'] = meta_path_id
     return jsonify(paths)
 
-
+"""
+    Deliver all available data sets for rating and a short description of each.
+"""
 @app.route("/get-available-datasets", methods=["GET"])
 def get_available_datasets():
     return jsonify(MetaPathLoaderDispatcher().get_available_datasets())

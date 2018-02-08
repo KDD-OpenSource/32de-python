@@ -43,7 +43,7 @@ class RandomMetaPathSelector(AbstractMetaPathSelector):
         """
         :return: requested number of next meta-paths to be shown.
         """
-        idx = np.random.choice(range(len(self.meta_paths)), replace=False, p=self._prob_choose_mp(), size=size)
+        idx = np.random.choice(range(len(self.meta_paths)), replace=False, p=self._prob_choose_meta_path(), size=size)
         self.visited[idx] = self.VISITED
         return self.meta_paths[idx]
 
@@ -56,5 +56,5 @@ class RandomMetaPathSelector(AbstractMetaPathSelector):
     """
     Functions
     """
-    def _prob_choose_mp(self) -> np.ndarray:
+    def _prob_  e_meta_path(self) -> np.ndarray:
         return self.visited / sum(self.visited)

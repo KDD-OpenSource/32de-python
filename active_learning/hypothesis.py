@@ -2,18 +2,16 @@ from util.datastructures import MetaPath
 
 class Hypothesis:
     """
-    A Hypothesis over a rating of meta-path.
+    A Hypothesis over a rating of meta-path. It decides which meta-path will be sent to the oracle next.
 
     This is just a simple example with a hypothesis, that the rating depends on the length of the meta-path and has a
-    cutoff at some length.
+    cutoff at some length. 
     """
 
     # example: use length says how important the graph is
-    exact_meta_path_rating = None
-    params = None
 
-    def __init__(self):
-        self.params = {'max_interesting_length': 4}
+    def __init__(self, maximum_interesting_length=4):
+        self.params = {'max_interesting_length': maximum_interesting_length}
         self.exact_meta_path_rating = {}
 
     def update(self, meta_path: MetaPath, rating: float) -> None:
