@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from .datastructures import MetaPath
-from typing import List
+from typing import List, Dict
 import pandas as pd
 from .config import ROTTEN_TOMATO_PATH
 import os
@@ -56,7 +56,7 @@ class MetaPathLoaderDispatcher():
         'Rotten Tomato': RottenTomatoMetaPathLoader()
     }
 
-    def get_available_datasets(self) -> List[str]:
+    def get_available_datasets(self) -> List[Dict[str, str]]:
         return self.available_datasets
 
     def get_loader(self, dataset) -> AbstractMetaPathLoader:

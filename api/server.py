@@ -1,11 +1,11 @@
 from flask import Flask, jsonify, request, abort, session
 from flask_session import Session
 from flask_cors import CORS
-from util.config import REACT_PORT, API_PORT, SESSION_CACHE_DIR, SESSION_MODE, SESSION_THRESHOLD
+from util.config import REACT_PORT, API_PORT, SESSION_CACHE_DIR, SESSION_MODE, SESSION_THRESHOLD, RATED_DATASETS_PATH
 from util.meta_path_loader import MetaPathLoaderDispatcher
 from active_learning.meta_path_selector import RandomMetaPathSelector
 import json
-import time
+import os
 
 app = Flask(__name__)
 
@@ -31,24 +31,27 @@ def run(port, hostname, debug_mode):
 def login():
     if request.method == 'POST':
         session['username'] = request.form['username']
+        session['dataset'] = request.form['dataset']
+        session['purpose'] = request.form['purpose']
         meta_path_loader = MetaPathLoaderDispatcher().get_loader("Rotten Tomato")
         meta_paths = meta_path_loader.load_meta_paths()
         session['meta_path_distributor'] = RandomMetaPathSelector(meta_paths=meta_paths)
         session['meta_path_id'] = 1
-        print(session['username'])
-        print(session['meta_path_distributor'])
     return '''
         <form method="post">
             <p><input type=text name=username>
+            <p><input type=text name=dataset>
+            <p><input type=text name=purpose>
             <p><input type=submit value=Login>
         </form>
     '''
 
 @app.route('/logout')
 def logout():
-    session.pop('username', None)
-    session.pop('meta_path_distributer', None)
-
+    json.dump(session['rated_meta_paths'], os.path.join(RATED_DATASETS_PATH, '{}_{}_{}.json'.format(session['dataset'],
+                                                                                                    session['purpose'],
+                                                                                                    session['username'])))
+    session.clear()
 
 # TODO: If meta-paths for A and B will be written in Java, they will need this information in Java
 @app.route("/node-sets", methods=["POST"])
@@ -78,8 +81,6 @@ def send_next_metapaths_to_rate():
     # TODO: Check if necessary information is in request object
     batch_size = 5
     meta_path_id = session['meta_path_id']
-    print(session['meta_path_distributor'])
-    print(session['username'])
     next_batch = session['meta_path_distributor'].get_next(size=batch_size)
     paths = [{'id': id,
               'meta_path': meta_path.as_list(),
@@ -99,8 +100,7 @@ def receive_rated_metapaths():
     rated_metapaths = request.get_json()
     if not all(key in rated_metapaths for key in ['id', 'meta_path', 'rating']):
         abort(400)
-    # TODO: BUGGGG
-    json.dump('rated_data_{}.json'.format(session.get('username', 'fail')), rated_metapaths)
+    session['rated_meta_paths'] = rated_metapaths
     return 'OK'
 
 

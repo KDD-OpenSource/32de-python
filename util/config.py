@@ -6,6 +6,7 @@ REACT_PORT = 3000
 API_PORT = 8000
 # Data sets
 ROTTEN_TOMATO_PATH = 'tests/data/rotten_tomatoes/'
+RATED_DATASETS_PATH = '../rated_datasets/'
 # Configuration for sessions saved on the file system
 SESSION_CACHE_DIR = '../tmp/sessions/'
 SESSION_THRESHOLD = 500
