@@ -30,7 +30,7 @@ def run(port, hostname, debug_mode):
 @app.route("/node-sets", methods=["POST"])
 def receive_node_sets():
     """
-    Endpoint where the node sets from the "Setup" page which the user selects are posted.
+    Receives the node sets from the "Setup" page which the user selects.
     This endpoint is called for each new added node.
 
     The repeated calling enables us to start the following computations as early as possible
@@ -47,7 +47,7 @@ def receive_node_sets():
 @app.route("/node-sets", methods=["GET"])
 def send_node_sets():
     """
-    Endpoint where the node sets which the user previously selected on the "Setup" page can be retrieved.
+    Returns the node sets which the user previously selected on the "Setup" page.
     """
     # TODO: Does active_learning really needs this endpoint? Does someone needs this endpoint?
     # TODO: Call fitting method in active_learning
@@ -60,7 +60,7 @@ def send_node_sets():
 @app.route("/types", methods=["POST"])
 def receive_edge_node_types():
     """
-    Endpoint where the node and edge types which are selected (types which are active) on the "Config" page are posted
+    Receives the node and edge types which are selected (types which are active) on the "Config" page.
     """
     # TODO: Check if necessary information is in request object
     if not request.json:
@@ -71,7 +71,7 @@ mock_id = 1
 @app.route("/next-meta-paths", methods=["GET"])
 def send_next_metapaths_to_rate():
     """
-    Endpoint which returns the next `batchsize` meta-paths to rate.
+    Returns the next `batchsize` meta-paths to rate.
 
     Metapaths are formated like this:
     {'id': 3,
@@ -93,7 +93,7 @@ def send_next_metapaths_to_rate():
 @app.route("/rate-meta-paths", methods=["POST"])
 def receive_rated_metapaths():
     """
-    Endpoint where the rated meta-paths are posted.
+    Receives the rated meta-paths.
 
     Meta-paths are formated like this:
     {'id': 3,
