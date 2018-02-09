@@ -5,17 +5,29 @@ from .hypothesis import Hypothesis
 from abc import ABC, abstractmethod
 
 class AbstractMetaPathSelector(ABC):
-
+    """
+        Abstract base class for all objects that deliver meta paths based on an hypothesis.
+    """
     @abstractmethod
     def get_next(self, size:int) -> List[MetaPath]:
+        """
+        :param size: the number of meta paths that are delivered.
+        :return: A size-long list of meta paths.
+        """
         pass
 
     @abstractmethod
     def get_all(self) -> List[MetaPath]:
+        """
+        :return: A list of all meta paths.
+        """
         pass
 
     @abstractmethod
     def get_all_unrated(self) -> List[MetaPath]:
+        """
+        :return: A list of all unrated meta paths.
+        """
         pass
 
     @classmethod
@@ -26,9 +38,10 @@ class AbstractMetaPathSelector(ABC):
                 return True
         return NotImplemented
 
+
 class RandomMetaPathSelector(AbstractMetaPathSelector):
     """
-    A MetaPathSelector selects the next meta-path to be rated.
+        A meta path selector that selects meta paths randomly.
     """
 
     VISITED = 0
@@ -56,5 +69,5 @@ class RandomMetaPathSelector(AbstractMetaPathSelector):
     """
     Functions
     """
-    def _probe_meta_path(self) -> np.ndarray:
+    def _prob_choose_meta_path(self) -> np.ndarray:
         return self.visited / sum(self.visited)

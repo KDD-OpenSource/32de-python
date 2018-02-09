@@ -6,6 +6,7 @@ from util.meta_path_loader import MetaPathLoaderDispatcher
 from active_learning.meta_path_selector import RandomMetaPathSelector
 import json
 import os
+import time
 
 app = Flask(__name__)
 
@@ -45,10 +46,15 @@ def login():
 
 @app.route('/logout')
 def logout():
-    # TODO better filenaming
-    filename = '{}_{}_{}.json'.format(session['dataset'],session['purpose'],session['username'])
+    rated_meta_paths = {
+        'meta_paths': session['rated_meta_paths'],
+        'dataset': session['dataset'],
+        'username': session['username'],
+        'purpose': session['purpose']
+    }
+    filename = '{}_{}_{}.json'.format(session['datset'], session['username'], time.time())
     path = os.path.join(RATED_DATASETS_PATH, filename)
-    json.dump(session['rated_meta_paths'], open(path,"w", encoding="utf8"))
+    json.dump(rated_meta_paths, open(path,"w", encoding="utf8"))
     session.clear()
     return 'OK'
 
@@ -75,9 +81,8 @@ def receive_edge_node_types():
     if not request.json:
         abort(400)
 
-@app.route("/next-meta-paths", methods=["GET"])
-def send_next_metapaths_to_rate():
-    batch_size = 5
+@app.route("/next-meta-paths/<int:batch_size>", methods=["GET"])
+def send_next_metapaths_to_rate(batch_size):
     meta_path_id = session['meta_path_id']
     next_batch = session['meta_path_distributor'].get_next(size=batch_size)
     paths = [{'id': id,
@@ -102,7 +107,6 @@ def receive_rated_metapaths():
     if not request.is_json:
         abort(400)
     rated_metapaths = request.get_json()
-    print(rated_metapaths)
     for datapoint in rated_metapaths:
         if not all(key in datapoint for key in ['id', 'metapath', 'rating']):
             abort(400)  # malformed input

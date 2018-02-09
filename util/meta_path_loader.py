@@ -6,9 +6,15 @@ from .config import ROTTEN_TOMATO_PATH
 import os
 
 class AbstractMetaPathLoader(ABC):
+    """
+    Abstract base object to extract meta paths from file.
+    """
 
     @abstractmethod
     def load_meta_paths(self) -> List[MetaPath]:
+        """
+        :return: List of all meta paths extracted from file
+        """
         pass
 
     @classmethod
@@ -45,22 +51,3 @@ class RottenTomatoMetaPathLoader(AbstractMetaPathLoader):
             mp = self.string_to_meta_path(nodes, edges)
             meta_paths.append(mp)
         return meta_paths
-
-class MetaPathLoaderDispatcher():
-
-    available_datasets = [{'name': 'Rotten Tomato',
-                           'description': 'Have you ever wondered how similar Arnold Schwarzenegger and all german'
-                                          'actors who have appeared in a Sci-Fi movie are? Rotten Tomato is the perfect '
-                                          'data set for you!'}]
-    dataset_to_loader = {
-        'Rotten Tomato': RottenTomatoMetaPathLoader()
-    }
-
-    def get_available_datasets(self) -> List[Dict[str, str]]:
-        return self.available_datasets
-
-    def get_loader(self, dataset) -> AbstractMetaPathLoader:
-        try:
-            return self.dataset_to_loader[dataset]
-        except KeyError as e:
-            print("The data set is not available! ", str(e))
