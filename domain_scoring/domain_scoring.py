@@ -1,6 +1,6 @@
 from typing import List, Tuple
 import numpy
-from util.ranking_graph import RankingGraph
+from util.datastructures import MetaPathRatingGraph
 from util.datastructures import MetaPath
 from util.lists import all_pairs
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -8,6 +8,7 @@ from sklearn.tree import DecisionTreeClassifier
 from domain_scoring.domain_value_transformer import NaiveTransformer, SMALLER, LARGER
 
 Ranking = Tuple[MetaPath, float]
+
 
 class DomainScoring():
     def __init__(self):
@@ -19,8 +20,7 @@ class DomainScoring():
         self.classifier = DecisionTreeClassifier()
         self.domain_value_transformer = NaiveTransformer()
 
-
-    def fit(self, metapath_graph: RankingGraph) -> None:
+    def fit(self, metapath_graph: MetaPathRatingGraph) -> None:
         """
         Fits a classifier to predict a meta-path ordering.
         :param metapath_graph: already ordered meta-path used as a training set.
@@ -31,8 +31,6 @@ class DomainScoring():
 
         self.classifier.fit(self._preprocess(x_train), y_train)
 
-
-
     def predict(self, metapath_unrated: List[MetaPath]) -> List[Tuple[MetaPath, int]]:
         """
         Predict the domain value of the given meta-paths.
@@ -41,7 +39,6 @@ class DomainScoring():
         """
         x_predict = all_pairs(metapath_unrated)
         y_predict = self.classifier.predict(self._preprocess(x_predict))
-
 
         return self.transform_to_domain_values(x_predict, y_predict)
 
@@ -70,7 +67,7 @@ class DomainScoring():
 
         return self.domain_value_transformer.transform(metapaths_pairs, classification)
 
-    def _fit_vectorizer(self, metapath_graph: RankingGraph) -> None:
+    def _fit_vectorizer(self, metapath_graph: MetaPathRatingGraph) -> None:
         """
 
         :param metapath_graph: metapaths based on which to train the vectorizer.
@@ -78,7 +75,7 @@ class DomainScoring():
         """
         self.vectorizer.fit([str(node) for node in metapath_graph.all_nodes()])
 
-    def _extract_training_data_labels(self, metapath_graph: RankingGraph) -> (List[Tuple[MetaPath]], List[int]):
+    def _extract_training_data_labels(self, metapath_graph: MetaPathRatingGraph) -> (List[Tuple[MetaPath]], List[int]):
         """
         Computes all pairwise tuples (a, b) of the meta-paths with their feature vector. If a is ranked higher than b
         a > b then the label is 1, 0 otherwise.
@@ -90,16 +87,12 @@ class DomainScoring():
         metapath_pairs = []
         metapath_labels = []
 
-        for closure in metapath_graph.transitive_closures():
-            node_vector = closure.pop(0) # pop first element
-            for successor in closure:
-                successor_vector = successor
+        for superior, inferior, distance in metapath_graph.stream_meta_path_distances():
 
-                metapath_pairs.append((node_vector, successor_vector))
-                metapath_labels.append(SMALLER) # <
+            metapath_pairs.append((inferior, superior))
+            metapath_labels.append(SMALLER)  # <
 
-                metapath_pairs.append((successor_vector, node_vector))
-                metapath_labels.append(LARGER) # >
-
+            metapath_pairs.append((superior, inferior))
+            metapath_labels.append(LARGER)  # >
 
         return metapath_pairs, metapath_labels
