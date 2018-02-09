@@ -1,15 +1,14 @@
 import unittest
 from domain_scoring.domain_scoring import DomainScoring
-from util.ranking_graph import RankingGraph
-from util.datastructures import MetaPath
+from util.datastructures import MetaPath, MetaPathRatingGraph
 
 class DomainScoringTest(unittest.TestCase):
 
     def setUp(self):
         self.ds = DomainScoring()
 
-        self.ranking_graph = RankingGraph()
-        self.ranking_graph.transitive_closures = lambda: [[1, "B", "C"], ["B", "C"]]
+        self.ranking_graph = MetaPathRatingGraph()
+        self.ranking_graph.stream_meta_path_distances = lambda: [("B", 1, 0), ("C", 1, 0), ("C", "B", 0)]
         self.ranking_graph.all_nodes = lambda: [1, "B", "C"]
 
     def test_extract_features_labels(self):

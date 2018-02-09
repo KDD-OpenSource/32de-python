@@ -3,7 +3,7 @@ import unittest
 
 import pandas as pd
 
-from active_learning.active_learning import *
+from active_learning.active_learner import *
 from active_learning.oracles import MockOracle
 from util.datastructures import MetaPath
 
