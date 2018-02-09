@@ -2,7 +2,7 @@ from flask import Flask, jsonify, request, abort, session
 from flask_session import Session
 from flask_cors import CORS
 from util.config import REACT_PORT, API_PORT, SESSION_CACHE_DIR, SESSION_MODE, SESSION_THRESHOLD, RATED_DATASETS_PATH
-from util.meta_path_loader import MetaPathLoaderDispatcher
+from util.meta_path_loader_dispatcher import MetaPathLoaderDispatcher
 from active_learning.meta_path_selector import RandomMetaPathSelector
 import json
 import os
@@ -84,6 +84,7 @@ def receive_edge_node_types():
 @app.route("/next-meta-paths/<int:batch_size>", methods=["GET"])
 def send_next_metapaths_to_rate(batch_size):
     meta_path_id = session['meta_path_id']
+    # TODO: Check whether there are enough unrated meta paths left
     next_batch = session['meta_path_distributor'].get_next(size=batch_size)
     paths = [{'id': id,
               'metapath': meta_path.as_list(),

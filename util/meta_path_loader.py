@@ -50,4 +50,5 @@ class RottenTomatoMetaPathLoader(AbstractMetaPathLoader):
             edges = i[1]
             mp = self.string_to_meta_path(nodes, edges)
             meta_paths.append(mp)
+        print(len(meta_paths))
         return meta_paths
