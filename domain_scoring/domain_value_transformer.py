@@ -5,6 +5,9 @@ from util.datastructures import MetaPath
 SMALLER = 0
 LARGER = 1
 
+RANGE_UPPER = 1.
+RANGE_LOWER = 0.
+
 class DomainValueTransformer:
     """
     Abstract class. Domain Value Transformers are strategies that can be used to transform meta-path ordering predictions
@@ -25,8 +28,10 @@ class DomainValueTransformer:
 
 class NaiveTransformer(DomainValueTransformer):
 
-    def transform(self, metapaths_pairs: List[Tuple[MetaPath, MetaPath]], classification: List[int], all_metapaths: List[MetaPath] = None) -> List[
-        Tuple[MetaPath, float]]:
+    def transform(self,
+                  metapaths_pairs: List[Tuple[MetaPath, MetaPath]],
+                  classification: List[int],
+                  all_metapaths: List[MetaPath] = None) -> List[Tuple[MetaPath, float]]:
         """
         Transforms the classified ordering of all meta-paths pairs to the domain values.
         This is done in two steps: First all the tuples are combined and flattened to a single ordered list.
@@ -35,7 +40,7 @@ class NaiveTransformer(DomainValueTransformer):
         :param classification: The classificatin whether a pair is in the correct order or not.
         :param all_metapaths: A list of all meta-paths occurring in the pairs that need to be ordered.
                               If this is None it is automatically extracted.
-        :return: Total order of all meta-paths with values in [0,1]
+        :return: Total order of all meta-paths with values in [0,10]
         """
 
         if all_metapaths is None:
@@ -101,7 +106,7 @@ class NaiveTransformer(DomainValueTransformer):
 
 
     def _spread_domain_value(self, ordered_paths: List[MetaPath]) -> List[Tuple[MetaPath, float]]:
-        weights = arange(10, 0, -10./len(ordered_paths))[::-1]
+        weights = arange(RANGE_UPPER, RANGE_LOWER, -RANGE_UPPER/len(ordered_paths))[::-1]
         return list(zip(ordered_paths, weights))
 
 

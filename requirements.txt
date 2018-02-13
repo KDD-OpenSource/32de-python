@@ -4,6 +4,9 @@ sklearn
 typing
 pytest
 flask
+pandas
+flask-cors
 scipy
-python-coveralls
+# TODO: Introduct development (non-deployment) dependencies
 pytest-cov
+Flask-Session

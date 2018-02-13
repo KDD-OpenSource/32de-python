@@ -6,9 +6,11 @@ class MetaPath:
     _edges = None
     _nodes = None
 
-    def __init__(self, nodes: List[str] = [], edges: List[str] = []):
-        assert (len(nodes) - 1 == len(edges)) or (len(nodes) == 0 and len(
-            edges) == 0), "Invalid path: number of edges and nodes do not match."
+
+
+    def __init__(self, nodes:List[str] = [], edges:List[str] = []):
+        assert (len(nodes) - 1 == len(edges)) or (
+        len(nodes) == 0 and len(edges) == 0), "Invalid path: number of edges and nodes do not match."
         self._edges = edges
         self._nodes = nodes
 
@@ -20,6 +22,15 @@ class MetaPath:
         representation[::2] = self._nodes
         representation[1::2] = self._edges
         return representation
+
+    @staticmethod
+    def from_list(meta_path: List):
+        assert len(meta_path) % 2 != 0 or len(meta_path) == 0
+        return MetaPath(meta_path[::2], meta_path[1::2])
+
+    @staticmethod
+    def from_string(meta_path: str, sep=' '):
+        return MetaPath.from_list(meta_path.split(sep))
 
     def __len__(self) -> int:
         return len(self._edges) + len(self._nodes)
@@ -61,11 +72,16 @@ class UserOrderedMetaPaths:
 
 class MetaPathRatingGraph:
 
-    def __init__(self):
+    def __init__(self,rating=None):
         self.graph = Graph(directed=True)
         self.distance = self.graph.new_edge_property("double")
         self.meta_path_to_vertex = {}
         self.vertex_to_meta_path = {}
+        if rating is not None:
+            ordered = sorted(rating.items(), key=lambda tuple: tuple[1])
+            list(map(lambda rated_mp_1, rated_mp_2: self.add_user_rating(rated_mp_1[0], rated_mp_2[0],
+                                                                                rated_mp_2[1] - rated_mp_1[1]),
+                     ordered[:-1], ordered[1:]))
 
     def __add_meta_path(self, meta_path: MetaPath) -> Vertex:
         """
@@ -82,8 +98,8 @@ class MetaPathRatingGraph:
 
     def add_user_rating(self, superior_meta_path: MetaPath, inferior_meta_path: MetaPath, distance: float) -> None:
         """
-           :param superior_meta_path: The meta-path, which was rated higher compared to b.
-           :param inferior_meta_path: The meta-path, which was rated lower compared to a.
+           :param superior_meta_path: The meta-path, which was rated higher.
+           :param inferior_meta_path: The meta-path, which was rated lower.
            :param distance: The distance between meta-paths a and b.
         """
         assert (distance >= 0), "Distance may not be negative"
@@ -118,3 +134,13 @@ class MetaPathRatingGraph:
             for target_index, distance in enumerate(distances_from_source):
                 if not numpy.isinf(distance) and distance != 0:
                     yield self.vertex_to_meta_path[node], self.vertex_to_meta_path[self.graph.vertex(target_index)], distance
+
+    def __str__(self):
+        return "MetaPathRating with {} rating(s)".format(len(self.graph.get_edges()))
+
+    def draw(self, filename='log/rating.png'):
+        layout = arf_layout(self.graph, max_iter=0)
+        # TODO: maybe add weights
+        graph_draw(self.graph, pos=layout, vertex_fill_color=[0, 0, 1.0, 1.0],
+                   output=filename)  # , edge_pen_width=pen_width)
+        print('Printed rating to file {}'.format(filename))

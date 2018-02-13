@@ -10,20 +10,20 @@ class NaiveDomainValueTransformerTest(unittest.TestCase):
         self.oracle = self._create_oracle(range(6))
 
     def test_transform(self):
-        self.assertEqual([(1, 5), (2, 10)], self.transformer.transform([(1, 2)], [SMALLER]))
+        self.assertEqual([(1, 0.5), (2, 1.0)], self.transformer.transform([(1, 2)], [SMALLER]))
 
     def test_spread_domain_value(self):
         self.assertEqual(
-            [(1, 5), (2, 10)],
+            [(1, 0.5), (2, 1.0)],
             self.transformer._spread_domain_value([1, 2]))
         self.assertEqual(
-            [(1, 2.5), (2, 5), (3, 7.5), (4, 10)],
+            [(1, 0.25), (2, 0.5), (3, .75), (4, 1.0)],
             self.transformer._spread_domain_value([1, 2, 3, 4]))
         self.assertEqual(
-            [(1, 5), (2, 10)],
+            [(1, 0.5), (2, 1.0)],
             self.transformer._spread_domain_value([1, 2]))
         self.assertEqual(
-            [(1, 10)],
+            [(1, 1.0)],
             self.transformer._spread_domain_value([1]))
 
     def test_order_pairs(self):
