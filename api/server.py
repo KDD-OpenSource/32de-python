@@ -58,31 +58,58 @@ def logout():
     session.clear()
     return 'OK'
 
-# TODO: If meta-paths for A and B will be written in Java, they will need this information in Java
+# TODO: If functionality "meta-paths for node set A and B" will be written in Java, team alpha will need this information in Java
 @app.route("/node-sets", methods=["POST"])
 def receive_node_sets():
+    """
+    Receives the node sets from the "Setup" page which the user selects.
+    This endpoint is called for each new added node.
+
+    The repeated calling enables us to start the following computations as early as possible
+    so that we can return information on the next pages faster.
+    For example on the first call we already know the type of the whole node set and
+    therefore can begin to retrieve the corresponding node sets.
+    """
     # TODO: Check if necessary information is in request object
     if not request.json:
         abort(400)
+    raise NotImplementedError("This API endpoint isn't implemented in the moment")
 
 
 @app.route("/node-sets", methods=["GET"])
 def send_node_sets():
+    """
+    Returns the node sets which the user previously selected on the "Setup" page.
+    """
+    # TODO: Does active_learning really needs this endpoint? Does someone needs this endpoint?
     # TODO: Call fitting method in active_learning
     # TODO: Check if necessary information is in request object
-
+    raise NotImplementedError("This API endpoint isn't implemented in the moment")
     return jsonify("Hello world")
 
 
-# TODO: If meta-paths for A and B will be written in Java, they will need this information in Java
+# TODO: If functionality "meta-paths for node set A and B" will be written in Java, team alpha will need this information in Java
 @app.route("/types", methods=["POST"])
 def receive_edge_node_types():
+    """
+    Receives the node and edge types which are selected (types which are active) on the "Config" page.
+    """
     # TODO: Check if necessary information is in request object
     if not request.json:
         abort(400)
+    raise NotImplementedError("This API endpoint isn't implemented in the moment")
+
 
 @app.route("/next-meta-paths/<int:batch_size>", methods=["GET"])
 def send_next_metapaths_to_rate(batch_size):
+    """
+    Returns the next `batchsize` meta-paths to rate.
+
+    Metapaths are formated like this:
+    {'id': 3,
+    'metapath': ['Phenotype', 'HAS', 'Association', 'HAS', 'SNP', 'HAS', 'Phenotype'],
+    'rating': 0.5}
+    """
     meta_path_id = session['meta_path_id']
     # TODO: Check whether there are enough unrated meta paths left
     next_batch = session['meta_path_distributor'].get_next(size=batch_size)
@@ -105,6 +132,15 @@ def get_available_datasets():
 # TODO: Maybe post each rated meta-path
 @app.route("/rate-meta-paths", methods=["POST"])
 def receive_rated_metapaths():
+    """
+    Receives the rated meta-paths.
+
+    Meta-paths are formated like this:
+    {'id': 3,
+    'metapath': ['Phenotype', 'HAS', 'Association', 'HAS', 'SNP', 'HAS', 'Phenotype'],
+    'rating': 0.75}
+    """
+    # TODO: Check if necessary information is in request object
     if not request.is_json:
         abort(400)
     rated_metapaths = request.get_json()
@@ -117,7 +153,11 @@ def receive_rated_metapaths():
 
 @app.route("/results", methods=["GET"])
 def send_results():
+    """
+    TODO: Endpoint needs to be specified by team delta
+    """
     # TODO: Call fitting method in explanation
+    raise NotImplementedError("This API endpoint isn't implemented in the moment")
     return jsonify("Hello world")
 
 
