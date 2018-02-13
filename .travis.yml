@@ -16,7 +16,7 @@ script:
   - docker exec server-container pytest --cov-report term-missing --cov
 
 after_success:
-  - docker cp server-container:/32de-python/.coverage .coverage
+  - docker cp server-container:/32de-python/.coverage .coverage.docker
   - coverage combine
   - coveralls
 
