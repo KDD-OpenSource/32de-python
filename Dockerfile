@@ -14,4 +14,4 @@ COPY . /32de-python/
 WORKDIR /32de-python
 RUN pip3 install -r requirements.txt
 RUN pip3 install -r deployment/deployment.txt
-ENTRYPOINT ["gunicorn", "--bind", "0.0.0.0:8000", "api.server:app"]
+ENTRYPOINT ["gunicorn", "--config", "deployment/gunicorn-config.py", "api.server:app"]
