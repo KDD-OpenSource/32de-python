@@ -15,11 +15,10 @@ before_install:
   - docker ps -a
 
 script:
-  - docker exec server-container pytest --cov-report term-missing --cov=domain_scoring
+  - docker exec server-container pytest --cov-report term-missing --cov=.
 
 after_success:
   - docker cp server-container:/32de-python/.coverage .coverage.docker
-  - rm .coverage
   - coverage combine
   - coveralls
 
