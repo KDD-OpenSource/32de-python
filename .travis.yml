@@ -17,6 +17,7 @@ script:
 
 after_success:
   - docker cp server-container:/32de-python/.coverage .coverage.docker
+  - rm .coverage
   - coverage combine
   - coveralls
 
