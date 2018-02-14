@@ -21,8 +21,9 @@ script:
 after_success:
   - docker cp server-container:/32de-python/.coverage .coverage.docker
   - cat .coverage.docker
+  - cat .coveragerc
+  - coverage report
   - coverage --version
-  - coverage combine  --append
   - coverage combine
   - cat .coverage
   - coveralls
