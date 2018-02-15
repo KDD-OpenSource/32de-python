@@ -8,7 +8,6 @@ services:
 
 install:
   -  pip install python-coveralls
-  -  pip list
 
 before_install:
   - deployment/build-server.sh .
@@ -19,13 +18,8 @@ script:
   - docker exec server-container pytest --cov-report term-missing --cov=.
 
 after_success:
-  - docker cp server-container:/32de-python/.coverage .coverage.docker
-  - cat .coverage.docker
-  - cat .coveragerc
-  - coverage report
-  - coverage --version
+  - docker cp server-container:/src/.coverage .coverage.docker
   - coverage combine
-  - cat .coverage
   - coveralls
 
 after_script:
