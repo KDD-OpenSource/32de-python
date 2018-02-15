@@ -89,16 +89,55 @@ def send_node_sets():
 
 
 # TODO: If functionality "meta-paths for node set A and B" will be written in Java, team alpha will need this information in Java
-@app.route("/types", methods=["POST"])
-def receive_edge_node_types():
+@app.route("/set-edge-types", methods=["POST"])
+def receive_edge_types(request):
     """
     Receives the node and edge types which are selected (types which are active) on the "Config" page.
     """
+    print("....")
+
     # TODO: Check if necessary information is in request object
     if not request.json:
         abort(400)
-    raise NotImplementedError("This API endpoint isn't implemented in the moment")
 
+    edge_types = request.get_json()
+    print(edge_types)
+
+# TODO: If functionality "meta-paths for node set A and B" will be written in Java, team alpha will need this information in Java
+@app.route("/set-node-types", methods=["POST"])
+def receive_node_types(request):
+    """
+    Receives the node and edge types which are selected (types which are active) on the "Config" page.
+    """
+    print("....")
+
+    # TODO: Check if necessary information is in request object
+    if not request.json:
+        abort(400)
+
+    node_types = request.get_json()
+    print(node_types)
+
+@app.route("/get-edge-types", methods=["GET"])
+def send_edge_types():
+    """
+    Returns the available edge types for the "Config" page
+    """
+
+    node_types = [['Tree', True], ['Flower', False], ['River', False], ['Grass', False]]
+    return send_types(node_types)
+
+@app.route("/get-node-types", methods=["GET"])
+def send_node_types():
+    """
+    Returns the available node types for the "Config" page
+    """
+
+    edge_types = [['Door', True], ['Window', True], ['Wall', False], ['Roof', True]]
+    return send_types(edge_types)
+
+def send_types(types):
+    return jsonify(types)
 
 @app.route("/next-meta-paths/<int:batch_size>", methods=["GET"])
 def send_next_metapaths_to_rate(batch_size):
