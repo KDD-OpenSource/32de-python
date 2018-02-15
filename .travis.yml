@@ -20,10 +20,8 @@ script:
 after_success:
   - docker cp server-container:/32de-python/.coverage .coverage.docker
   - coverage combine
-  - cat .coverage
   # rename path on travis as coverage combine doesn't seem to work properly.
   - sed -i s/"\/32de-python"/./g .coverage
-  - cat .coverage
   - coveralls
 
 after_script:
