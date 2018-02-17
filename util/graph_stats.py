@@ -8,7 +8,7 @@ class GraphStats:
 
     def load_dataframe(self):
         df = pd.read_csv(
-            os.path.join("../", ROTTEN_TOMATO_PATH, self.dataset_filename))
+            os.path.join("/32de-python/", ROTTEN_TOMATO_PATH, self.dataset_filename))
         df.columns = ['b', 'a', 'node_types', 'edge_types']
         return df
 

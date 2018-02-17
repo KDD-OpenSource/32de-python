@@ -145,7 +145,7 @@ def send_node_types():
 
 
 def build_selection(types):
-    return [(type, True) for type in types.list]
+    return [(element, True) for element in types]
 
 
 @app.route("/next-meta-paths/<int:batch_size>", methods=["GET"])
