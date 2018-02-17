@@ -3,6 +3,7 @@ from flask_session import Session
 from flask_cors import CORS
 from util.config import REACT_PORT, API_PORT, SESSION_CACHE_DIR, SESSION_MODE, SESSION_THRESHOLD, RATED_DATASETS_PATH
 from util.meta_path_loader_dispatcher import MetaPathLoaderDispatcher
+from util.graph_stats import GraphStats
 from active_learning.meta_path_selector import RandomMetaPathSelector
 import json
 import os
@@ -24,8 +25,10 @@ Session(app)
 
 CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://localhost:{}".format(REACT_PORT)}})
 
+
 def run(port, hostname, debug_mode):
     app.run(host=hostname, port=port, debug=debug_mode, threaded=True)
+
 
 @app.route('/login', methods=["POST", "GET"])
 def login():
@@ -57,6 +60,7 @@ def logout():
     json.dump(rated_meta_paths, open(path,"w", encoding="utf8"))
     session.clear()
     return 'OK'
+
 
 # TODO: If functionality "meta-paths for node set A and B" will be written in Java, team alpha will need this information in Java
 @app.route("/node-sets", methods=["POST"])
@@ -90,33 +94,33 @@ def send_node_sets():
 
 # TODO: If functionality "meta-paths for node set A and B" will be written in Java, team alpha will need this information in Java
 @app.route("/set-edge-types", methods=["POST"])
-def receive_edge_types(request):
+def receive_edge_types():
     """
     Receives the node and edge types which are selected (types which are active) on the "Config" page.
     """
-    print("....")
 
     # TODO: Check if necessary information is in request object
     if not request.json:
         abort(400)
 
     edge_types = request.get_json()
-    print(edge_types)
+    return 'OK'
+
 
 # TODO: If functionality "meta-paths for node set A and B" will be written in Java, team alpha will need this information in Java
 @app.route("/set-node-types", methods=["POST"])
-def receive_node_types(request):
+def receive_node_types():
     """
     Receives the node and edge types which are selected (types which are active) on the "Config" page.
     """
-    print("....")
 
     # TODO: Check if necessary information is in request object
     if not request.json:
         abort(400)
 
     node_types = request.get_json()
-    print(node_types)
+    return 'OK'
+
 
 @app.route("/get-edge-types", methods=["GET"])
 def send_edge_types():
@@ -124,8 +128,10 @@ def send_edge_types():
     Returns the available edge types for the "Config" page
     """
 
-    node_types = [['Tree', True], ['Flower', False], ['River', False], ['Grass', False]]
-    return send_types(node_types)
+    edge_types = GraphStats().get_edge_types()
+    edge_types_selection = build_selection(edge_types)
+    return jsonify(edge_types_selection)
+
 
 @app.route("/get-node-types", methods=["GET"])
 def send_node_types():
@@ -133,11 +139,14 @@ def send_node_types():
     Returns the available node types for the "Config" page
     """
 
-    edge_types = [['Door', True], ['Window', True], ['Wall', False], ['Roof', True]]
-    return send_types(edge_types)
+    node_types = GraphStats().get_node_types()
+    node_type_selection = build_selection(node_types)
+    return jsonify(node_type_selection)
 
-def send_types(types):
-    return jsonify(types)
+
+def build_selection(types):
+    return [(type, True) for type in types.list]
+
 
 @app.route("/next-meta-paths/<int:batch_size>", methods=["GET"])
 def send_next_metapaths_to_rate(batch_size):
