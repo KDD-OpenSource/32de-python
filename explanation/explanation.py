@@ -26,7 +26,6 @@ class SimilarityScore:
     def fetch_meta_paths(self) -> List[MetaPathRating]:
         return self.meta_paths
 
-
     '''
     Computes a sum of a linear combination of structural and domain value
     over all meta-paths, normalized by each meta-path length. First simplified,
