@@ -57,7 +57,7 @@ def logout():
         'username': session['username'],
         'purpose': session['purpose']
     }
-    filename = '{}_{}_{}.json'.format(session['datset'], session['username'], time.time())
+    filename = '{}_{}_{}.json'.format(session['dataset'], session['username'], time.time())
     path = os.path.join(RATED_DATASETS_PATH, filename)
     json.dump(rated_meta_paths, open(path,"w", encoding="utf8"))
     session.clear()
