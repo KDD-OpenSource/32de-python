@@ -4,7 +4,7 @@ import os
 RESEARCH_MODE = "research"
 BASELINE_MODE = "baseline"
 # server
-REACT_PORT = 3000
+REACT_PORT = 80
 API_PORT = 8000
 # Data sets
 ROTTEN_TOMATO_PATH = os.path.join('tests','data','rotten_tomatoes')

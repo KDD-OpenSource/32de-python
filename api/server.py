@@ -23,7 +23,10 @@ app.config.from_object(__name__)
 app.config["SECRET_KEY"] = "37Y,=i9.,U3RxTx92@9j9Z[}"
 Session(app)
 
-CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://localhost:{}".format(REACT_PORT)}})
+if REACT_PORT is not 80:
+    CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://localhost:{}".format(REACT_PORT)}})
+else:
+    CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://localhost"}})
 
 
 def run(port, hostname, debug_mode):
