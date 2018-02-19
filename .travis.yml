@@ -1,7 +1,13 @@
 sudo: required
 
+language: python
+python:
+    - "3.6"
 services:
   - docker
+
+install:
+  -  pip install python-coveralls
 
 before_install:
   - deployment/build-server.sh .
@@ -9,7 +15,14 @@ before_install:
   - docker ps -a
 
 script:
-  - docker exec server-container pytest
+  - docker exec server-container pytest --cov-report term-missing --cov=.
+
+after_success:
+  - docker cp server-container:/32de-python/.coverage .coverage.docker
+  - coverage combine
+  # rename path on travis as coverage combine doesn't seem to work properly.
+  - sed -i s/"\/32de-python"/./g .coverage
+  - coveralls
 
 after_script:
   - docker rm -f server-container
