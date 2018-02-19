@@ -34,11 +34,11 @@ def run(port, hostname, debug_mode):
 def login():
     if request.method == 'POST':
         data = request.get_json()
-        print(data)
+        print("Login route received data: {}".format(data))
         session['username'] = data['username']
         session['dataset'] = data['dataset']
         session['purpose'] = data['purpose']
-        # TODO use key from dataset to select data
+        # TODO use dataset key  to select dataset
         meta_path_loader = MetaPathLoaderDispatcher().get_loader("Rotten Tomato")
         meta_paths = meta_path_loader.load_meta_paths()
         session['meta_path_distributor'] = RandomMetaPathSelector(meta_paths=meta_paths)
@@ -59,7 +59,7 @@ def logout():
     }
     filename = '{}_{}_{}.json'.format(session['dataset'], session['username'], time.time())
     path = os.path.join(RATED_DATASETS_PATH, filename)
-    json.dump(rated_meta_paths, open(path,"w", encoding="utf8"))
+    json.dump(rated_meta_paths, open(path, "w", encoding="utf8"))
     session.clear()
     return 'OK'
 
@@ -91,7 +91,6 @@ def send_node_sets():
     # TODO: Call fitting method in active_learning
     # TODO: Check if necessary information is in request object
     raise NotImplementedError("This API endpoint isn't implemented in the moment")
-    return jsonify("Hello world")
 
 
 # TODO: If functionality "meta-paths for node set A and B" will be written in Java, team alpha will need this information in Java
@@ -155,19 +154,22 @@ def build_selection(types):
 @app.route("/next-meta-paths/<int:batch_size>", methods=["GET"])
 def send_next_metapaths_to_rate(batch_size):
     """
-    Returns the next `batchsize` meta-paths to rate.
+        Returns the next `batchsize` meta-paths to rate.
 
-    Metapaths are formated like this:
-    {'id': 3,
-    'metapath': ['Phenotype', 'HAS', 'Association', 'HAS', 'SNP', 'HAS', 'Phenotype'],
-    'rating': 0.5}
-    """
+        Metapaths are formated like this:
+        {'id': 3,
+        'metapath': ['Phenotype', 'HAS', 'Association', 'HAS', 'SNP', 'HAS', 'Phenotype'],
+        'rating': 0.5}
+        """
     meta_path_id = session['meta_path_id']
-    # TODO: Check whether there are enough unrated meta paths left
     next_batch = session['meta_path_distributor'].get_next(size=batch_size)
-    paths = [{'id': id,
-              'metapath': meta_path.as_list(),
-              'rating': 0.5} for id, meta_path in zip(range(meta_path_id, meta_path_id + batch_size), next_batch)]
+    next_metapaths, last_batch = next_batch[0], next_batch[1]
+    paths = {'meta_paths': [{'id': meta_id,
+                             'metapath': meta_path.as_list(),
+                             'rating': 0.5} for meta_id, meta_path in
+                            zip(range(meta_path_id, meta_path_id + batch_size), next_metapaths)],
+             'last_batch': last_batch}
+
     meta_path_id += batch_size
     session['meta_path_id'] = meta_path_id
     return jsonify(paths)
@@ -210,7 +212,6 @@ def send_results():
     """
     # TODO: Call fitting method in explanation
     raise NotImplementedError("This API endpoint isn't implemented in the moment")
-    return jsonify("Hello world")
 
 
 if __name__ == '__main__':

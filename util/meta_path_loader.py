@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
 from .datastructures import MetaPath
-from typing import List, Dict
+from typing import List
 import pandas as pd
 from .config import ROTTEN_TOMATO_PATH
 import os
+
 
 class AbstractMetaPathLoader(ABC):
     """
@@ -50,5 +51,5 @@ class RottenTomatoMetaPathLoader(AbstractMetaPathLoader):
             edges = i[1]
             mp = self.string_to_meta_path(nodes, edges)
             meta_paths.append(mp)
-        print(len(meta_paths))
+        print("{}: Number of meta-paths is {}".format(self.__class__.__name__.upper(), len(meta_paths)))
         return meta_paths
