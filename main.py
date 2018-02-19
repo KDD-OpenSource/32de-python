@@ -1,4 +1,4 @@
-import active_learning.active_learning as active_learning
+import active_learning.active_learner as active_learning
 import domain_scoring.domain_scoring as domain_scoring
 import explanation.explanation as explanation
 from api import server
