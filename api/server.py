@@ -29,21 +29,29 @@ CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://local
 def run(port, hostname, debug_mode):
     app.run(host=hostname, port=port, debug=debug_mode, threaded=True)
 
-
 @app.route('/login', methods=["POST", "GET"])
 def login():
-    if request.method == 'POST':
+    if request.method == 'POST' and 'username' not in session:
         data = request.get_json()
+
+        # retrieve data from login
         print("Login route received data: {}".format(data))
         session['username'] = data['username']
         session['dataset'] = data['dataset']
         session['purpose'] = data['purpose']
-        # TODO use dataset key  to select dataset
-        meta_path_loader = MetaPathLoaderDispatcher().get_loader("Rotten Tomato")
+
+        # setup dataset
+        # TODO use key from dataset to select data
+        meta_path_loader = MetaPathLoaderDispatcher().get_loader(session['dataset'])
         meta_paths = meta_path_loader.load_meta_paths()
+        # TODO get Graph stats for current dataset
+        graph_stats = GraphStats()
         session['meta_path_distributor'] = RandomMetaPathSelector(meta_paths=meta_paths)
         session['meta_path_id'] = 1
         session['rated_meta_paths'] = []
+        session['selected_node_types'] = build_selection(graph_stats.get_node_types())
+        session['selected_edge_types'] = build_selection(graph_stats.get_edge_types())
+
     return jsonify({'status': 200})
 
 
@@ -130,10 +138,7 @@ def send_edge_types():
     """
     Returns the available edge types for the "Config" page
     """
-
-    edge_types = GraphStats().get_edge_types()
-    edge_types_selection = build_selection(edge_types)
-    return jsonify(edge_types_selection)
+    return jsonify(session['selected_edge_types'])
 
 
 @app.route("/get-node-types", methods=["GET"])
@@ -141,10 +146,7 @@ def send_node_types():
     """
     Returns the available node types for the "Config" page
     """
-
-    node_types = GraphStats().get_node_types()
-    node_type_selection = build_selection(node_types)
-    return jsonify(node_type_selection)
+    return jsonify(session['selected_node_types'])
 
 
 def build_selection(types):
@@ -156,7 +158,7 @@ def send_next_metapaths_to_rate(batch_size):
     """
         Returns the next `batchsize` meta-paths to rate.
 
-        Metapaths are formated like this:
+        Metapaths are formatted like this:
         {'id': 3,
         'metapath': ['Phenotype', 'HAS', 'Association', 'HAS', 'SNP', 'HAS', 'Phenotype'],
         'rating': 0.5}
