@@ -170,7 +170,7 @@ def send_next_metapaths_to_rate(batch_size):
                              'metapath': meta_path.as_list(),
                              'rating': 0.5} for meta_id, meta_path in
                             zip(range(meta_path_id, meta_path_id + batch_size), next_metapaths)],
-             'last_batch': last_batch}
+             'next_batch_available': not last_batch}
 
     meta_path_id += batch_size
     session['meta_path_id'] = meta_path_id
