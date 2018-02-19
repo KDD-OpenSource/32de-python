@@ -9,7 +9,10 @@ class Explanation:
     def __init__(self):
         raise NotImplementedError()
 
-
+'''
+Compute similarity score between the two node sets based on given meta-paths
+and their structural and domain value.
+'''
 class SimilarityScore:
     meta_paths = None
     similarity_score = None
@@ -19,8 +22,8 @@ class SimilarityScore:
         self.algorithm_type = algorithm_type
 
     '''
-    Later, we will fetch meta-paths dynamically. At the moment, we pass meta paths directly
-    from the tests.
+    Later, we will fetch meta-paths dynamically. At the moment, we pass meta paths
+    directly from the tests.
     '''
     @staticmethod
     def fetch_meta_paths(self) -> List[MetaPathRating]:
