@@ -1,3 +1,5 @@
+import os
+
 # algorithms
 RESEARCH_MODE = "research"
 BASELINE_MODE = "baseline"
@@ -5,9 +7,9 @@ BASELINE_MODE = "baseline"
 REACT_PORT = 3000
 API_PORT = 8000
 # Data sets
-ROTTEN_TOMATO_PATH = 'tests/data/rotten_tomatoes/'
-RATED_DATASETS_PATH = '../rated_datasets/'
+ROTTEN_TOMATO_PATH = os.path.join('tests','data','rotten_tomatoes')
+RATED_DATASETS_PATH = os.path.join('..','rated_datasets')
 # Configuration for sessions saved on the file system
-SESSION_CACHE_DIR = '../tmp/sessions/'
+SESSION_CACHE_DIR = os.path.join('..','tmp','sessions')
 SESSION_THRESHOLD = 500
 SESSION_MODE = '0700'
