@@ -52,6 +52,8 @@ def logout():
     rated_meta_paths = {
         'meta_paths': session['rated_meta_paths'],
         'dataset': session['dataset'],
+        'node_type_selection': session['selected_node_types'],
+        'edge_type_selection': session['selected_edge_types'],
         'username': session['username'],
         'purpose': session['purpose']
     }
@@ -104,6 +106,7 @@ def receive_edge_types():
         abort(400)
 
     edge_types = request.get_json()
+    session['selected_edge_types'] = edge_types
     return 'OK'
 
 
@@ -119,6 +122,7 @@ def receive_node_types():
         abort(400)
 
     node_types = request.get_json()
+    session['selected_node_types'] = node_types
     return 'OK'
 
 
