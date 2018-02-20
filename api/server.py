@@ -24,27 +24,38 @@ app.config.from_object(__name__)
 app.config["SECRET_KEY"] = "37Y,=i9.,U3RxTx92@9j9Z[}"
 Session(app)
 
-CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://localhost:{}".format(REACT_PORT)}})
+if REACT_PORT is not 80:
+    CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://localhost:{}".format(REACT_PORT)}})
+else:
+    CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://localhost"}})
 
 
 def run(port, hostname, debug_mode):
     app.run(host=hostname, port=port, debug=debug_mode, threaded=True)
 
-
 @app.route('/login', methods=["POST", "GET"])
 def login():
-    if request.method == 'POST':
+    if request.method == 'POST' and 'username' not in session:
         data = request.get_json()
-        print(data)
+
+        # retrieve data from login
+        print("Login route received data: {}".format(data))
         session['username'] = data['username']
         session['dataset'] = data['dataset']
         session['purpose'] = data['purpose']
+
+        # setup dataset
         # TODO use key from dataset to select data
-        meta_path_loader = MetaPathLoaderDispatcher().get_loader("Rotten Tomato")
+        meta_path_loader = MetaPathLoaderDispatcher().get_loader(session['dataset'])
         meta_paths = meta_path_loader.load_meta_paths()
+        # TODO get Graph stats for current dataset
+        graph_stats = GraphStats()
         session['meta_path_distributor'] = RandomMetaPathSelector(meta_paths=meta_paths)
         session['meta_path_id'] = 1
         session['rated_meta_paths'] = []
+        session['selected_node_types'] = build_selection(graph_stats.get_node_types())
+        session['selected_edge_types'] = build_selection(graph_stats.get_edge_types())
+
     return jsonify({'status': 200})
 
 
@@ -60,7 +71,7 @@ def logout():
     }
     filename = '{}_{}_{}.json'.format(session['dataset'], session['username'], time.time())
     path = os.path.join(RATED_DATASETS_PATH, filename)
-    json.dump(rated_meta_paths, open(path,"w", encoding="utf8"))
+    json.dump(rated_meta_paths, open(path, "w", encoding="utf8"))
     session.clear()
     return 'OK'
 
@@ -92,7 +103,6 @@ def send_node_sets():
     # TODO: Call fitting method in active_learning
     # TODO: Check if necessary information is in request object
     raise NotImplementedError("This API endpoint isn't implemented in the moment")
-    return jsonify("Hello world")
 
 
 # TODO: If functionality "meta-paths for node set A and B" will be written in Java, team alpha will need this information in Java
@@ -132,10 +142,7 @@ def send_edge_types():
     """
     Returns the available edge types for the "Config" page
     """
-
-    edge_types = GraphStats().get_edge_types()
-    edge_types_selection = build_selection(edge_types)
-    return jsonify(edge_types_selection)
+    return jsonify(session['selected_edge_types'])
 
 
 @app.route("/get-node-types", methods=["GET"])
@@ -143,10 +150,7 @@ def send_node_types():
     """
     Returns the available node types for the "Config" page
     """
-
-    node_types = GraphStats().get_node_types()
-    node_type_selection = build_selection(node_types)
-    return jsonify(node_type_selection)
+    return jsonify(session['selected_node_types'])
 
 
 def build_selection(types):
@@ -156,19 +160,22 @@ def build_selection(types):
 @app.route("/next-meta-paths/<int:batch_size>", methods=["GET"])
 def send_next_metapaths_to_rate(batch_size):
     """
-    Returns the next `batchsize` meta-paths to rate.
+        Returns the next `batchsize` meta-paths to rate.
 
-    Metapaths are formated like this:
-    {'id': 3,
-    'metapath': ['Phenotype', 'HAS', 'Association', 'HAS', 'SNP', 'HAS', 'Phenotype'],
-    'rating': 0.5}
-    """
+        Metapaths are formatted like this:
+        {'id': 3,
+        'metapath': ['Phenotype', 'HAS', 'Association', 'HAS', 'SNP', 'HAS', 'Phenotype'],
+        'rating': 0.5}
+        """
     meta_path_id = session['meta_path_id']
-    # TODO: Check whether there are enough unrated meta paths left
     next_batch = session['meta_path_distributor'].get_next(size=batch_size)
-    paths = [{'id': id,
-              'metapath': meta_path.as_list(),
-              'rating': 0.5} for id, meta_path in zip(range(meta_path_id, meta_path_id + batch_size), next_batch)]
+    next_metapaths, last_batch = next_batch[0], next_batch[1]
+    paths = {'meta_paths': [{'id': meta_id,
+                             'metapath': meta_path.as_list(),
+                             'rating': 0.5} for meta_id, meta_path in
+                            zip(range(meta_path_id, meta_path_id + batch_size), next_metapaths)],
+             'next_batch_available': not last_batch}
+
     meta_path_id += batch_size
     session['meta_path_id'] = meta_path_id
     session['time'] = datetime.datetime.now()
@@ -214,7 +221,6 @@ def send_results():
     """
     # TODO: Call fitting method in explanation
     raise NotImplementedError("This API endpoint isn't implemented in the moment")
-    return jsonify("Hello world")
 
 
 if __name__ == '__main__':

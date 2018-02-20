@@ -52,13 +52,18 @@ class RandomMetaPathSelector(AbstractMetaPathSelector):
         self.visited = np.array([self.NOT_VISITED] * len(meta_paths))
         self.hypothesis = hypothesis
 
-    def get_next(self, size=1) -> List[MetaPath]:
+    def get_next(self, size=1) -> (List[MetaPath], bool):
         """
         :return: requested number of next meta-paths to be shown.
         """
+        last_batch = False
+        if sum(self.visited) < size:
+            size = sum(self.visited)
+            last_batch = True
+
         idx = np.random.choice(range(len(self.meta_paths)), replace=False, p=self._prob_choose_meta_path(), size=size)
         self.visited[idx] = self.VISITED
-        return self.meta_paths[idx]
+        return self.meta_paths[idx], last_batch
 
     def get_all(self) -> List[MetaPath]:
         return self.meta_paths
@@ -70,4 +75,4 @@ class RandomMetaPathSelector(AbstractMetaPathSelector):
     Functions
     """
     def _prob_choose_meta_path(self) -> np.ndarray:
-        return self.visited / sum(self.visited)
+        return self.visited / sum(self.visited) if sum(self.visited) else np.append(np.zeros(len(self.meta_paths)-1), [1])

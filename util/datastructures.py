@@ -48,6 +48,11 @@ class MetaPathRating:
     def __init__(self, meta_path: MetaPath):
         self.meta_path = meta_path
 
+    def __init__(self, meta_path: MetaPath, structural_value: float, domain_value: float):
+        self.meta_path = meta_path
+        self.structural_value = structural_value
+        self.domain_value = domain_value
+
 
 class UserOrderedMetaPaths:
     meta_paths = None
