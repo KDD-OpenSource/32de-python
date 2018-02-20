@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y python3-pip python3 dirmngr
 RUN echo "deb http://downloads.skewed.de/apt/xenial xenial universe" | tee -a /etc/apt/sources.list
 RUN echo "deb-src http://downloads.skewed.de/apt/xenial xenial universe" | tee -a /etc/apt/sources.list
 RUN apt-get update && apt-get install -y libboost-all-dev
-RUN apt-get update -qq && apt-get install -y python3-graph-tool
+RUN apt-get update -qq && apt-get install -y --allow-unauthenticated python3-graph-tool
 
 COPY . /32de-python/
 
