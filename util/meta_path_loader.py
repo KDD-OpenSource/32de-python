@@ -79,6 +79,6 @@ class CypherDataSetLoader(AbstractMetaPathLoader):
         meta_paths = []
         for i, row in df.iterrows():
             nodes = [i[0] for i in row.nodes_types]
-            edges = row.relationship_types
+            edges = [rel_type.split('/')[-1] for rel_type in row.relationship_types]
             meta_paths.append(MetaPath(nodes, edges))
         return meta_paths
