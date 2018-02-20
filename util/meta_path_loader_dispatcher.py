@@ -1,7 +1,8 @@
-from .meta_path_loader import RottenTomatoMetaPathLoader, AbstractMetaPathLoader, CypherDataSetLoader
+from .meta_path_loader import RottenTomatoMetaPathLoader, AbstractMetaPathLoader, CypherDataSetLoader, CypherDataSetLoaderWithoutCounts
 from typing import List, Dict
 from .config import MOCK_DATASETS_DIR
 import os
+
 
 class MetaPathLoaderDispatcher():
     """
@@ -23,16 +24,22 @@ class MetaPathLoaderDispatcher():
                           {'name': 'Programming Languages PHPvsPython [Freebase] - length 5',
                            'description': 'How is the world of programming languages connected?' \
                                           'Can ou find the common anchestor of all?' \
-                                          'What are the influencial ones?'}
+                                          'What are the influencial ones?'},
+                          {'name': 'Marvel vs DC',
+                           'description': 'Marvel Comics and DC Comics are Americas biggest comic book publisher.'}
                           ]
+
     dataset_to_loader = {
         'Rotten Tomato': RottenTomatoMetaPathLoader(),
-        'Programming Languages OOvsWeb [Freebase] - length 3': CypherDataSetLoader(os.path.join(MOCK_DATASETS_DIR, 'freebase', 'programming_languages', '03-oo_web-1.3.res.csv')),
+        'Programming Languages OOvsWeb [Freebase] - length 3': CypherDataSetLoader(
+            os.path.join(MOCK_DATASETS_DIR, 'freebase', 'programming_languages', '03-oo_web-1.3.res.csv')),
         'Programming Languages OOvsWeb [Freebase] - length 4': CypherDataSetLoader(
             os.path.join(MOCK_DATASETS_DIR, 'freebase', 'programming_languages', '03-oo_web-1.3.res.csv')),
         'Programming Languages PHPvsPython [Freebase] - length 5': CypherDataSetLoader(
-            os.path.join(MOCK_DATASETS_DIR, 'freebase', 'programming_languages', '01-php_python-1.5.res.csv'))
-
+            os.path.join(MOCK_DATASETS_DIR, 'freebase', 'programming_languages', '01-php_python-1.5.res.csv')),
+        'Marvel vs DC': CypherDataSetLoader(
+            os.path.join(MOCK_DATASETS_DIR, 'freebase', 'marvel_dc_counts.csv')
+        )
     }
 
     def get_available_datasets(self) -> List[Dict[str, str]]:
