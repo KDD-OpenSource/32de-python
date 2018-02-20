@@ -3,6 +3,7 @@ from typing import List, Dict
 from .config import MOCK_DATASETS_DIR
 import os
 
+
 class MetaPathLoaderDispatcher():
     """
     Dispatcher for all currently available meta path data sets.
@@ -27,11 +28,12 @@ class MetaPathLoaderDispatcher():
                           ]
     dataset_to_loader = {
         'Rotten Tomato': RottenTomatoMetaPathLoader(),
-        'Programming Languages OOvsWeb [Freebase] - length 3': CypherDataSetLoader(os.path.join(MOCK_DATASETS_DIR, 'freebase', 'programming_languages', '03-oo_web-1.3.res.csv')),
+        'Programming Languages OOvsWeb [Freebase] - length 3': CypherDataSetLoader(
+            os.path.join('..', MOCK_DATASETS_DIR, 'freebase', 'programming_languages', '03-oo_web-1.3.res.csv')),
         'Programming Languages OOvsWeb [Freebase] - length 4': CypherDataSetLoader(
-            os.path.join(MOCK_DATASETS_DIR, 'freebase', 'programming_languages', '03-oo_web-1.3.res.csv')),
+            os.path.join('..', MOCK_DATASETS_DIR, 'freebase', 'programming_languages', '03-oo_web-1.3.res.csv')),
         'Programming Languages PHPvsPython [Freebase] - length 5': CypherDataSetLoader(
-            os.path.join(MOCK_DATASETS_DIR, 'freebase', 'programming_languages', '01-php_python-1.5.res.csv'))
+            os.path.join('..', MOCK_DATASETS_DIR, 'freebase', 'programming_languages', '01-php_python-1.5.res.csv'))
 
     }
 

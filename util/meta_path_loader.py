@@ -38,7 +38,7 @@ class RottenTomatoMetaPathLoader(AbstractMetaPathLoader):
 
     def load_meta_paths(self) -> List[MetaPath]:
         df = pd.read_csv(
-            os.path.join(ROTTEN_TOMATO_PATH, self.dataset_filename))
+            os.path.join('..', ROTTEN_TOMATO_PATH, self.dataset_filename))
         df.columns = ['b', 'a', 'node_types', 'edge_types']
         df.a = df.a.apply(eval)
         df.b = df.b.apply(eval)
@@ -79,6 +79,7 @@ class CypherDataSetLoader(AbstractMetaPathLoader):
         meta_paths = []
         for i, row in df.iterrows():
             nodes = [i[0] for i in row.nodes_types]
-            edges = row.relationship_types
+            edges = [rel_type.split('/')[-1] for rel_type in row.relationship_types]
             meta_paths.append(MetaPath(nodes, edges))
+        print("{}: Number of meta-paths is {}".format(self.__class__.__name__.upper(), len(meta_paths)))
         return meta_paths
