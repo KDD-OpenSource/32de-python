@@ -73,6 +73,7 @@ class CypherDataSetLoader(AbstractMetaPathLoader):
             fo.seek(0)
 
         df = pd.read_csv(fo, index_col=None, sep=';')
+
         df.columns = [col_name.strip() for col_name in df.columns]
         df.nodes_types = df.nodes_types.apply(eval)
         df.relationship_types = df.relationship_types.apply(eval)
@@ -81,4 +82,37 @@ class CypherDataSetLoader(AbstractMetaPathLoader):
             nodes = [i[0] for i in row.nodes_types]
             edges = [rel_type.split('/')[-1] for rel_type in row.relationship_types]
             meta_paths.append(MetaPath(nodes, edges))
+        print("{}: Number of meta-paths is {}".format(self.__class__.__name__.upper(), len(meta_paths)))
+        return meta_paths
+
+class CypherDataSetLoaderWithoutCounts(AbstractMetaPathLoader):
+    def __init__(self, dataset_path):
+        self.dataset_path = dataset_path
+
+    def load_meta_paths(self) -> List[MetaPath]:
+        with open(self.dataset_path, 'r') as f:
+            lines = f.readlines()
+            fo = io.StringIO()
+            new_lines = [lines[0].replace(',', ';')]
+            for line in lines[1:]:
+                seps = line.split(',')
+                line = ';'.join(seps[:2])
+                brack = ','.join(seps[2:])
+                line += ';' + ']];['.join(brack.split(']], ['))
+                new_lines.append(line)
+            fo.writelines(u"" + line for line in new_lines)
+            fo.seek(0)
+
+        df = pd.read_csv(fo, index_col=None, sep=';')
+
+        df.columns = [col_name.strip() for col_name in df.columns]
+        df.drop_duplicates(inplace=True, subset=['nodes_types', 'relationship_types'])
+        df.nodes_types = df.nodes_types.apply(eval)
+        df.relationship_types = df.relationship_types.apply(eval)
+        meta_paths = []
+        for i, row in df.iterrows():
+            nodes = [i[0] for i in row.nodes_types]
+            edges = [rel_type.split('/')[-1] for rel_type in row.relationship_types]
+            meta_paths.append(MetaPath(nodes, edges))
+        print("{}: Number of meta-paths is {}".format(self.__class__.__name__.upper(), len(meta_paths)))
         return meta_paths
