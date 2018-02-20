@@ -209,7 +209,7 @@ def receive_rated_metapaths():
     for datapoint in rated_metapaths:
         if not all(key in datapoint for key in ['id', 'metapath', 'rating']):
             abort(400)  # malformed input
-    rated_metapaths[0]['time_to_rate'] = ((session['time'] - time_results_received).total_seconds())
+    rated_metapaths.append({'time_to_rate': (session['time'] - time_results_received).total_seconds()})
     session['rated_meta_paths'] = session['rated_meta_paths'] + rated_metapaths
     return 'OK'
 
