@@ -214,7 +214,9 @@ def receive_rated_metapaths():
     if "time_old" in session.keys():
         rated_metapaths.append({'time_to_rate': (time_results_received - session['time_old']).total_seconds()})
     else:
-        rated_metapaths.append({'time_to_rate': (time_results_received - session['time']).total_seconds()})
+        if "time" in session.keys():
+            rated_metapaths.append({'time_to_rate': (time_results_received - session['time']).total_seconds()})
+
     session['rated_meta_paths'] = session['rated_meta_paths'] + rated_metapaths
     return 'OK'
 
