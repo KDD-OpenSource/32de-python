@@ -6,7 +6,7 @@ BASELINE_MODE = "baseline"
 # server
 REACT_PORT = 80
 API_PORT = 8000
-SERVER_PATH = 172.20.14.22
+SERVER_PATH = '172.20.14.22'
 # Data sets
 ROTTEN_TOMATO_PATH = os.path.join('tests', 'data', 'rotten_tomatoes')
 RATED_DATASETS_PATH = os.path.join('rated_datasets')
