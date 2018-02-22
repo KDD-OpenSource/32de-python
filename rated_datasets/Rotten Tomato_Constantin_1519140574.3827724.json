@@ -1,0 +1,1 @@
+{"purpose": "Geolocation", "node_type_selection": [["Movie", true], ["Person", true]], "edge_type_selection": [["PRODUCED", true], ["ACTED_IN", true], ["WROTE", true], ["DIRECTED", true]], "meta_paths": [{"time_to_rate": 0.006283}], "dataset": "Rotten Tomato", "username": "Constantin"}
