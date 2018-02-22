@@ -7,7 +7,7 @@ services:
   - docker
 
 install:
-  -  pip install python-coveralls
+  - pip install python-coveralls
 
 before_install:
   - deployment/build-server.sh .
@@ -21,7 +21,7 @@ after_success:
   - docker cp server-container:/32de-python/.coverage .coverage.docker
   - coverage combine
   # rename path on travis as coverage combine doesn't seem to work properly.
-  - sed -i s/"\/32de-python"/./g .coverage
+  - sed -i s/"\/32de-python"/$(pwd | sed s/"\\/"/"\\\\\/"/g)/g .coverage
   - coveralls
 
 after_script:
