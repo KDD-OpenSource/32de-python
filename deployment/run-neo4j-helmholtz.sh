@@ -7,6 +7,7 @@ docker run \
     --volume=$HOME/bioDB/logs:/logs \
     --volume=$HOME/bioDB/conf:/conf \
     --env=NEO4J_ACCEPT_LICENSE_AGREEMENT=yes \
+    --env NEO4J_AUTH=neo4j/${HELMHOLTZ_PWD} \
     -d \
     --name neo4j-graph-algo-container-helmholtz \
     neo4j-graph-algorithms

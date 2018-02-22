@@ -7,6 +7,7 @@ docker run \
     --volume=$HOME/commerzbank/logs:/logs \
     --volume=$HOME/commerzbank/conf:/conf \
     --env=NEO4J_ACCEPT_LICENSE_AGREEMENT=yes \
+    --env NEO4J_AUTH=neo4j/${COMMERZBANK_PWD} \
     -d \
     --name neo4j-graph-algo-container-commerzbank \
     neo4j-graph-algorithms
