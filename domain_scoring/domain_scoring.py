@@ -5,6 +5,7 @@ from util.datastructures import MetaPath
 from util.lists import all_pairs
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.model_selection import train_test_split
 from domain_scoring.domain_value_transformer import NaiveTransformer, SMALLER, LARGER
 
 Ranking = Tuple[MetaPath, float]
@@ -17,19 +18,30 @@ class DomainScoring():
         """
         # The token_pattern also allows single character strings which the default doesn't allow
         self.vectorizer = TfidfVectorizer(analyzer='word', token_pattern='\\b\\w+\\b')
-        self.classifier = DecisionTreeClassifier()
+        self.classifier = DecisionTreeClassifier(random_state=42)
         self.domain_value_transformer = NaiveTransformer()
 
-    def fit(self, metapath_graph: MetaPathRatingGraph) -> None:
+    def fit(self, metapath_graph: MetaPathRatingGraph, test_size: float = False) -> None:
         """
         Fits a classifier to predict a meta-path ordering.
+        :param test_size: Specify size of test set if a test accuracy should be reported
         :param metapath_graph: already ordered meta-path used as a training set.
         :return: Nothing.
         """
         self._fit_vectorizer(metapath_graph)
-        x_train, y_train = self._extract_training_data_labels(metapath_graph)
+        x, y = self._extract_data_labels(metapath_graph)
 
-        self.classifier.fit(self._preprocess(x_train), y_train)
+        if test_size:
+            x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=test_size, random_state=42,
+                                                                shuffle=True)
+        else:
+            x_train = x
+            y_train = y
+
+        self.classifier = self.classifier.fit(self._preprocess(x_train), y_train)
+
+        if test_size:
+            print('Test accuracy is {}'.format(self.classifier.score(X=self._preprocess(x_test), y=y_test)))
 
     def predict(self, metapath_unrated: List[MetaPath]) -> List[Tuple[MetaPath, int]]:
         """
@@ -75,20 +87,19 @@ class DomainScoring():
         """
         self.vectorizer.fit([str(node) for node in metapath_graph.all_nodes()])
 
-    def _extract_training_data_labels(self, metapath_graph: MetaPathRatingGraph) -> (List[Tuple[MetaPath]], List[int]):
+    def _extract_data_labels(self, metapath_graph: MetaPathRatingGraph) -> (List[Tuple[MetaPath]], List[int]):
         """
         Computes all pairwise tuples (a, b) of the meta-paths with their feature vector. If a is ranked higher than b
         a > b then the label is 1, 0 otherwise.
 
         :param metapath_graph: The meta-path graph representing the ordering of all meta-path
-        :return: (x_train, y_train) The training feature vector and class labels.
+        :return: (x, y) The feature vector and class labels.
         """
 
         metapath_pairs = []
         metapath_labels = []
 
         for superior, inferior, distance in metapath_graph.stream_meta_path_distances():
-
             metapath_pairs.append((inferior, superior))
             metapath_labels.append(SMALLER)  # <
 
