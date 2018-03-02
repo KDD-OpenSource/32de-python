@@ -18,7 +18,7 @@ class DomainScoring():
         """
         # The token_pattern also allows single character strings which the default doesn't allow
         self.vectorizer = TfidfVectorizer(analyzer='word', token_pattern='\\b\\w+\\b')
-        self.classifier = DecisionTreeClassifier()
+        self.classifier = DecisionTreeClassifier(random_state=42)
         self.domain_value_transformer = NaiveTransformer()
 
     def fit(self, metapath_graph: MetaPathRatingGraph, test_size: float = False) -> None:
@@ -38,7 +38,7 @@ class DomainScoring():
             x_train = x
             y_train = y
 
-            self.classifier = self.classifier.fit(self._preprocess(x_train), y_train)
+        self.classifier = self.classifier.fit(self._preprocess(x_train), y_train)
 
         if test_size:
             print('Test accuracy is {}'.format(self.classifier.score(X=self._preprocess(x_test), y=y_test)))
