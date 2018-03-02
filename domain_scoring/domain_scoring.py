@@ -29,7 +29,7 @@ class DomainScoring():
         :return: Nothing.
         """
         self._fit_vectorizer(metapath_graph)
-        x, y = self._extract_training_data_labels(metapath_graph)
+        x, y = self._extract_data_labels(metapath_graph)
 
         if test_size:
             x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=test_size, random_state=42,
@@ -87,7 +87,7 @@ class DomainScoring():
         """
         self.vectorizer.fit([str(node) for node in metapath_graph.all_nodes()])
 
-    def _extract_training_data_labels(self, metapath_graph: MetaPathRatingGraph) -> (List[Tuple[MetaPath]], List[int]):
+    def _extract_data_labels(self, metapath_graph: MetaPathRatingGraph) -> (List[Tuple[MetaPath]], List[int]):
         """
         Computes all pairwise tuples (a, b) of the meta-paths with their feature vector. If a is ranked higher than b
         a > b then the label is 1, 0 otherwise.
