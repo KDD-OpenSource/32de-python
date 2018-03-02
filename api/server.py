@@ -4,7 +4,7 @@ from flask_cors import CORS
 from util.config import REACT_PORT, API_PORT, SESSION_CACHE_DIR, SESSION_MODE, SESSION_THRESHOLD, RATED_DATASETS_PATH
 from util.meta_path_loader_dispatcher import MetaPathLoaderDispatcher
 from util.graph_stats import GraphStats
-from active_learning.meta_path_selector import RandomMetaPathSelector
+from active_learning.active_learner import RandomSelectionAlgorithm
 import json
 import os
 import time
@@ -24,14 +24,13 @@ app.config.from_object(__name__)
 app.config["SECRET_KEY"] = "37Y,=i9.,U3RxTx92@9j9Z[}"
 Session(app)
 
-if REACT_PORT is not 80:
-    CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://localhost:{}".format(REACT_PORT)}})
-else:
-    CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://localhost"}})
+#TODO revert
+CORS(app, supports_credentials=True, resources='*')
 
 
 def run(port, hostname, debug_mode):
     app.run(host=hostname, port=port, debug=debug_mode, threaded=True)
+
 
 @app.route('/login', methods=["POST", "GET"])
 def login():
@@ -50,9 +49,10 @@ def login():
         meta_paths = meta_path_loader.load_meta_paths()
         # TODO get Graph stats for current dataset
         graph_stats = GraphStats()
-        session['meta_path_distributor'] = RandomMetaPathSelector(meta_paths=meta_paths)
+        session['active_learning_algorithm'] = RandomSelectionAlgorithm(meta_paths=meta_paths)
         session['meta_path_id'] = 1
         session['rated_meta_paths'] = []
+        # TODO feed this selection to the ALgorithms
         session['selected_node_types'] = build_selection(graph_stats.get_node_types())
         session['selected_edge_types'] = build_selection(graph_stats.get_edge_types())
 
@@ -62,7 +62,7 @@ def login():
 @app.route('/logout')
 def logout():
     rated_meta_paths = {
-        'meta_paths': session['rated_meta_paths'],
+        'meta_paths': session['active_learning_algorithm'].create_output(),
         'dataset': session['dataset'],
         'node_type_selection': session['selected_node_types'],
         'edge_type_selection': session['selected_edge_types'],
@@ -167,17 +167,10 @@ def send_next_metapaths_to_rate(batch_size):
         'metapath': ['Phenotype', 'HAS', 'Association', 'HAS', 'SNP', 'HAS', 'Phenotype'],
         'rating': 0.5}
         """
-    meta_path_id = session['meta_path_id']
-    next_batch = session['meta_path_distributor'].get_next(size=batch_size)
-    next_metapaths, last_batch = next_batch[0], next_batch[1]
-    paths = {'meta_paths': [{'id': meta_id,
-                             'metapath': meta_path.as_list(),
-                             'rating': 0.5} for meta_id, meta_path in
-                            zip(range(meta_path_id, meta_path_id + batch_size), next_metapaths)],
-             'next_batch_available': not last_batch}
 
-    meta_path_id += batch_size
-    session['meta_path_id'] = meta_path_id
+    next_metapaths, is_last_batch = session['active_learning_algorithm'].get_next(batch_size=batch_size)
+    paths = {'meta_paths': next_metapaths,
+             'next_batch_available': not is_last_batch}
     if "time" in session.keys():
         session['time_old'] = session['time']
     session['time'] = datetime.datetime.now()
@@ -208,6 +201,7 @@ def receive_rated_metapaths():
     if not request.is_json:
         abort(400)
     rated_metapaths = request.get_json()
+    session['active_learning_algorithm'].update(rated_metapaths)
     for datapoint in rated_metapaths:
         if not all(key in datapoint for key in ['id', 'metapath', 'rating']):
             abort(400)  # malformed input
@@ -217,7 +211,7 @@ def receive_rated_metapaths():
         if "time" in session.keys():
             rated_metapaths.append({'time_to_rate': (time_results_received - session['time']).total_seconds()})
 
-    session['rated_meta_paths'] = session['rated_meta_paths'] + rated_metapaths
+    
     return 'OK'
 
 
