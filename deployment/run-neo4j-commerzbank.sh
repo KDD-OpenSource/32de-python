@@ -17,6 +17,7 @@ docker run \
     --env=-Dcom.sun.management.jmxremote.local.only=false \
     --env=-Dcom.sun.management.jmxremote.authenticate=false \
     --env=-Dcom.sun.management.jmxremote.ssl=false \
+    --env=NEO4J_AUTH=neo4j/${COMMERZBANK_PWD} \
     -d \
     --name neo4j-graph-algo-container-commerzbank \
     neo4j-graph-algorithms
