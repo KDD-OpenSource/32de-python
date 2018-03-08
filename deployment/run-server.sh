@@ -4,4 +4,5 @@ docker rm server-container
 docker run --name server-container \
            --publish=${1:-8000}:8000 \
            -d \
+           -e METAEXP_DEV=${2:-'false'}\
            server
