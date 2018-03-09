@@ -4,7 +4,7 @@ FROM jupyter/scipy-notebook
 
 USER root
 
-RUN conda install -c ostrokach-forge graph-tool --quiet --yes
+RUN conda install --yes -c ostrokach-forge graph-tool
 RUN pip install graphviz
 
 COPY requirements.txt /32de-python/
