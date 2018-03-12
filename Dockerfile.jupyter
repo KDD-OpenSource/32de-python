@@ -1,0 +1,16 @@
+# Based on Jupyter's Scipy-Notebook
+# https://github.com/jupyter/docker-stacks/blob/master/scipy-notebook/Dockerfile
+FROM jupyter/scipy-notebook
+
+USER root
+
+RUN conda install --yes -c ostrokach-forge graph-tool
+RUN apt-get update && apt-get install -y graphviz
+RUN pip install graphviz
+RUN pip install vext
+RUN pip install vext.gi
+
+COPY requirements.txt /32de-python/
+RUN pip install -r /32de-python/requirements.txt
+
+USER $NB_UID
