@@ -1,6 +1,6 @@
 from typing import List, Tuple
 import numpy
-from sklearn.linear_model import HuberRegressor
+from sklearn.ensemble import RandomForestRegressor
 
 from util.datastructures import MetaPathRatingGraph
 from util.datastructures import MetaPath
@@ -43,7 +43,7 @@ class DomainScoring():
         self.classifier = self.classifier.fit(self._preprocess(x_train), y_train)
 
         if test_size:
-            print('Test accuracy is {}'.format(self.classifier.score(X=self._preprocess(x_test), y=y_test)))
+            self._test_score(x_test, y_test)
 
     def predict(self, metapath_unrated: List[MetaPath]) -> List[Tuple[MetaPath, int]]:
         """
@@ -110,6 +110,9 @@ class DomainScoring():
 
         return metapath_pairs, metapath_labels
 
+    def _test_score(self, x_test, y_test):
+        print('Test accuracy is {}'.format(self.classifier.score(X=self._preprocess(x_test), y=y_test)))
+
 class DomainScoringRegressor(DomainScoring):
 
     def __init__(self):
@@ -117,7 +120,7 @@ class DomainScoringRegressor(DomainScoring):
         Extracts the domain value of meta-paths via regression.
         """
         super()
-        self.classifier = HuberRegressor()
+        self.classifier = RandomForestRegressor()
 
     def _extract_data_labels(self, metapath_graph: MetaPathRatingGraph) -> (List[Tuple[MetaPath]], List[int]):
         """
@@ -138,3 +141,12 @@ class DomainScoringRegressor(DomainScoring):
             metapath_labels.append(-distance)  # >
 
         return metapath_pairs, metapath_labels
+
+    def _test_score(self, x_test, y_test):
+        """
+        Converts regression result into a binary classification and uses mean accuracy.
+        """
+        test_predict = self.classifier.predict(self._preprocess(x_test))
+        score = numpy.mean(numpy.logical_and(numpy.array(y_test) > 0, numpy.array(test_predict) > 0))
+        print('Test accuracy is {}'.format(score))
+        print('R^2 is {}'.format(self.classifier.score(X=self._preprocess(x_test), y=y_test)))
