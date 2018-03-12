@@ -1,0 +1,9 @@
+FROM server:latest
+EXPOSE 8888
+
+RUN apt-get update && apt-get install -y graphviz
+RUN pip3 install jupyter
+
+COPY . /32de-python/
+
+ENTRYPOINT ["jupyter", "notebook", "--config", "deployment/jupyter_notebook_config.py"]
