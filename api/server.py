@@ -4,7 +4,7 @@ from flask_cors import CORS
 from util.config import REACT_PORT, API_PORT, SESSION_CACHE_DIR, SESSION_MODE, SESSION_THRESHOLD, RATED_DATASETS_PATH
 from util.meta_path_loader_dispatcher import MetaPathLoaderDispatcher
 from util.graph_stats import GraphStats
-from active_learning.active_learner import RandomSelectionAlgorithm
+from active_learning.active_learner import UncertaintySamplingAlgorithm
 import json
 import os
 import time
@@ -49,7 +49,7 @@ def login():
         meta_paths = meta_path_loader.load_meta_paths()
         # TODO get Graph stats for current dataset
         graph_stats = GraphStats()
-        session['active_learning_algorithm'] = RandomSelectionAlgorithm(meta_paths=meta_paths)
+        session['active_learning_algorithm'] = UncertaintySamplingAlgorithm(meta_paths=meta_paths,hypothesis='Gaussian Process')
         session['meta_path_id'] = 1
         session['rated_meta_paths'] = []
         # TODO feed this selection to the ALgorithms
