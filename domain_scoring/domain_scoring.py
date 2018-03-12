@@ -1,5 +1,7 @@
 from typing import List, Tuple
 import numpy
+from sklearn.linear_model import HuberRegressor
+
 from util.datastructures import MetaPathRatingGraph
 from util.datastructures import MetaPath
 from util.lists import all_pairs
@@ -73,8 +75,8 @@ class DomainScoring():
         """
         Transforms the classified ordering of all meta-paths pairs to the domain values.
 
-        :param inferred_ratings: user-defined and inferred rating for all meta-paths
-        :return: Total order of all meta-paths with values in [0,1]
+        :param inferred_ratings: user-defined and inferred rating for all meta-paths.
+        :return: Total order of all meta-paths with values in [0,1].
         """
 
         return self.domain_value_transformer.transform(metapaths_pairs, classification)
@@ -89,10 +91,10 @@ class DomainScoring():
 
     def _extract_data_labels(self, metapath_graph: MetaPathRatingGraph) -> (List[Tuple[MetaPath]], List[int]):
         """
-        Computes all pairwise tuples (a, b) of the meta-paths with their feature vector. If a is ranked higher than b
+        Computes all pairwise tuples (a, b) of the meta-paths. If a is ranked higher than b
         a > b then the label is 1, 0 otherwise.
 
-        :param metapath_graph: The meta-path graph representing the ordering of all meta-path
+        :param metapath_graph: The meta-path graph representing the ordering of all meta-path.
         :return: (x, y) The feature vector and class labels.
         """
 
@@ -105,5 +107,34 @@ class DomainScoring():
 
             metapath_pairs.append((superior, inferior))
             metapath_labels.append(LARGER)  # >
+
+        return metapath_pairs, metapath_labels
+
+class DomainScoringRegressor(DomainScoring):
+
+    def __init__(self):
+        """
+        Extracts the domain value of meta-paths via regression.
+        """
+        super()
+        self.classifier = HuberRegressor()
+
+    def _extract_data_labels(self, metapath_graph: MetaPathRatingGraph) -> (List[Tuple[MetaPath]], List[int]):
+        """
+        Computes all pairwise distances (a, b) of the meta-paths.
+
+        :param metapath_graph: The meta-path graph representing the ordering of all meta-path.
+        :return: (x, y) The meta-paths pairs and their respective distance.
+        """
+
+        metapath_pairs = []
+        metapath_labels = []
+
+        for superior, inferior, distance in metapath_graph.stream_meta_path_distances():
+            metapath_pairs.append((inferior, superior))
+            metapath_labels.append(distance)  # <
+
+            metapath_pairs.append((superior, inferior))
+            metapath_labels.append(-distance)  # >
 
         return metapath_pairs, metapath_labels
