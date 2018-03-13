@@ -1,4 +1,5 @@
 from util.datastructures import MetaPath
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import (RBF, Matern, RationalQuadratic,
                                               ExpSineSquared, DotProduct,
@@ -42,13 +43,21 @@ class GaussianProcessHypothesis:
     def __init__(self, meta_paths):
         kernel = 1.0 * RBF(length_scale=1.0, length_scale_bounds=(1e-1, 10.0))
         self.gp = GaussianProcessRegressor(kernel=kernel)
-        self.meta_paths = self._transform(meta_paths)
+        self.meta_paths = self._tfidf_transform(meta_paths)
 
-    def _transform(self,meta_paths):
+    def _length_based_transform(self,meta_paths):
         """
         Trivial transformation into feature space of length x unique_length.
         """
         return np.array([[len(mp), len(set(mp.as_list()))] for mp in meta_paths])
+
+    def _tfidf_transform(self,meta_paths):
+        """
+        Transform the metapaths as tfidf vectors.
+        """
+        vectorizer = TfidfVectorizer(analyzer='word', token_pattern='\\b\\w+\\b')
+        vectorizer.fit([str(mp) for mp in meta_paths])
+        return vectorizer.transform(map(str, meta_paths)).toarray()
 
     def update(self, idx, ratings):
         if len(idx) == 0:
