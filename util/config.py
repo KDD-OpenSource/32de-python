@@ -3,6 +3,8 @@ import os
 # algorithms
 RESEARCH_MODE = "research"
 BASELINE_MODE = "baseline"
+# development
+RANDOM_STATE = 42 # change it to something random if it should not be reconstructive.
 # server
 REACT_PORT = 80
 API_PORT = 8000

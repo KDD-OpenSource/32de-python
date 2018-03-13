@@ -5,6 +5,7 @@ from sklearn.ensemble import RandomForestRegressor
 from util.datastructures import MetaPathRatingGraph
 from util.datastructures import MetaPath
 from util.lists import all_pairs
+from util.config import RANDOM_STATE
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split
@@ -20,21 +21,25 @@ class DomainScoring():
         """
         # The token_pattern also allows single character strings which the default doesn't allow
         self.vectorizer = TfidfVectorizer(analyzer='word', token_pattern='\\b\\w+\\b')
-        self.classifier = DecisionTreeClassifier(random_state=42)
+        self.random_state = RANDOM_STATE
+        self.classifier = DecisionTreeClassifier(random_state=self.random_state)
         self.domain_value_transformer = NaiveTransformer()
 
-    def fit(self, metapath_graph: MetaPathRatingGraph, test_size: float = False) -> None:
+    def fit(self, metapath_graph: MetaPathRatingGraph, test_size: float = None) -> None:
         """
         Fits a classifier to predict a meta-path ordering.
-        :param test_size: Specify size of test set if a test accuracy should be reported
         :param metapath_graph: already ordered meta-path used as a training set.
+        :param test_size: Specify size of test set if a test accuracy should be reported.
+                          If empty or None is specified no accuracy is reported.
         :return: Nothing.
         """
         self._fit_vectorizer(metapath_graph)
         x, y = self._extract_data_labels(metapath_graph)
 
-        if test_size:
-            x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=test_size, random_state=42,
+        if test_size is not None:
+            x_train, x_test, y_train, y_test = train_test_split(x, y,
+                                                                test_size=test_size,
+                                                                random_state=self.random_state,
                                                                 shuffle=True)
         else:
             x_train = x
@@ -54,7 +59,7 @@ class DomainScoring():
         x_predict = all_pairs(metapath_unrated)
         y_predict = self.classifier.predict(self._preprocess(x_predict))
 
-        return self.transform_to_domain_values(x_predict, y_predict)
+        return self._transform_to_domain_values(x_predict, y_predict)
 
     def _preprocess(self, data: List[Tuple[MetaPath, MetaPath]]) -> List[List[int]]:
         """
