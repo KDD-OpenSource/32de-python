@@ -14,7 +14,7 @@ class DomainScoringTest(unittest.TestCase):
     def test_extract_features_labels(self):
         self.assertEqual(
             ([(1, "B"), ("B", 1), (1, "C"), ("C", 1), ("B", "C"), ("C", "B")], [0, 1, 0, 1, 0, 1]),
-            self.ds._extract_training_data_labels(self.ranking_graph))
+            self.ds._extract_data_labels(self.ranking_graph))
 
     def test_fit_vectorizer(self):
         self.assertIsNone(self.ds._fit_vectorizer(self.ranking_graph))
