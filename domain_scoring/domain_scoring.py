@@ -3,6 +3,7 @@ import numpy
 from util.datastructures import MetaPathRatingGraph
 from util.datastructures import MetaPath
 from util.lists import all_pairs
+from util.config import RANDOM_STATE
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split
@@ -18,7 +19,7 @@ class DomainScoring():
         """
         # The token_pattern also allows single character strings which the default doesn't allow
         self.vectorizer = TfidfVectorizer(analyzer='word', token_pattern='\\b\\w+\\b')
-        self.random_state = numpy.random.randint(0, 100) + 42
+        self.random_state = RANDOM_STATE
         self.classifier = DecisionTreeClassifier(random_state=self.random_state)
         self.domain_value_transformer = NaiveTransformer()
 
@@ -56,7 +57,7 @@ class DomainScoring():
         x_predict = all_pairs(metapath_unrated)
         y_predict = self.classifier.predict(self._preprocess(x_predict))
 
-        return self.transform_to_domain_values(x_predict, y_predict)
+        return self._transform_to_domain_values(x_predict, y_predict)
 
     def _preprocess(self, data: List[Tuple[MetaPath, MetaPath]]) -> List[List[int]]:
         """
