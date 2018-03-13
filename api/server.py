@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request, abort, session
 from flask_session import Session
 from flask_cors import CORS
-from util.config import REACT_PORT, API_PORT, SESSION_CACHE_DIR, SESSION_MODE, SESSION_THRESHOLD, RATED_DATASETS_PATH
+from util.config import SERVER_PATH, REACT_PORT, API_PORT, SESSION_CACHE_DIR, SESSION_MODE, SESSION_THRESHOLD, RATED_DATASETS_PATH
 from util.meta_path_loader_dispatcher import MetaPathLoaderDispatcher
 from util.graph_stats import GraphStats
 from active_learning.meta_path_selector import RandomMetaPathSelector
@@ -24,10 +24,12 @@ app.config.from_object(__name__)
 app.config["SECRET_KEY"] = "37Y,=i9.,U3RxTx92@9j9Z[}"
 Session(app)
 
-if REACT_PORT is not 80:
-    CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://localhost:{}".format(REACT_PORT)}})
-else:
-    CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://localhost"}})
+#TODO: Fix CORS origins specification
+#if REACT_PORT is not 80:
+#    CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://{}:{}".format(SERVER_PATH, REACT_PORT)}})
+#else:
+#    CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://{}".format(SERVER_PATH)}})
+CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
 
 
 def run(port, hostname, debug_mode):
