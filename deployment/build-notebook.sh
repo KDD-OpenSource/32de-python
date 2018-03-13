@@ -1,2 +1,2 @@
 #!/bin/bash
-docker build -t notebook -f Dockerfile.jupyter ${1:-.}
+docker build -t notebook -f Dockerfile-Notebook ${1:-.}
