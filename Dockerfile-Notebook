@@ -1,9 +1,16 @@
 FROM server:latest
-EXPOSE 8888
 
 RUN apt-get update && apt-get install -y graphviz
 RUN pip3 install jupyter
 
+# Add Tini. Tini operates as a process subreaper for jupyter. This prevents
+# kernel crashes.
+ENV TINI_VERSION v0.6.0
+ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /usr/bin/tini
+RUN chmod +x /usr/bin/tini
+ENTRYPOINT ["/usr/bin/tini", "--"]
+
 COPY . /32de-python/
 
-ENTRYPOINT ["jupyter", "notebook", "--config", "deployment/jupyter_notebook_config.py"]
+EXPOSE 8888
+CMD ["jupyter", "notebook", "--config", "deployment/jupyter_notebook_config.py"]
