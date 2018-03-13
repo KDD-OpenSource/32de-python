@@ -122,7 +122,7 @@ class RandomSelectionAlgorithm(ActiveLearningAlgorithm):
 
 class UncertaintySamplingAlgorithm(ActiveLearningAlgorithm):
     """
-        An active learning algorithm, that asks for randomly labeled instances.
+        An active learning algorithm, that requests labels on the data he is most uncertain of.
     """
 
     VISITED = 0
@@ -141,7 +141,6 @@ class UncertaintySamplingAlgorithm(ActiveLearningAlgorithm):
         self.visited = np.array([self.NOT_VISITED] * len(meta_paths))
         self.random = np.random.RandomState(seed=seed)
         self.hypothesis = self.available_hypotheses[hypothesis](meta_paths=meta_paths)
-
 
     def initial_label_request(self, seed_size):
         return self.get_next(batch_size=seed_size)
@@ -169,13 +168,18 @@ class UncertaintySamplingAlgorithm(ActiveLearningAlgorithm):
             batch_size = sum(self.visited)
 
         std = self.hypothesis.predict_std(range(len(self.meta_paths)))
+        std = std[np.where(self.visited)]
         most_uncertain_idx = np.argpartition(std, -batch_size)[-batch_size:]
-
+        most_uncertain_ids = np.where(self.visited)[0][most_uncertain_idx]
         mps = [{'id': int(meta_id),
-                'metapath': meta_path.as_list(),
+                'metapath': meta_path,
                 'rating': self.standard_rating} for meta_id, meta_path in
-               zip(most_uncertain_idx, self.meta_paths[most_uncertain_idx])]
+               zip(most_uncertain_ids, self.meta_paths[most_uncertain_idx])]
         return mps, is_last_batch
+
+    def get_all_predictions(self):
+        idx = range(len(self.meta_paths))
+        return [{'id': id, 'rating': rating, 'metapath': self.meta_paths[id]} for id, rating in zip(idx, self.hypothesis.predict_rating(idx))]
 
     def create_output(self):
         mps = [{'id': int(meta_id[0]),

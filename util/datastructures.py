@@ -7,14 +7,35 @@ class MetaPath:
     _edges = None
     _nodes = None
 
-    def __init__(self, nodes: List[str] = [], edges: List[str] = []):
-        assert (len(nodes) - 1 == len(edges)) or (
-            len(nodes) == 0 and len(edges) == 0), "Invalid path: number of edges and nodes do not match."
-        self._edges = edges
-        self._nodes = nodes
+    def __init__(self, **kwargs):
+        """
+        Create a Metapaths either from 
+        - a list of 'nodes' and 'edges' (ordered)
+        - an 'edge_node_list'
+        If no argument is given, an empty Metapath is created.
+        """
+
+        if 'nodes'  in kwargs.keys() and 'edges'  in kwargs.keys():
+            nodes = kwargs['nodes']
+            edges = kwargs['edges']
+            assert (len(nodes) - 1 == len(edges)) or (
+                len(nodes) == 0 and len(edges) == 0), "Invalid path: number of edges and nodes do not match."
+            self._edges = edges
+            self._nodes = nodes
+
+        elif 'edge_node_list' in kwargs.keys():
+            edge_node_list = kwargs['edge_node_list']
+            self._nodes = edge_node_list[::2]
+            self._edges = edge_node_list[1::2]
+
+        elif len(kwargs) == 0:
+            self._nodes = []
+            self._edges = []
+        else:
+            raise ValueError("Keywords not  valid: {}".format(', '.join(kwargs.keys())))
 
     def is_empty(self) -> bool:
-        return len(self) == 0
+            return len(self) == 0
 
     def as_list(self) -> List[str]:
         representation = [None] * len(self)
@@ -26,7 +47,7 @@ class MetaPath:
     @staticmethod
     def from_list(meta_path: List):
         assert len(meta_path) % 2 != 0 or len(meta_path) == 0
-        return MetaPath(meta_path[::2], meta_path[1::2])
+        return MetaPath(nodes=meta_path[::2], edges=meta_path[1::2])
 
     @staticmethod
     def from_string(meta_path: str, sep=' '):

@@ -24,8 +24,15 @@ app.config.from_object(__name__)
 app.config["SECRET_KEY"] = "37Y,=i9.,U3RxTx92@9j9Z[}"
 Session(app)
 
-#TODO revert
-CORS(app, supports_credentials=True, resources='*')
+# Configure Cross Site Scripting
+if REACT_PORT is not 80:
+    # Special react port on server
+    CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://localhost:{}".format(REACT_PORT)}})
+elif __name__ == '__main__':
+    # Flask runs locally, all resources are allowed
+    CORS(app, supports_credentials=True, resources='*')
+else:
+    CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://localhost"}})
 
 
 def run(port, hostname, debug_mode):
@@ -49,7 +56,8 @@ def login():
         meta_paths = meta_path_loader.load_meta_paths()
         # TODO get Graph stats for current dataset
         graph_stats = GraphStats()
-        session['active_learning_algorithm'] = UncertaintySamplingAlgorithm(meta_paths=meta_paths,hypothesis='Gaussian Process')
+        session['active_learning_algorithm'] = UncertaintySamplingAlgorithm(meta_paths=meta_paths,
+                                                                            hypothesis='Gaussian Process')
         session['meta_path_id'] = 1
         session['rated_meta_paths'] = []
         # TODO feed this selection to the ALgorithms
@@ -169,6 +177,8 @@ def send_next_metapaths_to_rate(batch_size):
         """
 
     next_metapaths, is_last_batch = session['active_learning_algorithm'].get_next(batch_size=batch_size)
+    for i in range(len(next_metapaths)):
+        next_metapaths[i]['metapath'] = next_metapaths[i]['metapath'].as_list()
     paths = {'meta_paths': next_metapaths,
              'next_batch_available': not is_last_batch}
     if "time" in session.keys():
@@ -211,7 +221,6 @@ def receive_rated_metapaths():
         if "time" in session.keys():
             rated_metapaths.append({'time_to_rate': (time_results_received - session['time']).total_seconds()})
 
-    
     return 'OK'
 
 

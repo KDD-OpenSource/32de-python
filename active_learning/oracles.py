@@ -1,41 +1,117 @@
 from util.datastructures import MetaPath
-from typing import Dict
+from active_learning.active_learner import UncertaintySamplingAlgorithm
+from util.meta_path_loader_dispatcher import MetaPathLoaderDispatcher
+from typing import Dict, List
+from abc import ABC, abstractmethod
+import json
+import logging
+import pandas as pd
+
+# Set up logging
+logger = logging.getLogger()
+consoleHandler = logging.StreamHandler()
+logger.addHandler(consoleHandler)
+logger.setLevel(logging.DEBUG)
 
 
-class Oracle:
+class Oracle(ABC):
     """
     Abstract class for the Oracle the Active Learner interacts with. 
     """
 
-    # statistics on the iteraction with the oracle
-    number_of_instances_labeled = None  # keep track of how many times the oracle was asked to label a meta-path
+    # Required parameters for the algorithm.
+    # Should be initialized in __init__
+    algorithm = None
+    batch_size = None
+    seed = None
 
-    def __init__(self):
-        self.number_of_instances_labeled = 0
+    def compute(self) -> pd.DataFrame:
+        """
+        Label the datapoints according to the ActiveLearningAlgorithm and collect statistics.
+        Communication is via ids of meta-paths which are assumed to be zero-indexed.
+        
+        :return: pd.Dataframe with statistics about the collection process.
+        """
+        statistics = []
+        is_last_batch = False
 
-    # TODO Think about whether exclusion is own class or 0
-    def rate_meta_path(self, meta_path: MetaPath) -> float:
-        self.number_of_instances_labeled += 1
-        return self._rate_meta_path(meta_path)
+        while self._wants_to_continue() == True and not is_last_batch:
+            # Retrieve next batch
+            next_metapaths, is_last_batch = self.algorithm.get_next(batch_size=self.batch_size)
+            ids_to_be_rated = [mp['id'] for mp in next_metapaths]
+            logger.info("\tRating paths:\t{}".format(ids_to_be_rated))
 
-    def _rate_meta_path(self, meta_path: MetaPath) -> float:
+            # Rate paths and update algorithm
+            rated_metapaths = self._rate_meta_paths(next_metapaths)
+            self.algorithm.update(rated_metapaths)
+
+            # Log statistics
+            mse = self.compute_mse()
+            stats = {'mse': mse}
+            statistics.append(stats)
+
+            logger.info('\n'.join(["\t{}:\t{}".format(key, value) for key, value in stats.items()]))
+            logger.info("")
+        logger.info("Finished rating paths.")
+        return pd.DataFrame.from_records(statistics)
+
+    def compute_mse(self) -> float:
+        """
+        Calculate the Mean Squared Error between the predicted ratings and the ground truth.
+        """
+        predictions = self.algorithm.get_all_predictions()
+        return sum([pow(self._rate_meta_path(p) - p['rating'], 2) for p in predictions])
+
+    def _rate_meta_paths(self, metapaths: List[Dict]) -> List[Dict]:
+        """
+        Rate a list of meta-paths according to their id.
+        """
+        return [{'id': mp['id'], 'rating': self._rate_meta_path(mp)} for mp in metapaths]
+
+    @abstractmethod
+    def _rate_meta_path(self, mp: Dict) -> float:
+        """
+        Rate a meta-path according to its importance to the oracle.
+        """
         raise NotImplementedError("Should have implemented this.")
 
-    def wants_to_continue(self) -> bool:
+    @abstractmethod
+    def _wants_to_continue(self) -> bool:
+        """
+        Determine whether the oracle wants to continue rating more paths.
+        """
         raise NotImplementedError("Should have implemented this.")
 
 
 class CmdLineOracle(Oracle):
     """
     CmdLineOracle interacts with the command line.
+    
+    WARNING: This is still buggy, because you have to rate all the paths in one go regardless of batch size.
+             No interactivity is given.
+             Keeping it for development without user interface.
+    
     """
 
-    def _rate_meta_path(self, meta_path: MetaPath) -> float:
-        print("Please rate this meta-path: {}".format(meta_path))
+    def __init__(self, dataset_name, batch_size, seed=42):
+        # Set configuration of this oracle
+        self.batch_size = batch_size
+
+        # Load the dataset and the algorithm to operate on
+        meta_path_loader = MetaPathLoaderDispatcher().get_loader(dataset_name)
+        meta_paths = meta_path_loader.load_meta_paths()
+        self.algorithm = UncertaintySamplingAlgorithm(meta_paths=meta_paths, hypothesis='Gaussian Process', seed=seed)
+        self.rating = {}
+
+    def _rate_meta_path(self, metapath: Dict) -> float:
+        if metapath['id'] in self.rating.keys():
+            return self.rating[metapath['id']]
+        print("Please rate this meta-path: {}".format(metapath['metapath']))
         rating = input()
+        self.rating[metapath['id']] = rating
         return float(rating)
 
-    def wants_to_continue(self) -> bool:
+    def _wants_to_continue(self) -> bool:
         print("Do you want to continue rating? [y/n]")
         keep_going = input()
         if keep_going in 'no':
@@ -45,31 +121,74 @@ class CmdLineOracle(Oracle):
 
 class MockOracle(Oracle):
     """
-    MockOracle rates all meta-paths with 1 and never wants to continue to rate more.
+    MockOracle rates all meta-paths with 1.
     """
+
+    def __init__(self, dataset_name: str, batch_size=5, seed=42):
+        # Set configuration of this oracle
+        self.batch_size = batch_size
+
+        # Load the dataset and the algorithm to operate on
+        meta_path_loader = MetaPathLoaderDispatcher().get_loader(dataset_name)
+        meta_paths = meta_path_loader.load_meta_paths()
+        self.algorithm = UncertaintySamplingAlgorithm(meta_paths=meta_paths, hypothesis='Gaussian Process', seed=seed)
 
     def _rate_meta_path(self, meta_path: MetaPath) -> float:
         return 1.0
 
-    def wants_to_continue(self) -> bool:
-        return self.number_of_instances_labeled < 5
+    def _wants_to_continue(self) -> bool:
+        return True
 
 
-class SpecialistOracle(Oracle):
+class UserOracle(Oracle):
     """
-    A  SpecialistOracle rates all meta-paths according to its rating dictionary.
+    An Oracle designed to use a json-file containing rated Meta-Paths as labels.
     """
 
-    rating = None
-    maximal_queries = None  # maximal number of queries tolerated by the oracle
+    def __init__(self, ground_truth_path: str, dataset_name: str, default_rating=0.5, batch_size=5,
+                 is_zero_indexed=True, seed=42):
+        # Set configuration of this oracle
+        self.batch_size = batch_size
+        self.is_zero_indexed = is_zero_indexed
+        self.default_rating = default_rating
 
-    def __init__(self, rating: Dict[MetaPath, float], maximal_queries: int):
-        super.__init__(self)
-        self.rating = rating
-        self.maximal_queries = maximal_queries
+        # Load the dataset and the algorithm to operate on
+        meta_path_loader = MetaPathLoaderDispatcher().get_loader(dataset_name)
+        meta_paths = meta_path_loader.load_meta_paths()
+        self.algorithm = UncertaintySamplingAlgorithm(meta_paths=meta_paths, hypothesis='Gaussian Process', seed=seed)
 
-    def _rate_meta_path(self, meta_path: MetaPath) -> float:
-        return self.rating[meta_path]
+        # Load the rating into the oracle
+        self.rating = self.load_rating_from(ground_truth_path)
 
-    def wants_to_continue(self) -> bool:
-        return self.number_of_instances_labeled < self.maximal_queries
+    def load_rating_from(self, ground_truth_path: str):
+        """
+        Loads a dataset of saved ratings.
+        """
+        data = json.load(open(ground_truth_path, "r", encoding="utf8"))
+        rating = {}
+        i = 0
+        first = True
+        for probably_path in data["meta_paths"]:
+            # Ignore first time_to_rate
+            if first:
+                first = False
+                continue
+            i += 1
+            if i == 6:
+                # Ignore time_to_rate
+                i = 0
+            else:
+                if 'time_to_rate' not in probably_path.keys():
+                    rating[probably_path['id']] = probably_path['rating']
+        return rating
+
+    def _rate_meta_path(self, metapath: Dict) -> float:
+        id = metapath['id'] if self.is_zero_indexed else metapath['id'] + 1
+        try:
+            return float(self.rating[id])
+        except KeyError:
+            logger.info("You did not rate path {}".format(metapath['id']))
+            return self.default_rating
+
+    def _wants_to_continue(self) -> bool:
+        return True
