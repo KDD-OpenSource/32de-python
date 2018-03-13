@@ -125,7 +125,7 @@ class DomainScoringRegressor(DomainScoring):
         Extracts the domain value of meta-paths via regression.
         """
         super().__init__()
-        self.classifier = RandomForestRegressor()
+        self.classifier = RandomForestRegressor(random_state=self.random_state)
 
     def _extract_data_labels(self, metapath_graph: MetaPathRatingGraph) -> (List[Tuple[MetaPath]], List[int]):
         """
