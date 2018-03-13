@@ -7,3 +7,8 @@ if not os.path.exists("./log"):
 if "METAEXP_DEV" in os.environ.keys() and os.environ["METAEXP_DEV"] == "true":
     accesslog = "./log/access.log"
 errorlog = "./log/errors.log"
+if "METAEXP_DEV" in os.environ.keys() and os.environ["METAEXP_DEV"] == "true":
+    loglevel = "debug"
+if "METAEXP_HTTPS" in os.environ.keys() and os.environ["METAEXP_HTTPS"] == "true":
+    certfile = "/32de-python/https/api.crt"
+    keyfile = "/32de-python/https/api.key"
