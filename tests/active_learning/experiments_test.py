@@ -21,15 +21,15 @@ class ActiveLearningExperimentsTest(unittest.TestCase):
                            batch_size=3,
                            default_rating=0.5)
         stats = merlin.compute()
-        stats['mse'].plot(title='Merlins Rating')
-        plt.xlabel('iteration')
-        plt.ylabel('mean squared error')
+        #stats['mse'].plot(title='Merlins Rating')
+        #plt.xlabel('iteration')
+        #plt.ylabel('mean squared error')
         #plt.show()
 
         stats = felix.compute()
-        stats['mse'].plot(title='Felix Rating')
-        plt.xlabel('iteration')
-        plt.ylabel('mean squared error')
+        #stats['mse'].plot(title='Felix Rating')
+        #plt.xlabel('iteration')
+        #plt.ylabel('mean squared error')
         #plt.show()
 
     def test_mockOracle(self):
@@ -38,9 +38,9 @@ class ActiveLearningExperimentsTest(unittest.TestCase):
         """
         oracle = MockOracle(dataset_name='Rotten Tomato')
         stats = oracle.compute()
-        stats['mse'].plot(title='MSE')
-        plt.xlabel('iteration')
-        plt.ylabel('mean squared error')
+        #stats['mse'].plot(title='MSE')
+        #plt.xlabel('iteration')
+        #plt.ylabel('mean squared error')
         #plt.show()
 
 
