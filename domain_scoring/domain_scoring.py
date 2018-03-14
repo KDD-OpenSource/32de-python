@@ -12,12 +12,12 @@ Ranking = Tuple[MetaPath, float]
 
 
 class DomainScoring():
-    def __init__(self):
+    def __init__(self, ngram_range=(1,1)):
         """
         Classifies the ordering and extracts the domain value of meta-paths.
         """
         # The token_pattern also allows single character strings which the default doesn't allow
-        self.vectorizer = TfidfVectorizer(analyzer='word', token_pattern='\\b\\w+\\b')
+        self.vectorizer = TfidfVectorizer(analyzer='word', token_pattern='\\b\\w+\\b', ngram_range=ngram_range)
         self.classifier = DecisionTreeClassifier(random_state=42)
         self.domain_value_transformer = NaiveTransformer()
 
