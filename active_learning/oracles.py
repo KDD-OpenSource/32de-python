@@ -1,7 +1,7 @@
 from util.datastructures import MetaPath
 from active_learning.active_learner import UncertaintySamplingAlgorithm
 from util.meta_path_loader_dispatcher import MetaPathLoaderDispatcher
-from typing import Dict, List
+from typing import Dict, List, Callable
 from abc import ABC, abstractmethod
 import json
 import logging
@@ -140,6 +140,33 @@ class MockOracle(Oracle):
         return True
 
 
+class FlexibleOracle(Oracle):
+    """
+    Flexible Oracle that rates all meta-paths according to .
+    """
+
+    def __init__(self, dataset_name: str, rating_func: Callable[[MetaPath], float], batch_size=5, seed=42):
+        # Set configuration of this oracle
+        self.batch_size = batch_size
+        self.rating_func = rating_func
+        self.rating = {}
+
+        # Load the dataset and the algorithm to operate on
+        meta_path_loader = MetaPathLoaderDispatcher().get_loader(dataset_name)
+        meta_paths = meta_path_loader.load_meta_paths()
+        self.algorithm = UncertaintySamplingAlgorithm(meta_paths=meta_paths, hypothesis='Gaussian Process', seed=seed)
+
+    def _rate_meta_path(self, metapath: Dict) -> float:
+        if metapath['id'] in self.rating.keys():
+            return self.rating[metapath['id']]
+        rating = self.rating_func(metapath['metapath'])
+        self.rating[metapath['id']] = rating
+        return rating
+
+    def _wants_to_continue(self) -> bool:
+        return True
+
+
 class UserOracle(Oracle):
     """
     An Oracle designed to use a json-file containing rated Meta-Paths as labels.
@@ -187,7 +214,6 @@ class UserOracle(Oracle):
         try:
             return float(self.rating[id])
         except KeyError:
-            logger.info("You did not rate path {}".format(metapath['id']))
             return self.default_rating
 
     def _wants_to_continue(self) -> bool:
