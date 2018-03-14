@@ -1,47 +1,46 @@
-from typing import List, Iterator
+from typing import List
 from graph_tool.all import *
-
+import numpy
 
 class MetaPath:
-    edges = None
-    nodes = None
+    _edges = None
+    _nodes = None
 
-    def __init__(self):
-        self.edges = []
-        self.nodes = []
 
-    def __init__(self, nodes:List, edges:List):
+
+    def __init__(self, nodes:List[str] = [], edges:List[str] = []):
         assert (len(nodes) - 1 == len(edges)) or (
-        len(nodes) == 0 and len(edges) == 0), "Path is not valid, number of edges and nodes does not compose a path"
-        self.edges = edges
-        self.nodes = nodes
+        len(nodes) == 0 and len(edges) == 0), "Invalid path: number of edges and nodes do not match."
+        self._edges = edges
+        self._nodes = nodes
 
     def is_empty(self) -> bool:
         return len(self) == 0
 
-    def as_list(self) -> List:
+    def as_list(self) -> List[str]:
         representation = [None] * len(self)
-        representation[::2] = self.nodes
-        representation[1::2] = self.edges
+        representation[::2] = self._nodes
+        representation[1::2] = self._edges
         return representation
 
     @staticmethod
-    def from_list(self, meta_path: List):
+    def from_list(meta_path: List):
         assert len(meta_path) % 2 != 0 or len(meta_path) == 0
         return MetaPath(meta_path[::2], meta_path[1::2])
 
     @staticmethod
-    def from_string(self, meta_path: str, sep=' '):
+    def from_string(meta_path: str, sep=' '):
         return MetaPath.from_list(meta_path.split(sep))
 
     def __len__(self) -> int:
-        return len(self.edges) + len(self.nodes)
+        return len(self._edges) + len(self._nodes)
 
     def __str__(self) -> str:
-        return ';'.join(map(str, self.as_list()))
+        return ' '.join(map(str, self.as_list()))
 
 
 class MetaPathRating:
+    # TODO: Define methods
     meta_path = None
     structural_value = None
     domain_value = None
@@ -50,44 +49,98 @@ class MetaPathRating:
         self.meta_path = meta_path
 
 
+class UserOrderedMetaPaths:
+    meta_paths = None
+    distances = None
+
+    def __init__(self, meta_paths: List[MetaPath], distances: List[float] = None):
+        """
+
+        :param distances: Distances between meta-paths on UI
+        :param meta_paths: All meta-paths as ordered by the user
+        which were rated in one "session" (between each click on "Next five")
+        """
+        self.meta_paths = meta_paths
+        self.set_distances(distances)
+
+    def set_distances(self, distances: List[float]) -> None:
+        assert distances is None or len(self.meta_paths) == len(
+            distances), 'Number of meta-paths which is {} doesn\'t match number of passed distances which is {}'.format(
+            len(self.meta_paths), len(distances))
+        self.distances = distances
+
+
 class MetaPathRatingGraph:
-    meta_paths_map = None
-    distance = None
-    g = None
 
-    def __init__(self):
-        self.g = Graph(directed=True)
-        self.distance = self.g.new_edge_property("double")
-        self.meta_paths_map = {}
+    def __init__(self,rating=None):
+        self.graph = Graph(directed=True)
+        self.distance = self.graph.new_edge_property("double")
+        self.meta_path_to_vertex = {}
+        self.vertex_to_meta_path = {}
+        if rating is not None:
+            ordered = sorted(rating.items(), key=lambda tuple: tuple[1])
+            list(map(lambda rated_mp_1, rated_mp_2: self.add_user_rating(rated_mp_1[0], rated_mp_2[0],
+                                                                                rated_mp_2[1] - rated_mp_1[1]),
+                     ordered[:-1], ordered[1:]))
 
-    """
-    :param a: The index of the meta-path will be retrieved or the meta-path is mapped to a new index.
-    """
-
-    def __add_meta_path(self, a: MetaPath) -> None:
-        if a in self.meta_paths_map:
-            v = self.meta_paths_map[a]
+    def __add_meta_path(self, meta_path: MetaPath) -> Vertex:
+        """
+        :param meta_path: The index of the meta-path will be retrieved or the meta-path is mapped to a new index.
+        :return: Return the vertex corresponding to the meta-path
+        """
+        if meta_path in self.meta_path_to_vertex:
+            meta_path_vertex = self.meta_path_to_vertex[meta_path]
         else:
-            v = self.g.add_vertex()
-            self.meta_paths_map[a] = v
-        return v
+            meta_path_vertex = self.graph.add_vertex()
+            self.meta_path_to_vertex[meta_path] = meta_path_vertex
+            self.vertex_to_meta_path[meta_path_vertex] = meta_path
+        return meta_path_vertex
 
-    """
-    :param a: The meta-path, which was rated higher compared to b.
-    :param b: The meta-path, which was rated lower compared to a.
-    :param distance: The distance between meta-paths a and b. 
-    """
+    def add_user_rating(self, superior_meta_path: MetaPath, inferior_meta_path: MetaPath, distance: float) -> None:
+        """
+           :param superior_meta_path: The meta-path, which was rated higher compared to b.
+           :param inferior_meta_path: The meta-path, which was rated lower compared to a.
+           :param distance: The distance between meta-paths a and b.
+        """
+        assert (distance >= 0), "Distance may not be negative"
+        superior_meta_path_vertex = self.__add_meta_path(superior_meta_path)
+        inferior_meta_path_vertex = self.__add_meta_path(inferior_meta_path)
 
-    def add_user_rating(self, a: MetaPath, b: MetaPath, distance: float):
-        id_a = self.__add_meta_path(a)
-        id_b = self.__add_meta_path(b)
+        new_edge_positive = self.graph.add_edge(superior_meta_path_vertex, inferior_meta_path_vertex)
+        self.distance[new_edge_positive] = distance
 
-        new_edge = self.g.add_edge(id_a, id_b)
-        self.distance[new_edge] = distance
+    def number_of_edges(self) -> int:
+        return self.graph.num_edges()
+
+    def number_of_nodes(self) -> int:
+        return self.graph.num_vertices()
 
     def all_nodes(self) -> List[MetaPath]:
-        return list(self.meta_paths_map.keys())
+        return list(self.meta_path_to_vertex.keys())
 
-def all_pair_distances(self) -> Iterator[]:
-        # TODO: we also have to update the distance map.
-        return shortest_distance(self.g, weights=self.distance, directed=True)
+    def all_pair_distances(self) -> PropertyMap:
+        """
+        :return: A Property Map with raw all-pair distances in it.
+        """
+        return shortest_distance(self.graph, weights=self.distance, directed=True)
+
+    def stream_meta_path_distances(self) -> (MetaPath, MetaPath, float):
+        """
+        :return: A stream of MetaPath-Distance-Triple.
+        """
+        dist_map = self.graph.new_vp("double", numpy.inf)
+        for node in self.graph.vertices():
+            distances_from_source = shortest_distance(self.graph, source=node, weights=self.distance, directed=True, dist_map=dist_map)
+            for target_index, distance in enumerate(distances_from_source):
+                if not numpy.isinf(distance) and distance != 0:
+                    yield self.vertex_to_meta_path[node], self.vertex_to_meta_path[self.graph.vertex(target_index)], distance
+
+    def __str__(self):
+        return "MetaPathRating with {} rating(s)".format(len(self.graph.get_edges()))
+
+    def draw(self, filename='log/rating.png'):
+        layout = arf_layout(self.graph, max_iter=0)
+        # TODO: maybe add weights
+        graph_draw(self.graph, pos=layout, vertex_fill_color=[0, 0, 1.0, 1.0],
+                   output=filename)  # , edge_pen_width=pen_width)
+        print('Printed rating to file {}'.format(filename))
