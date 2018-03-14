@@ -10,3 +10,4 @@ scipy
 # TODO: Introduce development (non-deployment) dependencies
 pytest-cov
 Flask-Session
+flask-ask
