@@ -150,8 +150,7 @@ class UncertaintySamplingAlgorithm(ActiveLearningAlgorithm):
         ratings = [mp['rating'] for mp in meta_paths]
         self.visited[idx] = self.VISITED
         self.meta_paths_rating[idx] = ratings
-
-        self.hypothesis.update(idx, ratings)
+        self.hypothesis.update(np.where(self.visited == self.VISITED), self.meta_paths_rating[np.where(self.visited == self.VISITED)])
 
     def has_one_batch_left(self, batch_size):
         if sum(self.visited) < batch_size:
