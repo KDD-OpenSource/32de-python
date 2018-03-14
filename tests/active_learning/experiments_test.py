@@ -1,6 +1,5 @@
 from active_learning.oracles import UserOracle, MockOracle, FlexibleOracle
 from active_learning.rating import length_based
-import matplotlib.pyplot as plt
 import unittest
 
 
@@ -22,16 +21,7 @@ class ActiveLearningExperimentsTest(unittest.TestCase):
                            batch_size=5,
                            default_rating=0.5)
         stats = merlin.compute()
-        # stats['mse'].plot(title='Merlins Rating')
-        # plt.xlabel('iteration')
-        # plt.ylabel('mean squared error')
-        # plt.show()
-
         stats = felix.compute()
-        # stats['mse'].plot(title='Felix Rating')
-        # plt.xlabel('iteration')
-        # plt.ylabel('mean squared error')
-        # plt.show()
 
     def test_mockOracle(self):
         """
@@ -39,11 +29,6 @@ class ActiveLearningExperimentsTest(unittest.TestCase):
         """
         oracle = MockOracle(dataset_name='Rotten Tomato')
         stats = oracle.compute()
-        # stats['mse'].plot(title='MSE')
-        # plt.xlabel('iteration')
-        # plt.ylabel('mean squared error')
-        # plt.show()
-
     def test_flexibleOracle(self):
         """
         Using the a FlexibleOracle for rating the Rotten Tomato dataset.
