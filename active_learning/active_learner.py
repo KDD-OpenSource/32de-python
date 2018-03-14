@@ -108,6 +108,18 @@ class RandomSelectionAlgorithm(ActiveLearningAlgorithm):
                self.visited[meta_id] == self.VISITED]
         return mps
 
+    def _predict(self, id):
+        if self.visited[id] == self.VISITED:
+            return self.meta_paths_rating[id]
+        return sum(self.meta_paths_rating[np.where(self.visited == self.VISITED)])/len(self.meta_paths_rating)
+
+    def _predict_rating(self, idx):
+        return [self._predict(id) for id in idx]
+
+    def get_all_predictions(self):
+        idx = range(len(self.meta_paths))
+        return [{'id': id, 'rating': rating, 'metapath': self.meta_paths[id]} for id, rating in zip(idx, self._predict_rating(idx))]
+
     """
     Functions
     """
