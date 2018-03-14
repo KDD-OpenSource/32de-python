@@ -35,6 +35,7 @@ class DomainScoring():
         """
         self._fit_vectorizer(metapath_graph)
         x, y = self._extract_data_labels(metapath_graph)
+        x = self._preprocess(x)
 
         if test_size is not None:
             x_train, x_test, y_train, y_test = train_test_split(x, y,
@@ -45,10 +46,18 @@ class DomainScoring():
             x_train = x
             y_train = y
 
-        self.classifier = self.classifier.fit(self._preprocess(x_train), y_train)
+        self._fit(x_train, y_train)
 
         if test_size:
             self._test_score(x_test, y_test)
+
+    def _fit(self, x, y) -> None:
+        """
+        Executes the actual fitting of the classifier. Overwrite in subclasses if necessary.
+        :param x: The preprocessed features.
+        :param y: The labels.
+        """
+        self.classifier.fit(x, y)
 
     def predict(self, metapath_unrated: List[MetaPath]) -> List[Tuple[MetaPath, int]]:
         """
@@ -116,7 +125,7 @@ class DomainScoring():
         return metapath_pairs, metapath_labels
 
     def _test_score(self, x_test, y_test):
-        print('Test accuracy is {}'.format(self.classifier.score(X=self._preprocess(x_test), y=y_test)))
+        print('Test accuracy is {}'.format(self.classifier.score(X=x_test, y=y_test)))
 
 class DomainScoringRegressor(DomainScoring):
 
@@ -151,7 +160,16 @@ class DomainScoringRegressor(DomainScoring):
         """
         Converts regression result into a binary classification and uses mean accuracy.
         """
-        test_predict = self.classifier.predict(self._preprocess(x_test))
+        test_predict = self.classifier.predict(x_test)
         score = numpy.mean(numpy.logical_and(numpy.array(y_test) > 0, numpy.array(test_predict) > 0))
         print('Test accuracy is {}'.format(score))
-        print('R^2 is {}'.format(self.classifier.score(X=self._preprocess(x_test), y=y_test)))
+        print('R^2 is {}'.format(self.classifier.score(X=x_test, y=y_test)))
+
+# TODO: WIP
+class DomainScoringNeuralNet(DomainScoring):
+
+    def __init__(self):
+        """
+        Extracts the domain value of meta-paths by training a neural network.
+        """
+        super().__init__()
