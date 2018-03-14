@@ -24,8 +24,8 @@ class DomainScoringTest(unittest.TestCase):
         expected = [[0, 0, 1, 1, 0, 0]]
 
         metapaths = [
-            MetaPath(["C"]),
-            MetaPath([1])
+            MetaPath(edge_node_list=["C"]),
+            MetaPath(edge_node_list=[1])
         ]
 
         metapaths_tuples = [(metapaths[0], metapaths[1])]
