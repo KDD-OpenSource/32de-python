@@ -11,7 +11,7 @@ import pandas as pd
 logger = logging.getLogger()
 consoleHandler = logging.StreamHandler()
 logger.addHandler(consoleHandler)
-logger.setLevel(logging.DEBUG)
+#logger.setLevel(logging.DEBUG)
 
 
 class Oracle(ABC):
@@ -94,14 +94,14 @@ class CmdLineOracle(Oracle):
     
     """
 
-    def __init__(self, dataset_name, batch_size, seed=42):
+    def __init__(self, dataset_name, batch_size, seed=42,algorithm=UncertaintySamplingAlgorithm, algo_params={'hypothesis':'Gaussian Process'}):
         # Set configuration of this oracle
         self.batch_size = batch_size
 
         # Load the dataset and the algorithm to operate on
         meta_path_loader = MetaPathLoaderDispatcher().get_loader(dataset_name)
         meta_paths = meta_path_loader.load_meta_paths()
-        self.algorithm = UncertaintySamplingAlgorithm(meta_paths=meta_paths, hypothesis='Gaussian Process', seed=seed)
+        self.algorithm = algorithm(meta_paths=meta_paths, seed=seed, **algo_params)
         self.rating = {}
 
     def _rate_meta_path(self, metapath: Dict) -> float:
@@ -125,14 +125,14 @@ class MockOracle(Oracle):
     MockOracle rates all meta-paths with 1.
     """
 
-    def __init__(self, dataset_name: str, batch_size=5, seed=42):
+    def __init__(self, dataset_name: str, batch_size=5, seed=42, algorithm=UncertaintySamplingAlgorithm, algo_params={'hypothesis':'Gaussian Process'}):
         # Set configuration of this oracle
         self.batch_size = batch_size
 
         # Load the dataset and the algorithm to operate on
         meta_path_loader = MetaPathLoaderDispatcher().get_loader(dataset_name)
         meta_paths = meta_path_loader.load_meta_paths()
-        self.algorithm = UncertaintySamplingAlgorithm(meta_paths=meta_paths, hypothesis='Gaussian Process', seed=seed)
+        self.algorithm = algorithm(meta_paths=meta_paths,seed=seed, **algo_params)
 
     def _rate_meta_path(self, meta_path: MetaPath) -> float:
         return 1.0
@@ -146,7 +146,7 @@ class FlexibleOracle(Oracle):
     Flexible Oracle that rates all meta-paths according to .
     """
 
-    def __init__(self, dataset_name: str, rating_func: Callable[[MetaPath], float], batch_size=5, seed=42):
+    def __init__(self, dataset_name: str, rating_func: Callable[[MetaPath], float], batch_size=5, seed=42,algorithm=UncertaintySamplingAlgorithm, algo_params={'hypothesis':'Gaussian Process'}):
         # Set configuration of this oracle
         self.batch_size = batch_size
         self.rating_func = rating_func
@@ -155,7 +155,7 @@ class FlexibleOracle(Oracle):
         # Load the dataset and the algorithm to operate on
         meta_path_loader = MetaPathLoaderDispatcher().get_loader(dataset_name)
         meta_paths = meta_path_loader.load_meta_paths()
-        self.algorithm = UncertaintySamplingAlgorithm(meta_paths=meta_paths, hypothesis='Gaussian Process', seed=seed)
+        self.algorithm = algorithm(meta_paths=meta_paths, seed=seed, **algo_params)
 
     def _rate_meta_path(self, metapath: Dict) -> float:
         if metapath['id'] in self.rating.keys():
@@ -174,7 +174,7 @@ class UserOracle(Oracle):
     """
 
     def __init__(self, ground_truth_path: str, dataset_name: str, default_rating=0.5, batch_size=5,
-                 is_zero_indexed=True, seed=42):
+                 is_zero_indexed=True, seed=42, algorithm=UncertaintySamplingAlgorithm, algo_params={'hypothesis':'Gaussian Process'}):
         # Set configuration of this oracle
         self.batch_size = batch_size
         self.is_zero_indexed = is_zero_indexed
@@ -183,7 +183,7 @@ class UserOracle(Oracle):
         # Load the dataset and the algorithm to operate on
         meta_path_loader = MetaPathLoaderDispatcher().get_loader(dataset_name)
         meta_paths = meta_path_loader.load_meta_paths()
-        self.algorithm = UncertaintySamplingAlgorithm(meta_paths=meta_paths, hypothesis='Gaussian Process', seed=seed)
+        self.algorithm = algorithm(meta_paths=meta_paths, seed=seed, **algo_params)
 
         # Load the rating into the oracle
         self.rating = self.load_rating_from(ground_truth_path)
