@@ -60,7 +60,8 @@ class Oracle(ABC):
         Calculate the Mean Squared Error between the predicted ratings and the ground truth.
         """
         predictions = self.algorithm.get_all_predictions()
-        return sum([pow(self._rate_meta_path(p) - p['rating'], 2) for p in predictions])
+        squared_values = [pow(self._rate_meta_path(p) - p['rating'], 2) for p in predictions]
+        return sum(squared_values)/len(squared_values)
 
     def _rate_meta_paths(self, metapaths: List[Dict]) -> List[Dict]:
         """
