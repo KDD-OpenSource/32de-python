@@ -1,4 +1,5 @@
-from active_learning.oracles import UserOracle, MockOracle, FlexibleOracle
+from active_learning.oracles import UserOracle, FlexibleOracle
+from active_learning.evaluation import Evaluator
 from active_learning.active_learner import RandomSelectionAlgorithm, GPSelect_Algorithm
 from active_learning.rating import length_based
 import unittest
@@ -12,49 +13,38 @@ class ActiveLearningExperimentsTest(unittest.TestCase):
         print("Hear, hear!"
               "The Oracle of Merlin and Felix ... ")
 
-        merlin = UserOracle(dataset_name='Rotten Tomato',
-                            ground_truth_path='rated_datasets/Rotten Tomato_Merlin_1519148528.2417703.json',
-                            is_zero_indexed=False,
-                            batch_size=5)
-        felix = UserOracle(dataset_name='Rotten Tomato',
-                           ground_truth_path='rated_datasets/Rotten Tomato_mcfelix_1519142949.904623.json',
-                           is_zero_indexed=False,
-                           batch_size=5,
-                           default_rating=0.5)
-        stats = merlin.compute()
-        stats = felix.compute()
-
-    def test_mockOracle(self):
-        """
-        An example for using the MockOracle on the Rotten Tomato dataset.
-        """
-        oracle = MockOracle(dataset_name='Rotten Tomato')
-        stats = oracle.compute()
+        merlin_eval = Evaluator(dataset_name='Rotten Tomato',
+                                oracle=UserOracle,
+                                oracle_params={
+                                    'ground_truth_path': 'rated_datasets/Rotten Tomato_Merlin_1519148528.2417703.json',
+                                    'is_zero_indexed': False},
+                                batch_size=5)
+        felix_eval = Evaluator(dataset_name='Rotten Tomato',
+                               oracle=UserOracle,
+                               oracle_params={
+                                   'ground_truth_path': 'rated_datasets/Rotten Tomato_mcfelix_1519142949.904623.json',
+                                   'is_zero_indexed': False,
+                                   'default_rating': 0.5},
+                               batch_size=5)
+        stats = merlin_eval.compute()
+        stats = felix_eval.compute()
+        print(stats)
 
     def test_randomSelection(self):
         """
         An example for using the MockOracle on the Rotten Tomato dataset.
         """
-        oracle = MockOracle(dataset_name='Rotten Tomato', algorithm=RandomSelectionAlgorithm, algo_params={})
-        stats = oracle.compute()
+        eval = Evaluator(dataset_name='Rotten Tomato', algorithm=RandomSelectionAlgorithm, algo_params={},batch_size=5)
+        stats = eval.compute()
 
-    def test_flexibleOracle(self):
-        """
-        Using the a FlexibleOracle for rating the Rotten Tomato dataset.
-        """
 
-        oracle = FlexibleOracle(dataset_name='Rotten Tomato', rating_func=length_based)
-        stats = oracle.compute()
-        print(stats)
-
-        oracle = FlexibleOracle(dataset_name='Rotten Tomato', rating_func=length_based)
-        stats = oracle.compute()
-        print(stats)
-
-    def test_gp_seelct(self):
-        oracle = FlexibleOracle(dataset_name='Rotten Tomato', rating_func=length_based, algorithm=GPSelect_Algorithm,
-                                algo_params={'hypothesis': 'Gaussian Process', 'beta': 0.12})
-        oracle.compute()
+    def test_gp_select(self):
+        eval = Evaluator(dataset_name='Rotten Tomato',
+                           oracle=FlexibleOracle,
+                           oracle_params={'rating_func': length_based},
+                           algorithm=GPSelect_Algorithm,
+                           algo_params={'hypothesis': 'Gaussian Process', 'beta': 0.12})
+        eval.compute()
 
 
 if __name__ == '__main__':
