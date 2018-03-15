@@ -144,6 +144,7 @@ class MockOracle(Oracle):
     def _wants_to_continue(self) -> bool:
         return True
 
+
 class FlexibleOracle(Oracle):
     """
     Flexible Oracle that rates all meta-paths according to .
