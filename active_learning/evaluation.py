@@ -1,6 +1,6 @@
 from active_learning.rating import constant
 from active_learning.active_learner import UncertaintySamplingAlgorithm
-from active_learning.oracles import FlexibleOracle
+from active_learning.oracles import FunctionalOracle
 from util.meta_path_loader_dispatcher import MetaPathLoaderDispatcher
 
 import logging
@@ -17,7 +17,7 @@ class Evaluator:
                  batch_size: int = 5,
                  algorithm=UncertaintySamplingAlgorithm,
                  algo_params={'hypothesis': 'Gaussian Process'},
-                 oracle=FlexibleOracle,
+                 oracle=FunctionalOracle,
                  oracle_params={'rating_func': constant},
                  seed: int = 42):
         self.batch_size = batch_size

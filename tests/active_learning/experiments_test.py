@@ -1,4 +1,4 @@
-from active_learning.oracles import UserOracle, FlexibleOracle
+from active_learning.oracles import UserOracle, FunctionalOracle
 from active_learning.evaluation import Evaluator
 from active_learning.active_learner import RandomSelectionAlgorithm, GPSelect_Algorithm
 from active_learning.rating import length_based
@@ -40,10 +40,10 @@ class ActiveLearningExperimentsTest(unittest.TestCase):
 
     def test_gp_select(self):
         eval = Evaluator(dataset_name='Rotten Tomato',
-                           oracle=FlexibleOracle,
-                           oracle_params={'rating_func': length_based},
-                           algorithm=GPSelect_Algorithm,
-                           algo_params={'hypothesis': 'Gaussian Process', 'beta': 0.12})
+                         oracle=FunctionalOracle,
+                         oracle_params={'rating_func': length_based},
+                         algorithm=GPSelect_Algorithm,
+                         algo_params={'hypothesis': 'Gaussian Process', 'beta': 0.12})
         eval.compute()
 
 

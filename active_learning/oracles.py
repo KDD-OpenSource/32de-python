@@ -1,9 +1,7 @@
 from util.datastructures import MetaPath
-from active_learning.active_learner import UncertaintySamplingAlgorithm, ActiveLearningAlgorithm
 
 from typing import Dict, List, Callable
 from abc import ABC, abstractmethod
-from active_learning.rating import constant
 import json
 
 class Oracle(ABC):
@@ -34,15 +32,16 @@ class Oracle(ABC):
         return True
 
 
-class FlexibleOracle(Oracle):
+class FunctionalOracle(Oracle):
     """
-    Flexible Oracle that rates all meta-paths according to .
+    FunctionalOracle that can rate based on the path itself.
+    The evaluation method is provided via a callable 'rating_func'.
     """
 
     def __init__(self, rating_func: Callable[[MetaPath], float]):
         # Set configuration of this oracle
         self.rating_func = rating_func
-        super(FlexibleOracle, self).__init__()
+        super(FunctionalOracle, self).__init__()
 
     def _rate_meta_path(self, metapath: Dict) -> float:
         if metapath['id'] in self.rating.keys():
