@@ -42,8 +42,8 @@ class Hypothesis:
 class GaussianProcessHypothesis:
     def __init__(self, meta_paths):
         kernel = 1.0 * RBF(length_scale=1.0, length_scale_bounds=(1e-1, 10.0))
-        self.gp = GaussianProcessRegressor(kernel=kernel)
-        self.meta_paths = self._tfidf_transform(meta_paths)
+        self.gp = GaussianProcessRegressor(kernel=kernel,optimizer=None)
+        self.meta_paths = self._length_based_transform(meta_paths)
 
     def _length_based_transform(self,meta_paths):
         """

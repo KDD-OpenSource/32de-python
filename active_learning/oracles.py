@@ -1,7 +1,7 @@
 from util.datastructures import MetaPath
 from active_learning.active_learner import UncertaintySamplingAlgorithm
 from util.meta_path_loader_dispatcher import MetaPathLoaderDispatcher
-from typing import Dict, List
+from typing import Dict, List, Callable
 from abc import ABC, abstractmethod
 import json
 import logging
@@ -11,7 +11,7 @@ import pandas as pd
 logger = logging.getLogger()
 consoleHandler = logging.StreamHandler()
 logger.addHandler(consoleHandler)
-logger.setLevel(logging.DEBUG)
+#logger.setLevel(logging.DEBUG)
 
 
 class Oracle(ABC):
@@ -60,7 +60,8 @@ class Oracle(ABC):
         Calculate the Mean Squared Error between the predicted ratings and the ground truth.
         """
         predictions = self.algorithm.get_all_predictions()
-        return sum([pow(self._rate_meta_path(p) - p['rating'], 2) for p in predictions])
+        squared_values = [pow(self._rate_meta_path(p) - p['rating'], 2) for p in predictions]
+        return sum(squared_values)/len(squared_values)
 
     def _rate_meta_paths(self, metapaths: List[Dict]) -> List[Dict]:
         """
@@ -93,14 +94,14 @@ class CmdLineOracle(Oracle):
     
     """
 
-    def __init__(self, dataset_name, batch_size, seed=42):
+    def __init__(self, dataset_name, batch_size, seed=42,algorithm=UncertaintySamplingAlgorithm, algo_params={'hypothesis':'Gaussian Process'}):
         # Set configuration of this oracle
         self.batch_size = batch_size
 
         # Load the dataset and the algorithm to operate on
         meta_path_loader = MetaPathLoaderDispatcher().get_loader(dataset_name)
         meta_paths = meta_path_loader.load_meta_paths()
-        self.algorithm = UncertaintySamplingAlgorithm(meta_paths=meta_paths, hypothesis='Gaussian Process', seed=seed)
+        self.algorithm = algorithm(meta_paths=meta_paths, seed=seed, **algo_params)
         self.rating = {}
 
     def _rate_meta_path(self, metapath: Dict) -> float:
@@ -124,17 +125,44 @@ class MockOracle(Oracle):
     MockOracle rates all meta-paths with 1.
     """
 
-    def __init__(self, dataset_name: str, batch_size=5, seed=42):
+    def __init__(self, dataset_name: str, batch_size=5, seed=42, algorithm=UncertaintySamplingAlgorithm, algo_params={'hypothesis':'Gaussian Process'}):
         # Set configuration of this oracle
         self.batch_size = batch_size
 
         # Load the dataset and the algorithm to operate on
         meta_path_loader = MetaPathLoaderDispatcher().get_loader(dataset_name)
         meta_paths = meta_path_loader.load_meta_paths()
-        self.algorithm = UncertaintySamplingAlgorithm(meta_paths=meta_paths, hypothesis='Gaussian Process', seed=seed)
+        self.algorithm = algorithm(meta_paths=meta_paths,seed=seed, **algo_params)
 
     def _rate_meta_path(self, meta_path: MetaPath) -> float:
         return 1.0
+
+    def _wants_to_continue(self) -> bool:
+        return True
+
+
+class FlexibleOracle(Oracle):
+    """
+    Flexible Oracle that rates all meta-paths according to .
+    """
+
+    def __init__(self, dataset_name: str, rating_func: Callable[[MetaPath], float], batch_size=5, seed=42,algorithm=UncertaintySamplingAlgorithm, algo_params={'hypothesis':'Gaussian Process'}):
+        # Set configuration of this oracle
+        self.batch_size = batch_size
+        self.rating_func = rating_func
+        self.rating = {}
+
+        # Load the dataset and the algorithm to operate on
+        meta_path_loader = MetaPathLoaderDispatcher().get_loader(dataset_name)
+        meta_paths = meta_path_loader.load_meta_paths()
+        self.algorithm = algorithm(meta_paths=meta_paths, seed=seed, **algo_params)
+
+    def _rate_meta_path(self, metapath: Dict) -> float:
+        if metapath['id'] in self.rating.keys():
+            return self.rating[metapath['id']]
+        rating = self.rating_func(metapath['metapath'])
+        self.rating[metapath['id']] = rating
+        return rating
 
     def _wants_to_continue(self) -> bool:
         return True
@@ -146,7 +174,7 @@ class UserOracle(Oracle):
     """
 
     def __init__(self, ground_truth_path: str, dataset_name: str, default_rating=0.5, batch_size=5,
-                 is_zero_indexed=True, seed=42):
+                 is_zero_indexed=True, seed=42, algorithm=UncertaintySamplingAlgorithm, algo_params={'hypothesis':'Gaussian Process'}):
         # Set configuration of this oracle
         self.batch_size = batch_size
         self.is_zero_indexed = is_zero_indexed
@@ -155,7 +183,7 @@ class UserOracle(Oracle):
         # Load the dataset and the algorithm to operate on
         meta_path_loader = MetaPathLoaderDispatcher().get_loader(dataset_name)
         meta_paths = meta_path_loader.load_meta_paths()
-        self.algorithm = UncertaintySamplingAlgorithm(meta_paths=meta_paths, hypothesis='Gaussian Process', seed=seed)
+        self.algorithm = algorithm(meta_paths=meta_paths, seed=seed, **algo_params)
 
         # Load the rating into the oracle
         self.rating = self.load_rating_from(ground_truth_path)
@@ -187,7 +215,6 @@ class UserOracle(Oracle):
         try:
             return float(self.rating[id])
         except KeyError:
-            logger.info("You did not rate path {}".format(metapath['id']))
             return self.default_rating
 
     def _wants_to_continue(self) -> bool:
