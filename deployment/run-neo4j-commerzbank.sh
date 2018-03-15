@@ -1,13 +1,14 @@
 #!/bin/bash
-docker stop neo4j-graph-algo-container
-docker rm neo4j-graph-algo-container
+docker stop neo4j-graph-algo-container-commerzbank
+docker rm neo4j-graph-algo-container-commerzbank
 docker run \
-    --publish=7494:7474 --publish=7707:7687 \
+    --publish=7494:7474 --publish=7707:7687\
     --volume=$HOME/commerzbank/data:/data \
     --volume=$HOME/commerzbank/logs:/logs \
     --volume=$HOME/commerzbank/conf:/conf \
     --env=NEO4J_ACCEPT_LICENSE_AGREEMENT=yes \
+    --env=NEO4J_AUTH=neo4j/${COMMERZBANK_PWD} \
     -d \
-    --name neo4j-graph-algo-container \
+    --name neo4j-graph-algo-container-commerzbank \
     neo4j-graph-algorithms
 

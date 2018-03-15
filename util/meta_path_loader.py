@@ -30,7 +30,7 @@ class AbstractMetaPathLoader(ABC):
     def string_to_meta_path(self, node_types, edge_types):
         nodes = [item[0] for item in eval(node_types)]
         edges = eval(edge_types)
-        return MetaPath(nodes, edges)
+        return MetaPath(nodes=nodes, edges=edges)
 
 
 class RottenTomatoMetaPathLoader(AbstractMetaPathLoader):
@@ -81,7 +81,7 @@ class CypherDataSetLoader(AbstractMetaPathLoader):
         for i, row in df.iterrows():
             nodes = [i[0] for i in row.nodes_types]
             edges = [rel_type.split('/')[-1] for rel_type in row.relationship_types]
-            meta_paths.append(MetaPath(nodes, edges))
+            meta_paths.append(MetaPath(nodes=nodes, edges=edges))
         print("{}: Number of meta-paths is {}".format(self.__class__.__name__.upper(), len(meta_paths)))
         return meta_paths
 
@@ -113,6 +113,6 @@ class CypherDataSetLoaderWithoutCounts(AbstractMetaPathLoader):
         for i, row in df.iterrows():
             nodes = [i[0] for i in row.nodes_types]
             edges = [rel_type.split('/')[-1] for rel_type in row.relationship_types]
-            meta_paths.append(MetaPath(nodes, edges))
+            meta_paths.append(MetaPath(nodes=nodes, edges=edges))
         print("{}: Number of meta-paths is {}".format(self.__class__.__name__.upper(), len(meta_paths)))
         return meta_paths

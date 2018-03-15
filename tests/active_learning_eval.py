@@ -22,7 +22,7 @@ class ActiveLearningTest(unittest.TestCase):
         def string_to_path(node_types, edge_types):
             nodes = [item[0] for item in eval(node_types)]
             edges = eval(edge_types)
-            return MetaPath(nodes, edges)
+            return MetaPath(nodes=nodes, edges=edges)
 
         df = pd.read_csv(
             os.path.join("data", "rotten_tomatoes", data_set))
