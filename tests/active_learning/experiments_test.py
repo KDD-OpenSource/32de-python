@@ -1,4 +1,5 @@
 from active_learning.oracles import UserOracle, MockOracle, FlexibleOracle
+from active_learning.active_learner import RandomSelectionAlgorithm
 from active_learning.rating import length_based
 import unittest
 
@@ -29,6 +30,14 @@ class ActiveLearningExperimentsTest(unittest.TestCase):
         """
         oracle = MockOracle(dataset_name='Rotten Tomato')
         stats = oracle.compute()
+
+    def test_randomSelection(self):
+        """
+        An example for using the MockOracle on the Rotten Tomato dataset.
+        """
+        oracle = MockOracle(dataset_name='Rotten Tomato',algorithm=RandomSelectionAlgorithm,algo_params={})
+        stats = oracle.compute()
+
     def test_flexibleOracle(self):
         """
         Using the a FlexibleOracle for rating the Rotten Tomato dataset.
