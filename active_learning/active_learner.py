@@ -19,7 +19,7 @@ class State(Enum):
     NOT_VISITED = 1
 
 
-class ActiveLearningAlgorithm(ABC):
+class AbstractActiveLearningAlgorithm(ABC):
     standard_rating = 0.5
 
     def __init__(self, meta_paths: List[MetaPath], seed: int):
@@ -60,7 +60,7 @@ class ActiveLearningAlgorithm(ABC):
         """
         Select the next n paths to be labeled
         """
-        raise NotImplementedError("Subclass should implement.")
+        pass
 
     def create_output(self):
         mps = [{'id': int(meta_id[0]),
@@ -70,7 +70,7 @@ class ActiveLearningAlgorithm(ABC):
         return mps
 
 
-class RandomSelectionAlgorithm(ActiveLearningAlgorithm):
+class RandomSelectionAlgorithm(AbstractActiveLearningAlgorithm):
     """
     An active learning algorithm, that asks for randomly labeled instances.
     """
@@ -116,7 +116,7 @@ class RandomSelectionAlgorithm(ActiveLearningAlgorithm):
             return np.append(np.zeros(len(self.meta_paths) - 1), [1])
 
 
-class HypothesisBasedAlgorithm(ActiveLearningAlgorithm, metaclass=ABCMeta):
+class HypothesisBasedAlgorithm(AbstractActiveLearningAlgorithm, metaclass=ABCMeta):
     available_hypotheses = {'Gaussian Process': GaussianProcessHypothesis}
 
     def __init__(self, meta_paths: List[MetaPath], hypothesis: str, seed: int = 42):

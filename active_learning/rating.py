@@ -1,4 +1,6 @@
 from util.datastructures import MetaPath
+from scipy.stats import entropy as probablistic_entropy
+from collections import Counter
 import numpy as np
 
 """
@@ -11,6 +13,13 @@ def length_based(mp: MetaPath) -> float:
     Set the rating as the length of the metapath.
     """
     return float(len(mp))
+
+def entropy(mp: MetaPath) -> float:
+    """
+    Rate the metapath according to the entropy of the sequence.
+    """
+    frequencies = np.array(list(Counter(mp.as_list()).values())) / len(mp)
+    return probablistic_entropy(frequencies)
 
 def randomly(mp: MetaPath) -> float:
     """
