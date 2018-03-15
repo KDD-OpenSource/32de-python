@@ -1,5 +1,5 @@
 from active_learning.oracles import UserOracle, MockOracle, FlexibleOracle
-from active_learning.active_learner import RandomSelectionAlgorithm
+from active_learning.active_learner import RandomSelectionAlgorithm, GPSelect_Algorithm
 from active_learning.rating import length_based
 import unittest
 
@@ -35,7 +35,7 @@ class ActiveLearningExperimentsTest(unittest.TestCase):
         """
         An example for using the MockOracle on the Rotten Tomato dataset.
         """
-        oracle = MockOracle(dataset_name='Rotten Tomato',algorithm=RandomSelectionAlgorithm,algo_params={})
+        oracle = MockOracle(dataset_name='Rotten Tomato', algorithm=RandomSelectionAlgorithm, algo_params={})
         stats = oracle.compute()
 
     def test_flexibleOracle(self):
@@ -50,6 +50,11 @@ class ActiveLearningExperimentsTest(unittest.TestCase):
         oracle = FlexibleOracle(dataset_name='Rotten Tomato', rating_func=length_based)
         stats = oracle.compute()
         print(stats)
+
+    def test_gp_seelct(self):
+        oracle = FlexibleOracle(dataset_name='Rotten Tomato', rating_func=length_based, algorithm=GPSelect_Algorithm,
+                                algo_params={'hypothesis': 'Gaussian Process', 'beta': 0.12})
+        oracle.compute()
 
 
 if __name__ == '__main__':

@@ -1,9 +1,12 @@
-from .hypothesis import Hypothesis, GaussianProcessHypothesis
-from abc import ABC, abstractmethod
-from typing import List
-from util.datastructures import MetaPath
-import numpy as np
+from abc import ABC, abstractmethod, ABCMeta
 from enum import Enum
+from typing import List
+
+import numpy as np
+
+from active_learning.hypothesis import GaussianProcessHypothesis
+from util.datastructures import MetaPath
+from .hypothesis import GaussianProcessHypothesis
 
 # algorithm types
 NO_USER_FEEDBACK = 'no_user_feedback'
@@ -113,21 +116,17 @@ class RandomSelectionAlgorithm(ActiveLearningAlgorithm):
             return np.append(np.zeros(len(self.meta_paths) - 1), [1])
 
 
-class UncertaintySamplingAlgorithm(ActiveLearningAlgorithm):
-    """
-        An active learning algorithm, that requests labels on the data he is most uncertain of.
-    """
-
+class HypothesisBasedAlgorithm(ActiveLearningAlgorithm, metaclass=ABCMeta):
     available_hypotheses = {'Gaussian Process': GaussianProcessHypothesis}
 
     def __init__(self, meta_paths: List[MetaPath], hypothesis: str, seed: int = 42):
         assert hypothesis in self.available_hypotheses.keys(), "Hypothesis {} not supported for this type of algorithm.".format(
             hypothesis)
         self.hypothesis = self.available_hypotheses[hypothesis](meta_paths=meta_paths)
-        super(UncertaintySamplingAlgorithm, self).__init__(meta_paths, seed)
+        super(HypothesisBasedAlgorithm, self).__init__(meta_paths, seed)
 
     def update(self, meta_paths):
-        super(UncertaintySamplingAlgorithm, self).update(meta_paths)
+        super(HypothesisBasedAlgorithm, self).update(meta_paths)
         self.hypothesis.update(np.where(self.visited == State.VISITED)[0],
                                self.meta_paths_rating[np.where(self.visited == State.VISITED)[0]])
 
@@ -138,6 +137,24 @@ class UncertaintySamplingAlgorithm(ActiveLearningAlgorithm):
         most_uncertain_ids = np.where(self.visited == State.NOT_VISITED)[0][most_uncertain_idx]
         return most_uncertain_ids
 
+    @abstractmethod
+    def compute_selection_criterion(self):
+        """
+        Select the next metapaths based on the uncertainty of them in the current model.
+        """
+        pass
+
+    def get_all_predictions(self):
+        idx = range(len(self.meta_paths))
+        return [{'id': id, 'rating': rating, 'metapath': self.meta_paths[id]} for id, rating in
+                zip(idx, self.hypothesis.predict_rating(idx))]
+
+
+class UncertaintySamplingAlgorithm(HypothesisBasedAlgorithm):
+    """
+        An active learning algorithm, that requests labels on the data he is most uncertain of.
+    """
+
     def compute_selection_criterion(self):
         """
         Select the next metapaths based on the uncertainty of them in the current model.
@@ -145,7 +162,26 @@ class UncertaintySamplingAlgorithm(ActiveLearningAlgorithm):
         std = self.hypothesis.predict_std(range(len(self.meta_paths)))
         return std
 
-    def get_all_predictions(self):
-        idx = range(len(self.meta_paths))
-        return [{'id': id, 'rating': rating, 'metapath': self.meta_paths[id]} for id, rating in
-                zip(idx, self.hypothesis.predict_rating(idx))]
+
+class GPSelect_Algorithm(HypothesisBasedAlgorithm):
+    """
+        An active learning algorithm, that selects the most uncertain data, but prefers more highly rated datapoints.
+        The parameter beta weights the trade-off between exploitation and explration.
+        ...
+        Hastagiri P. Vanchinathan, Andreas Marfurt, Charles-Antoine Robelin, Donald Kossmann, and Andreas Krause. 2015. 
+        Discovering Valuable items from Massive Data. In Proceedings of the 21th ACM SIGKDD (KDD '15).
+        ACM, New York, NY, USA, 1195-1204. DOI: https://doi.org/10.1145/2783258.2783360
+    """
+
+    def __init__(self, meta_paths: List[MetaPath], hypothesis: str, beta: float = 0.5, seed: int = 42):
+        super(GPSelect_Algorithm, self).__init__(meta_paths, hypothesis, seed)
+        self.beta = beta
+
+    def compute_selection_criterion(self):
+        """
+        Select the next metapaths based on the uncertainty of them in the current model.
+        """
+        all_paths = range(len(self.meta_paths))
+        criterion = np.sqrt(self.beta) * self.hypothesis.predict_std(all_paths) \
+                    + self.hypothesis.predict_rating(all_paths)
+        return criterion
