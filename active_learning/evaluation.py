@@ -20,7 +20,7 @@ class Evaluator:
     def __init__(self, dataset_name: str,
                  batch_size: int = 5,
                  algorithm=UncertaintySamplingAlgorithm,
-                 algo_params={'hypothesis': 'Gaussian Process'},
+                 algo_params={'hypothesis': GaussianProcessHypothesis},
                  oracle=FunctionalOracle,
                  oracle_params={'rating_func': constant},
                  seed: int = 42):

@@ -4,7 +4,6 @@ from typing import List
 
 import numpy as np
 
-from active_learning.hypothesis import GaussianProcessHypothesis
 from util.datastructures import MetaPath
 from .hypothesis import GaussianProcessHypothesis
 
@@ -119,10 +118,8 @@ class RandomSelectionAlgorithm(AbstractActiveLearningAlgorithm):
 class HypothesisBasedAlgorithm(AbstractActiveLearningAlgorithm, metaclass=ABCMeta):
     available_hypotheses = {'Gaussian Process': GaussianProcessHypothesis}
 
-    def __init__(self, meta_paths: List[MetaPath], hypothesis: str, seed: int = 42):
-        assert hypothesis in self.available_hypotheses.keys(), "Hypothesis {} not supported for this type of algorithm.".format(
-            hypothesis)
-        self.hypothesis = self.available_hypotheses[hypothesis](meta_paths=meta_paths)
+    def __init__(self, meta_paths: List[MetaPath], hypothesis: str, seed: int = 42, hypothesis_params = {}):
+        self.hypothesis = GaussianProcessHypothesis(meta_paths=meta_paths,**hypothesis_params)
         super(HypothesisBasedAlgorithm, self).__init__(meta_paths, seed)
 
     def update(self, meta_paths):
