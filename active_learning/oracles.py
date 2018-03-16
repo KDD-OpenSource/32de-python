@@ -1,8 +1,10 @@
 from util.datastructures import MetaPath
+from active_learning.rating import *
 
 from typing import Dict, List, Callable
 from abc import ABC, abstractmethod
 import json
+
 
 class Oracle(ABC):
     """
@@ -43,6 +45,12 @@ class FunctionalOracle(Oracle):
         self.rating_func = rating_func
         super(FunctionalOracle, self).__init__()
 
+    @staticmethod
+    def options():
+        return {
+            'rating_func': [constant, entropy, length_based, randomly]
+        }
+
     def _rate_meta_path(self, metapath: Dict) -> float:
         if metapath['id'] in self.rating.keys():
             return self.rating[metapath['id']]
@@ -64,6 +72,16 @@ class UserOracle(Oracle):
         # Load the rating into the oracle
         self.rating = self.load_rating_from(ground_truth_path)
         super(UserOracle, self).__init__()
+
+    @staticmethod
+    def options():
+        return {
+            'ground_truth_path': ['rated_datasets/Rotten Tomato_Merlin_1519148528.2417703.json',
+                                  'rated_datasets/Rotten Tomato_mcfelix_1519142949.904623.json',
+                                  'rated_datasets/Rotten Tomato_Constantin Lange_1519139724.4022887.json',
+                                  'rated_datasets/Rotten Tomato_Potato_1519142479.127663.json',
+                                  'rated_datasets/Rotten Tomato_Juliane_1519146371.039609.json']
+        }
 
     def load_rating_from(self, ground_truth_path: str):
         """

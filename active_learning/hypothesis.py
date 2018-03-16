@@ -40,24 +40,33 @@ class Hypothesis:
 
 
 class GaussianProcessHypothesis:
-    def __init__(self, meta_paths):
+    def __init__(self, meta_paths, transformation='length'):
         kernel = 1.0 * RBF(length_scale=1.0, length_scale_bounds=(1e-1, 10.0))
-        self.gp = GaussianProcessRegressor(kernel=kernel,optimizer=None)
-        self.meta_paths = self._length_based_transform(meta_paths)
+        self.gp = GaussianProcessRegressor(kernel=kernel, optimizer=None)
+        if transformation == 'length':
+            self.meta_paths = self._length_based_transform(meta_paths)
+        elif transformation == 'tfidf':
+            self.meta_paths = self._tfidf_transform(meta_paths)
+        else:
+            raise ValueError("'{}' is not a valid transformation.".format(transformation))
 
-    def _length_based_transform(self,meta_paths):
+    def _length_based_transform(self, meta_paths):
         """
         Trivial transformation into feature space of length x unique_length.
         """
         return np.array([[len(mp), len(set(mp.as_list()))] for mp in meta_paths])
 
-    def _tfidf_transform(self,meta_paths):
+    def _tfidf_transform(self, meta_paths):
         """
         Transform the metapaths as tfidf vectors.
         """
         vectorizer = TfidfVectorizer(analyzer='word', token_pattern='\\b\\w+\\b')
         vectorizer.fit([str(mp) for mp in meta_paths])
         return vectorizer.transform(map(str, meta_paths)).toarray()
+
+    @staticmethod
+    def options():
+        return {'transformation': ['length', 'tfidf']}
 
     def update(self, idx, ratings):
         if len(idx) == 0:

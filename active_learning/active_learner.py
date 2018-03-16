@@ -155,6 +155,10 @@ class UncertaintySamplingAlgorithm(HypothesisBasedAlgorithm):
         An active learning algorithm, that requests labels on the data he is most uncertain of.
     """
 
+    @staticmethod
+    def options():
+        return {}
+
     def compute_selection_criterion(self):
         """
         Select the next metapaths based on the uncertainty of them in the current model.
@@ -176,6 +180,12 @@ class GPSelect_Algorithm(HypothesisBasedAlgorithm):
     def __init__(self, meta_paths: List[MetaPath], hypothesis: str, beta: float = 0.5, seed: int = 42):
         super(GPSelect_Algorithm, self).__init__(meta_paths, hypothesis, seed)
         self.beta = beta
+
+    @staticmethod
+    def options():
+        return {
+            'hypothesis': [GaussianProcessHypothesis]
+        }
 
     def compute_selection_criterion(self):
         """

@@ -1,6 +1,6 @@
-from active_learning.rating import constant
-from active_learning.active_learner import UncertaintySamplingAlgorithm
-from active_learning.oracles import FunctionalOracle
+from active_learning.rating import *
+from active_learning.active_learner import *
+from active_learning.oracles import *
 from util.meta_path_loader_dispatcher import MetaPathLoaderDispatcher
 
 import logging
@@ -10,6 +10,10 @@ import pandas as pd
 logger = logging.getLogger()
 consoleHandler = logging.StreamHandler()
 logger.addHandler(consoleHandler)  # logger.setLevel(logging.DEBUG)
+
+# Different parametrisations that can be used in experiments
+ORACLES = [UserOracle, FunctionalOracle]
+ALGORITHMS = [UncertaintySamplingAlgorithm, GPSelect_Algorithm]
 
 
 class Evaluator:
@@ -51,7 +55,9 @@ class Evaluator:
 
             # Log statistics
             mse = self.compute_mse()
-            stats = {'mse': mse}
+            abs_diff = self.compute_absolute_error()
+            stats = {'mse': mse,
+                     'absolute_error': abs_diff}
             statistics.append(stats)
 
             logger.info('\n'.join(["\t{}:\t{}".format(key, value) for key, value in stats.items()]))
@@ -66,3 +72,11 @@ class Evaluator:
         predictions = self.algorithm.get_all_predictions()
         squared_values = [pow(self.oracle._rate_meta_path(p) - p['rating'], 2) for p in predictions]
         return sum(squared_values) / len(squared_values)
+
+    def compute_absolute_error(self) -> float:
+        """
+        Calculate the Mean Squared Error between the predicted ratings and the ground truth.
+        """
+        predictions = self.algorithm.get_all_predictions()
+        absolute_differences = [abs(self.oracle._rate_meta_path(p) - p['rating']) for p in predictions]
+        return sum(absolute_differences) / len(absolute_differences)

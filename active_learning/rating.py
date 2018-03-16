@@ -5,6 +5,7 @@ import numpy as np
 
 """
 A collection of functions for rating a domain-based score of a meta-path.
+Used by the Functional Oracle.
 """
 
 
