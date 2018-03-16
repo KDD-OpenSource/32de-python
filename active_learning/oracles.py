@@ -64,7 +64,7 @@ class UserOracle(Oracle):
     An Oracle designed to use a json-file containing rated Meta-Paths as labels.
     """
 
-    def __init__(self, ground_truth_path: str, default_rating=0.5, is_zero_indexed=True):
+    def __init__(self, ground_truth_path: str, default_rating=0.5, is_zero_indexed=False):
         super(UserOracle, self).__init__()
         # Set configuration of this oracle
         self.is_zero_indexed = is_zero_indexed
