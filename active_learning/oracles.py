@@ -65,13 +65,13 @@ class UserOracle(Oracle):
     """
 
     def __init__(self, ground_truth_path: str, default_rating=0.5, is_zero_indexed=True):
+        super(UserOracle, self).__init__()
         # Set configuration of this oracle
         self.is_zero_indexed = is_zero_indexed
         self.default_rating = default_rating
 
         # Load the rating into the oracle
         self.rating = self.load_rating_from(ground_truth_path)
-        super(UserOracle, self).__init__()
 
     @staticmethod
     def options():
