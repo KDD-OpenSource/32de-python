@@ -11,4 +11,5 @@ scipy
 pytest-cov
 Flask-Session
 graphviz
+cryptography==2.1.4
 flask-ask
