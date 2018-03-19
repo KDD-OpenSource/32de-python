@@ -12,11 +12,11 @@ class ActiveLearningExperimentsTest(unittest.TestCase):
               "The Oracle of Merlin and Felix ... ")
 
         merlin = UserOracle(dataset_name='Rotten Tomato',
-                            ground_truth_path='rated_datasets/Rotten Tomato_Merlin_1519148528.2417703.json',
+                            ground_truth_path='rated_datasets/rotten_tomatoes/Merlin_1519148528.2417703.json',
                             is_zero_indexed=False,
                             batch_size=5)
         felix = UserOracle(dataset_name='Rotten Tomato',
-                           ground_truth_path='rated_datasets/Rotten Tomato_mcfelix_1519142949.904623.json',
+                           ground_truth_path='rated_datasets/rotten_tomatoes/mcfelix_1519142949.904623.json',
                            is_zero_indexed=False,
                            batch_size=5,
                            default_rating=0.5)
