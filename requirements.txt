@@ -10,4 +10,5 @@ scipy
 # TODO: Introduce development (non-deployment) dependencies
 pytest-cov
 Flask-Session
+cryptography==2.1.4
 flask-ask
