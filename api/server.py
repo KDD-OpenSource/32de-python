@@ -28,15 +28,10 @@ Session(app)
 
 #TODO: Fix CORS origins specification
 # Configure Cross Site Scripting
-if REACT_PORT is not 80:
-    # Special react port on server
-    CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://{}:{}".format(SERVER_PATH, REACT_PORT)}})
-elif __name__ == '__main__':
-    # Flask runs locally, all resources are allowed
-    CORS(app, supports_credentials=True, resources='*')
-else:
+if "METAEXP_DEV" in os.environ.keys() and os.environ["METAEXP_DEV"] == "true":
     CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://{}".format(SERVER_PATH)}})
-
+else:
+    CORS(app, supports_credentials=True, resources='*')
 
 def run(port, hostname, debug_mode):
     app.run(host=hostname, port=port, debug=debug_mode, threaded=True)
