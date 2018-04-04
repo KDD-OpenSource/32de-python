@@ -4,6 +4,7 @@
 # Deployment
 To deploy our system including neo4j, the neo4j graph algorithm component, the UI and our server install docker on your system and run `deployment/docker-deployment.sh`.
 This will install a clean version from the alpha-dev and the master branches and doesn't include your local code changes.
+If the API should be served ssl encrypted, set the environment variable `METAEXP_HTTPS` to `true` and provide `api.crt` and `api.key` in the `https` folder.
 
 # Development
 To build your own local code use `deployment/build-*.sh /path/to/code` (e.g. `deployment/build-server.sh .`) and to run a single container `deployment/run-*.sh [PORT]`.

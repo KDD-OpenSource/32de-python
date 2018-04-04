@@ -1,16 +1,18 @@
 from flask import Flask, jsonify, request, abort, session
 from flask_session import Session
 from flask_cors import CORS
-from util.config import REACT_PORT, API_PORT, SESSION_CACHE_DIR, SESSION_MODE, SESSION_THRESHOLD, RATED_DATASETS_PATH
+from util.config import SERVER_PATH, REACT_PORT, API_PORT, SESSION_CACHE_DIR, SESSION_MODE, SESSION_THRESHOLD, RATED_DATASETS_PATH
 from util.meta_path_loader_dispatcher import MetaPathLoaderDispatcher
 from util.graph_stats import GraphStats
-from active_learning.meta_path_selector import RandomMetaPathSelector
+from active_learning.active_learner import UncertaintySamplingAlgorithm
 import json
 import os
 import time
 import datetime
+from flask_ask import Ask
 
 app = Flask(__name__)
+ask = Ask(app, '/alexa')
 
 # TODO: Change if we have a database in the background
 SESSION_TYPE = 'filesystem'
@@ -24,14 +26,21 @@ app.config.from_object(__name__)
 app.config["SECRET_KEY"] = "37Y,=i9.,U3RxTx92@9j9Z[}"
 Session(app)
 
+#TODO: Fix CORS origins specification
+# Configure Cross Site Scripting
 if REACT_PORT is not 80:
-    CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://localhost:{}".format(REACT_PORT)}})
+    # Special react port on server
+    CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://{}:{}".format(SERVER_PATH, REACT_PORT)}})
+elif __name__ == '__main__':
+    # Flask runs locally, all resources are allowed
+    CORS(app, supports_credentials=True, resources='*')
 else:
-    CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://localhost"}})
+    CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://{}".format(SERVER_PATH)}})
 
 
 def run(port, hostname, debug_mode):
     app.run(host=hostname, port=port, debug=debug_mode, threaded=True)
+
 
 @app.route('/login', methods=["POST", "GET"])
 def login():
@@ -50,9 +59,11 @@ def login():
         meta_paths = meta_path_loader.load_meta_paths()
         # TODO get Graph stats for current dataset
         graph_stats = GraphStats()
-        session['meta_path_distributor'] = RandomMetaPathSelector(meta_paths=meta_paths)
+        session['active_learning_algorithm'] = UncertaintySamplingAlgorithm(meta_paths=meta_paths,
+                                                                            hypothesis='Gaussian Process')
         session['meta_path_id'] = 1
         session['rated_meta_paths'] = []
+        # TODO feed this selection to the ALgorithms
         session['selected_node_types'] = build_selection(graph_stats.get_node_types())
         session['selected_edge_types'] = build_selection(graph_stats.get_edge_types())
 
@@ -62,7 +73,7 @@ def login():
 @app.route('/logout')
 def logout():
     rated_meta_paths = {
-        'meta_paths': session['rated_meta_paths'],
+        'meta_paths': session['active_learning_algorithm'].create_output(),
         'dataset': session['dataset'],
         'node_type_selection': session['selected_node_types'],
         'edge_type_selection': session['selected_edge_types'],
@@ -167,17 +178,12 @@ def send_next_metapaths_to_rate(batch_size):
         'metapath': ['Phenotype', 'HAS', 'Association', 'HAS', 'SNP', 'HAS', 'Phenotype'],
         'rating': 0.5}
         """
-    meta_path_id = session['meta_path_id']
-    next_batch = session['meta_path_distributor'].get_next(size=batch_size)
-    next_metapaths, last_batch = next_batch[0], next_batch[1]
-    paths = {'meta_paths': [{'id': meta_id,
-                             'metapath': meta_path.as_list(),
-                             'rating': 0.5} for meta_id, meta_path in
-                            zip(range(meta_path_id, meta_path_id + batch_size), next_metapaths)],
-             'next_batch_available': not last_batch}
 
-    meta_path_id += batch_size
-    session['meta_path_id'] = meta_path_id
+    next_metapaths, is_last_batch = session['active_learning_algorithm'].get_next(batch_size=batch_size)
+    for i in range(len(next_metapaths)):
+        next_metapaths[i]['metapath'] = next_metapaths[i]['metapath'].as_list()
+    paths = {'meta_paths': next_metapaths,
+             'next_batch_available': not is_last_batch}
     if "time" in session.keys():
         session['time_old'] = session['time']
     session['time'] = datetime.datetime.now()
@@ -208,6 +214,7 @@ def receive_rated_metapaths():
     if not request.is_json:
         abort(400)
     rated_metapaths = request.get_json()
+    session['active_learning_algorithm'].update(rated_metapaths)
     for datapoint in rated_metapaths:
         if not all(key in datapoint for key in ['id', 'metapath', 'rating']):
             abort(400)  # malformed input
@@ -217,7 +224,6 @@ def receive_rated_metapaths():
         if "time" in session.keys():
             rated_metapaths.append({'time_to_rate': (time_results_received - session['time']).total_seconds()})
 
-    session['rated_meta_paths'] = session['rated_meta_paths'] + rated_metapaths
     return 'OK'
 
 
@@ -228,6 +234,107 @@ def send_results():
     """
     # TODO: Call fitting method in explanation
     raise NotImplementedError("This API endpoint isn't implemented in the moment")
+
+
+# Self defined intents
+@ask.intent('ChooseDataset')
+def choose_dataset(dataset):
+    raise NotImplementedError()
+
+
+@ask.intent('RateMetapath')
+def rate_metapath():
+    raise NotImplementedError()
+
+
+@ask.intent('ExcludeEdgeType')
+def exclude_edge_type():
+    raise NotImplementedError()
+
+
+@ask.intent('ExcludeNodeType')
+def exclude_node_type():
+    raise NotImplementedError()
+
+
+@ask.intent('ShowMoreMetapaths')
+def show_more_metapaths():
+    raise NotImplementedError()
+
+
+@ask.intent('ShowResults')
+def show_results():
+    raise NotImplementedError()
+
+# Built-in intents
+@ask.intent('AMAZON.CancelIntent')
+def cancel():
+    raise NotImplementedError()
+
+
+@ask.intent('AMAZON.HelpIntent')
+def help():
+    raise NotImplementedError()
+
+
+@ask.intent('AMAZON.StopIntent')
+def stop():
+    raise NotImplementedError()
+
+
+@ask.intent('AMAZON.MoreIntent')
+def more():
+    raise NotImplementedError()
+
+
+@ask.intent('AMAZON.NavigateHomeIntent')
+def navigate_home():
+    raise NotImplementedError()
+
+
+@ask.intent('AMAZON.NavigateSettingsIntent')
+def navigate_settings():
+    raise NotImplementedError()
+
+
+@ask.intent('AMAZON.NextIntent')
+def next():
+    raise NotImplementedError()
+
+
+@ask.intent('AMAZON.PageUpIntent')
+def page_up():
+    raise NotImplementedError()
+
+
+@ask.intent('AMAZON.PageDownIntent')
+def page_down():
+    raise NotImplementedError()
+
+
+@ask.intent('AMAZON.PreviousIntent')
+def previous():
+    raise NotImplementedError()
+
+
+@ask.intent('AMAZON.ScrollRighIntent')
+def scroll_right():
+    raise NotImplementedError()
+
+
+@ask.intent('AMAZON.ScrollDownIntent')
+def scroll_down():
+    raise NotImplementedError()
+
+
+@ask.intent('AMAZON.ScrollLeftIntent')
+def scroll_left():
+    raise NotImplementedError()
+
+
+@ask.intent('AMAZON.ScrollUpIntent')
+def scroll_up():
+    raise NotImplementedError()
 
 
 if __name__ == '__main__':

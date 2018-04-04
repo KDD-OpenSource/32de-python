@@ -11,9 +11,9 @@ class SimilarityTestCase(unittest.TestCase):
 
     def test_similarity_calculation(self):
         test_paths = \
-            [MetaPathRating(MetaPath([1, 2], [3]), 3, 1), MetaPathRating(MetaPath([1, 2, 1], [3, 4]), 1, 3),
-             MetaPathRating(MetaPath([1, 3, 2], [1, 1]), 5, 2), MetaPathRating(MetaPath([1, 3, 2], [1, 1]), 4, 7),
-             MetaPathRating(MetaPath([1, 3, 2], [1, 1]), 6, 3)]
+            [MetaPathRating(MetaPath(nodes=[1, 2], edges=[3]), 3, 1), MetaPathRating(MetaPath(nodes=[1, 2, 1], edges=[3, 4]), 1, 3),
+             MetaPathRating(MetaPath(nodes=[1, 3, 2], edges=[1, 1]), 5, 2), MetaPathRating(MetaPath(nodes=[1, 3, 2], edges=[1, 1]), 4, 7),
+             MetaPathRating(MetaPath(nodes=[1, 3, 2], edges=[1, 1]), 6, 3)]
 
         similarity = SimilarityScore.calculate_similarity(test_paths)
 
