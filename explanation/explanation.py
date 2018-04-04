@@ -9,6 +9,7 @@ class Explanation:
     def __init__(self):
         raise NotImplementedError()
 
+
 '''
 Compute similarity score between the two node sets based on given meta-paths
 and their structural and domain value.
