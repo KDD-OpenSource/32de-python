@@ -182,7 +182,7 @@ class RandomSamplingAlgorithm(HypothesisBasedAlgorithm):
 class GPSelect_Algorithm(HypothesisBasedAlgorithm):
     """
         An active learning algorithm, that selects the most uncertain data, but prefers more highly rated datapoints.
-        The parameter beta weights the trade-off between exploitation and explration.
+        The parameter beta weights the trade-off between exploitation and exploration.
         ...
         Hastagiri P. Vanchinathan, Andreas Marfurt, Charles-Antoine Robelin, Donald Kossmann, and Andreas Krause. 2015. 
         Discovering Valuable items from Massive Data. In Proceedings of the 21th ACM SIGKDD (KDD '15).
