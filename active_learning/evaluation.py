@@ -13,7 +13,7 @@ logger.addHandler(consoleHandler)  # logger.setLevel(logging.DEBUG)
 
 # Different parametrisations that can be used in experiments
 ORACLES = [UserOracle, FunctionalOracle]
-ALGORITHMS = [UncertaintySamplingAlgorithm, GPSelect_Algorithm]
+ALGORITHMS = [UncertaintySamplingAlgorithm, GPSelect_Algorithm, RandomSamplingAlgorithm]
 
 
 class Evaluator:

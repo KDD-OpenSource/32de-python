@@ -163,6 +163,21 @@ class UncertaintySamplingAlgorithm(HypothesisBasedAlgorithm):
         std = self.hypothesis.predict_std(range(len(self.meta_paths)))
         return std
 
+class RandomSamplingAlgorithm(HypothesisBasedAlgorithm):
+    """
+        An active learning algorithm, that requests labels on the data he is most uncertain of.
+    """
+
+    @staticmethod
+    def options():
+        return {}
+
+    def compute_selection_criterion(self):
+        """
+        Select the next metapaths based on the uncertainty of them in the current model.
+        """
+        random_criterion = self.random.randn(len(self.meta_paths))
+        return random_criterion
 
 class GPSelect_Algorithm(HypothesisBasedAlgorithm):
     """
