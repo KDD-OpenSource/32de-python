@@ -29,7 +29,10 @@ Session(app)
 #TODO: Fix CORS origins specification
 # Configure Cross Site Scripting
 if "METAEXP_DEV" in os.environ.keys() and os.environ["METAEXP_DEV"] == "true":
-    CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://{}".format(SERVER_PATH)}})
+    if REACT_PORT == 80:
+        CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://{}".format(SERVER_PATH)}})
+    else:
+        CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://{}:{}".format(SERVER_PATH, REACT_PORT)}})
 else:
     CORS(app, supports_credentials=True, resources='*')
 
