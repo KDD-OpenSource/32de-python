@@ -35,7 +35,7 @@ if "METAEXP_DEV" in os.environ.keys() and os.environ["METAEXP_DEV"] == "true":
     else:
         CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://{}:{}".format(SERVER_PATH, REACT_PORT)}})
 else:
-    CORS(app, supports_credentials=True, resources='*')
+    CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
 
 def run(port, hostname, debug_mode):
     app.run(host=hostname, port=port, debug=debug_mode, threaded=True)
