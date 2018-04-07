@@ -5,6 +5,7 @@ from util.config import SERVER_PATH, REACT_PORT, API_PORT, SESSION_CACHE_DIR, SE
 from util.meta_path_loader_dispatcher import MetaPathLoaderDispatcher
 from util.graph_stats import GraphStats
 from active_learning.active_learner import UncertaintySamplingAlgorithm
+from explanation.explanation import SimilarityScore
 import json
 import os
 import time
@@ -225,13 +226,13 @@ def receive_rated_metapaths():
     return 'OK'
 
 
-@app.route("/results", methods=["GET"])
-def send_results():
+@app.route("/get-similarity-score", methods=["GET"])
+def send_similarity_score():
     """
-    TODO: Endpoint needs to be specified by team delta
+    TODO: Endpoint needs to request similarity score dynamically at SimilarityScore Class
     """
-    # TODO: Call fitting method in explanation
-    raise NotImplementedError("This API endpoint isn't implemented in the moment")
+    similarity_score = SimilarityScore()
+    return jsonify({'similarity_score': similarity_score.get_similarity_score()})
 
 
 # Self defined intents
