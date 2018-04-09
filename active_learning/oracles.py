@@ -40,9 +40,12 @@ class FunctionalOracle(Oracle):
     The evaluation method is provided via a callable 'rating_func'.
     """
 
-    def __init__(self, rating_func: Callable[[MetaPath], float]):
+    def __init__(self, **oracle_params):
         # Set configuration of this oracle
-        self.rating_func = rating_func
+        if 'rating_func' in oracle_params:
+            self.rating_func = oracle_params['rating_func']
+        else:
+            self.rating_func = constant
         super(FunctionalOracle, self).__init__()
 
     @staticmethod
@@ -65,7 +68,7 @@ class UserOracle(Oracle):
     """
 
     def __init__(self, ground_truth_path: str, default_rating=0.5, is_zero_indexed=False):
-        super(UserOracle, self).__init__()
+        super().__init__()
         # Set configuration of this oracle
         self.is_zero_indexed = is_zero_indexed
         self.default_rating = default_rating

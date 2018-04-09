@@ -118,12 +118,14 @@ class RandomSelectionAlgorithm(AbstractActiveLearningAlgorithm):
 class HypothesisBasedAlgorithm(AbstractActiveLearningAlgorithm, metaclass=ABCMeta):
     available_hypotheses = {'Gaussian Process': GaussianProcessHypothesis}
 
-    def __init__(self, meta_paths: List[MetaPath], hypothesis: str, seed: int = 42, hypothesis_params = {}):
-        self.hypothesis = GaussianProcessHypothesis(meta_paths=meta_paths,**hypothesis_params)
-        super(HypothesisBasedAlgorithm, self).__init__(meta_paths, seed)
+    def __init__(self, meta_paths: List[MetaPath], seed: int = 42, **hypothesis_params):
+        if hypothesis_params['hypothesis'] not in self.available_hypotheses:
+            print('This Hypotheses is unavailable! Try another one.')
+        self.hypothesis = self.available_hypotheses[hypothesis_params['hypothesis']](meta_paths=meta_paths,**hypothesis_params)
+        super().__init__(meta_paths, seed)
 
     def update(self, meta_paths):
-        super(HypothesisBasedAlgorithm, self).update(meta_paths)
+        super().update(meta_paths)
         self.hypothesis.update(np.where(self.visited == State.VISITED)[0],
                                self.meta_paths_rating[np.where(self.visited == State.VISITED)[0]])
 
@@ -158,9 +160,9 @@ class UncertaintySamplingAlgorithm(HypothesisBasedAlgorithm):
 
     def compute_selection_criterion(self):
         """
-        Select the next metapaths based on the uncertainty of them in the current model.
+        Select the next meta paths based on the uncertainty of them in the current model.
         """
-        std = self.hypothesis.predict_std(range(len(self.meta_paths)))
+        std = self.hypothesis.get_uncertainty_of_rating(range(len(self.meta_paths)))
         return std
 
 class RandomSamplingAlgorithm(HypothesisBasedAlgorithm):

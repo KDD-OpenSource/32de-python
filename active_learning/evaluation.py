@@ -20,18 +20,16 @@ class Evaluator:
     def __init__(self, dataset_name: str,
                  batch_size: int = 5,
                  algorithm=UncertaintySamplingAlgorithm,
-                 algo_params={'hypothesis': GaussianProcessHypothesis},
                  oracle=FunctionalOracle,
-                 oracle_params={'rating_func': constant},
-                 seed: int = 42):
+                 seed: int = 42, **evaluator_params):
+
         self.batch_size = batch_size
-        self.seed = seed
 
         meta_path_loader = MetaPathLoaderDispatcher().get_loader(dataset_name)
         meta_paths = meta_path_loader.load_meta_paths()
 
-        self.algorithm = algorithm(meta_paths=meta_paths, seed=seed, **algo_params)
-        self.oracle = oracle(**oracle_params)
+        self.algorithm = algorithm(meta_paths=meta_paths, seed=seed, **evaluator_params)
+        self.oracle = oracle
 
     def compute(self) -> pd.DataFrame:
         """
