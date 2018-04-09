@@ -295,9 +295,16 @@ def send_contributing_meta_paths():
 def send_contributing_meta_path(meta_path_id):
     contributing_meta_path = {
         "id": meta_path_id,
-        "label": "Meta-Path " + str(meta_path_id),
-        "value": 433,
-        "color": "hsl(341, 70%, 50%)"
+        "name": "Meta-Path " + str(meta_path_id),
+        "structural_value": 10,
+        "contribution_ranking": 2,
+        "contribution_value": 25.55,
+        "meta_path": "PERSON - acted_id - MOVIE - directed - PERSON - directed - MOVIE",
+        "instance_queries": [
+            "MATCH (n)-[r]->(m) RETURN n,r,m",
+            "MATCH (n)-[r]->(m) RETURN n,r,m",
+            "MATCH (n)-[r]->(m) RETURN n,r,m"
+        ]
     }
 
     return jsonify({'meta_path': contributing_meta_path})
