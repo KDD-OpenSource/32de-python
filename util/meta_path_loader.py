@@ -5,6 +5,7 @@ import pandas as pd
 from .config import ROTTEN_TOMATO_PATH
 import os
 import io
+import logging
 
 
 class AbstractMetaPathLoader(ABC):
@@ -36,6 +37,9 @@ class AbstractMetaPathLoader(ABC):
 class RottenTomatoMetaPathLoader(AbstractMetaPathLoader):
     dataset_filename = 'rotten-(when_harry_met_sally-sleepless_in_seattle)-mp1-5.csv'
 
+    def __init__(self):
+        self.logger = logging.getLogger('MetaExp.{}'.format(__class__.__name__))
+
     def load_meta_paths(self) -> List[MetaPath]:
         df = pd.read_csv(
             os.path.join(ROTTEN_TOMATO_PATH, self.dataset_filename))
@@ -50,12 +54,14 @@ class RottenTomatoMetaPathLoader(AbstractMetaPathLoader):
             edges = i[1]
             mp = self.string_to_meta_path(nodes, edges)
             meta_paths.append(mp)
-        print("{}: Number of meta-paths is {}".format(self.__class__.__name__.upper(), len(meta_paths)))
+        self.logger.debug("Successfully extracted meta paths from file")
+        self.logger.debug("Number of meta-paths is {}".format(len(meta_paths)))
         return meta_paths
 
 
 class CypherDataSetLoader(AbstractMetaPathLoader):
     def __init__(self, dataset_path):
+        self.logger = logging.getLogger('MetaExp.{}'.format(__class__.__name__))
         self.dataset_path = dataset_path
 
     def load_meta_paths(self) -> List[MetaPath]:
@@ -82,11 +88,13 @@ class CypherDataSetLoader(AbstractMetaPathLoader):
             nodes = [i[0] for i in row.nodes_types]
             edges = [rel_type.split('/')[-1] for rel_type in row.relationship_types]
             meta_paths.append(MetaPath(nodes=nodes, edges=edges))
-        print("{}: Number of meta-paths is {}".format(self.__class__.__name__.upper(), len(meta_paths)))
+        self.logger.debug("Successfully extracted meta paths from file")
+        self.logger.debug("Number of meta-paths is {}.".format(len(meta_paths)))
         return meta_paths
 
 class CypherDataSetLoaderWithoutCounts(AbstractMetaPathLoader):
     def __init__(self, dataset_path):
+        self.logger = logging.getLogger('MetaExp.{}'.format(__class__.__name__))
         self.dataset_path = dataset_path
 
     def load_meta_paths(self) -> List[MetaPath]:
@@ -114,5 +122,6 @@ class CypherDataSetLoaderWithoutCounts(AbstractMetaPathLoader):
             nodes = [i[0] for i in row.nodes_types]
             edges = [rel_type.split('/')[-1] for rel_type in row.relationship_types]
             meta_paths.append(MetaPath(nodes=nodes, edges=edges))
-        print("{}: Number of meta-paths is {}".format(self.__class__.__name__.upper(), len(meta_paths)))
+        self.logger.debug("Successfully extracted meta paths from file")
+        self.logger.debug("Number of meta-paths is {}".format(len(meta_paths)))
         return meta_paths
