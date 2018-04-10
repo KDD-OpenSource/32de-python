@@ -6,7 +6,7 @@ BASELINE_MODE = "baseline"
 # development
 RANDOM_STATE = 42 # change it to something random if it should not be reconstructive.
 # server
-REACT_PORT = 80
+REACT_PORT = 3000
 API_PORT = 8000
 SERVER_PATH = 'localhost'
 # Data sets

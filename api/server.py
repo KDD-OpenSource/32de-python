@@ -5,6 +5,7 @@ from util.config import SERVER_PATH, REACT_PORT, API_PORT, SESSION_CACHE_DIR, SE
 from util.meta_path_loader_dispatcher import MetaPathLoaderDispatcher
 from util.graph_stats import GraphStats
 from active_learning.active_learner import UncertaintySamplingAlgorithm
+from explanation.explanation import SimilarityScore
 import json
 import os
 import time
@@ -29,9 +30,12 @@ Session(app)
 #TODO: Fix CORS origins specification
 # Configure Cross Site Scripting
 if "METAEXP_DEV" in os.environ.keys() and os.environ["METAEXP_DEV"] == "true":
-    CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://{}".format(SERVER_PATH)}})
+    if REACT_PORT == 80:
+        CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://{}".format(SERVER_PATH)}})
+    else:
+        CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://{}:{}".format(SERVER_PATH, REACT_PORT)}})
 else:
-    CORS(app, supports_credentials=True, resources='*')
+    CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
 
 def run(port, hostname, debug_mode):
     app.run(host=hostname, port=port, debug=debug_mode, threaded=True)
@@ -109,6 +113,66 @@ def send_node_sets():
     # TODO: Call fitting method in active_learning
     # TODO: Check if necessary information is in request object
     raise NotImplementedError("This API endpoint isn't implemented in the moment")
+
+
+@app.route("/first-node -set-query", methods=["GET"])
+def send_first_node_set():
+    return jsonify({'node_set_query': 'MATCH (n)-[r]->(m) RETURN n,r,m'})
+
+
+@app.route("/second-node-set-query", methods=["GET"])
+def send_second_node_set():
+    return jsonify({'node_set_query': 'MATCH (n)-[r]->(m) RETURN n,r,m'})
+
+
+@app.route("/contributing-meta-paths", methods=["GET"])
+def send_contributing_meta_paths():
+    contributing_meta_paths = [
+      {
+        "id": "make",
+        "label": "make",
+        "value": 551,
+        "color": "hsl(131, 70%, 50%)"
+      },
+      {
+        "id": "erlang",
+        "label": "erlang",
+        "value": 226,
+        "color": "hsl(358, 70%, 50%)"
+      },
+      {
+        "id": "c",
+        "label": "c",
+        "value": 129,
+        "color": "hsl(151, 70%, 50%)"
+      },
+      {
+        "id": "php",
+        "label": "php",
+        "value": 67,
+        "color": "hsl(52, 70%, 50%)"
+      },
+      {
+        "id": "java",
+        "label": "java",
+        "value": 452,
+        "color": "hsl(221, 70%, 50%)"
+      },
+      {
+        "id": "stylus",
+        "label": "stylus",
+        "value": 406,
+        "color": "hsl(102, 70%, 50%)"
+      },
+      {
+        "id": "ruby",
+        "label": "ruby",
+        "value": 433,
+        "color": "hsl(341, 70%, 50%)"
+      }
+    ]
+
+    return jsonify({'contributing_meta_paths': contributing_meta_paths})
 
 
 # TODO: If functionality "meta-paths for node set A and B" will be written in Java, team alpha will need this information in Java
@@ -222,13 +286,13 @@ def receive_rated_metapaths():
     return 'OK'
 
 
-@app.route("/results", methods=["GET"])
-def send_results():
+@app.route("/get-similarity-score", methods=["GET"])
+def send_similarity_score():
     """
-    TODO: Endpoint needs to be specified by team delta
+    TODO: Endpoint needs to request similarity score dynamically at SimilarityScore Class
     """
-    # TODO: Call fitting method in explanation
-    raise NotImplementedError("This API endpoint isn't implemented in the moment")
+    similarity_score = SimilarityScore()
+    return jsonify({'similarity_score': similarity_score.get_similarity_score()})
 
 
 # Self defined intents
