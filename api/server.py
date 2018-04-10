@@ -309,6 +309,42 @@ def send_contributing_meta_path(meta_path_id):
 
     return jsonify({'meta_path': contributing_meta_path})
 
+@app.route("/similar-nodes", methods=["GET"])
+def send_similar_nodes():
+    similar_nodes = [
+        {
+            "cypher_query": "MATCH (n) RETURN n LIMIT 1",
+            "properties": {
+                "name": "Node A",
+                "label": "Node Type A"
+            }
+        },
+        {
+            "cypher_query": "MATCH (n) RETURN n LIMIT 1",
+            "properties": {
+                "name": "Node B",
+                "label": "Node Type B"
+            }
+        },
+        {
+            "cypher_query": "MATCH (n) RETURN n LIMIT 1",
+            "properties": {
+                "name": "Node C",
+                "label": "Node Type A"
+            }
+        },
+        {
+            "name": "Node D",
+            "cypher_query": "MATCH (n) RETURN n LIMIT 1",
+            "properties": {
+                "name": "Node D",
+                "label": "Node Type B"
+            }
+        }
+    ]
+
+    return jsonify({'similar_nodes': similar_nodes})
+
 
 # Self defined intents
 @ask.intent('ChooseDataset')
