@@ -1,2 +1,3 @@
 # List of packages which are only needed for deployment
+# Please add dependencies here and in the Dockerfile
 gunicorn

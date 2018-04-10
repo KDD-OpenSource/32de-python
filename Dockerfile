@@ -12,6 +12,7 @@ RUN apt-get update -qq && apt-get install -y python3-graph-tool
 COPY . /32de-python/
 
 WORKDIR /32de-python
-RUN pip3 install -r requirements.txt
-RUN pip3 install -r deployment/deployment.txt
+# Please add dependencies here and in requirements.txt or deployment/deployment.txt
+RUN pip3 install numpy==1.14.0 sklearn typing pytest flask pandas flask-cors scipy pytest-cov Flask-Session graphviz cryptography==2.1.4 flask-ask
+RUN pip3 install gunicorn
 ENTRYPOINT ["gunicorn", "--config", "deployment/gunicorn-config.py", "api.server:app"]
