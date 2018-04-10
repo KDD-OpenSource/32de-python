@@ -1,6 +1,6 @@
 from active_learning.oracles import UserOracle, FunctionalOracle
 from active_learning.evaluation import Evaluator
-from active_learning.active_learner import RandomSelectionAlgorithm, GPSelect_Algorithm
+from active_learning.active_learner import RandomSelectionAlgorithm, GPSelect_Algorithm, UncertaintySamplingAlgorithm
 from active_learning.rating import length_based
 import unittest
 
@@ -13,19 +13,10 @@ class ActiveLearningExperimentsTest(unittest.TestCase):
         print("Hear, hear!"
               "The Oracle of Merlin and Felix ... ")
 
-        merlin_eval = Evaluator(dataset_name='Rotten Tomato',
-                                oracle=UserOracle,
-                                oracle_params={
-                                    'ground_truth_path': 'rated_datasets/Rotten Tomato_Merlin_1519148528.2417703.json',
-                                    'is_zero_indexed': False},
-                                batch_size=5)
-        felix_eval = Evaluator(dataset_name='Rotten Tomato',
-                               oracle=UserOracle,
-                               oracle_params={
-                                   'ground_truth_path': 'rated_datasets/Rotten Tomato_mcfelix_1519142949.904623.json',
-                                   'is_zero_indexed': False,
-                                   'default_rating': 0.5},
-                               batch_size=5)
+        merlin_eval = Evaluator('Rotten Tomato', 5, UncertaintySamplingAlgorithm,
+                                UserOracle('rated_datasets/Rotten Tomato_Merlin_1519148528.2417703.json'))
+        felix_eval = Evaluator('Rotten Tomato', 5, UncertaintySamplingAlgorithm,
+                               UserOracle('rated_datasets/Rotten Tomato_mcfelix_1519142949.904623.json'))
         stats = merlin_eval.compute()
         stats = felix_eval.compute()
         print(stats)
@@ -34,16 +25,12 @@ class ActiveLearningExperimentsTest(unittest.TestCase):
         """
         An example for using the MockOracle on the Rotten Tomato dataset.
         """
-        eval = Evaluator(dataset_name='Rotten Tomato', algorithm=RandomSelectionAlgorithm, algo_params={},batch_size=5)
+        eval = Evaluator('Rotten Tomato', 5, RandomSelectionAlgorithm, FunctionalOracle())
         stats = eval.compute()
 
 
     def test_gp_select(self):
-        eval = Evaluator(dataset_name='Rotten Tomato',
-                         oracle=FunctionalOracle,
-                         oracle_params={'rating_func': length_based},
-                         algorithm=GPSelect_Algorithm,
-                         algo_params={'hypothesis': 'Gaussian Process', 'beta': 0.12})
+        eval = Evaluator('Rotten Tomato', 5, GPSelect_Algorithm, FunctionalOracle(rating_func= length_based), beta=0.12)
         eval.compute()
 
 

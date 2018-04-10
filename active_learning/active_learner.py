@@ -261,9 +261,12 @@ class GPSelect_Algorithm(HypothesisBasedAlgorithm):
         ACM, New York, NY, USA, 1195-1204. DOI: https://doi.org/10.1145/2783258.2783360
     """
 
-    def __init__(self, meta_paths: List[MetaPath], hypothesis: str, beta: float = 0.5, seed: int = 42):
-        super(GPSelect_Algorithm, self).__init__(meta_paths, hypothesis, seed)
-        self.beta = beta
+    def __init__(self, meta_paths: List[MetaPath], seed: int = 42, **hypothesis_params):
+        super().__init__(meta_paths, seed, **hypothesis_params)
+        if 'beta' in hypothesis_params:
+            self.beta = hypothesis_params['beta']
+        else:
+            self.beta = 0.5
 
     @staticmethod
     def options():
@@ -276,6 +279,6 @@ class GPSelect_Algorithm(HypothesisBasedAlgorithm):
         Select the next metapaths based on the uncertainty of them in the current model.
         """
         all_paths = range(len(self.meta_paths))
-        criterion = np.sqrt(self.beta) * self.hypothesis.predict_std(all_paths) \
+        criterion = np.sqrt(self.beta) * self.hypothesis.get_uncertainty(all_paths) \
                     + self.hypothesis.predict_rating(all_paths)
         return criterion

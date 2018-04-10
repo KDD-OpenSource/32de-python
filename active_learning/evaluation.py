@@ -18,9 +18,9 @@ ALGORITHMS = [UncertaintySamplingAlgorithm, GPSelect_Algorithm, RandomSamplingAl
 
 class Evaluator:
     def __init__(self, dataset_name: str,
-                 batch_size: int = 5,
-                 algorithm=UncertaintySamplingAlgorithm,
-                 oracle=FunctionalOracle,
+                 batch_size: int,
+                 algorithm,
+                 oracle,
                  seed: int = 42, **evaluator_params):
 
         self.batch_size = batch_size
