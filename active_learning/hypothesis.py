@@ -5,7 +5,8 @@ from sklearn.gaussian_process.kernels import (RBF, Matern, RationalQuadratic,
                                               ExpSineSquared, DotProduct,
                                               ConstantKernel)
 import numpy as np
-from typing import Callable
+import logging
+
 
 class MPLengthHypothesis:
     """
@@ -39,14 +40,27 @@ class MPLengthHypothesis:
 
 
 class GaussianProcessHypothesis:
-
     def __init__(self, meta_paths, **hypothesis_params):
+        self.logger = logging.getLogger('MetaExp.{}'.format(__class__.__name__))
         kernel = 1.0 * RBF(length_scale=1.0, length_scale_bounds=(1e-1, 10.0))
         self.gp = GaussianProcessRegressor(kernel=kernel, optimizer=None)
         if not 'embedding_strategy' in hypothesis_params:
             self.meta_paths = self._length_based_transform(meta_paths)
         else:
             self.meta_paths = hypothesis_params['embedding_strategy'](meta_paths)
+
+    def __getstate__(self):
+        # Copy the object's state from self.__dict__ which contains
+        # all our instance attributes.
+        state = self.__dict__.copy()
+        # Remove the unpicklable entries.
+        del state['logger']
+        return state
+
+    def __setstate__(self, d):
+        # Restore instance attributes
+        self.__dict__.update(d)
+        self.logger = logging.getLogger('MetaExp.{}'.format(__class__.__name__))
 
     def _length_based_transform(self, meta_paths):
         """
@@ -68,7 +82,11 @@ class GaussianProcessHypothesis:
         self.gp.fit(self.meta_paths[idx], ratings)
 
     def predict_rating(self, idx):
+        prediction = self.gp.predict(self.meta_paths[idx])
+        self.logger.debug("prediction for {} is {}", self.meta_paths[idx], prediction)
         return self.gp.predict(self.meta_paths[idx])
 
-    def get_uncertainty_of_rating(self, idx):
-        return self.gp.predict(self.meta_paths[idx], return_std=True)[1]
+    def get_uncertainty(self, idx):
+        uncertainty_all_meta_paths = self.gp.predict(self.meta_paths[idx], return_std=True)[1]
+        self.logger.debug("The uncertainty for the meta paths is: {}".format(uncertainty_all_meta_paths))
+        return uncertainty_all_meta_paths

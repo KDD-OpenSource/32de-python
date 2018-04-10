@@ -1,4 +1,4 @@
-import os
+from os import path
 from logging.config import dictConfig
 
 # algorithms
@@ -11,10 +11,10 @@ REACT_PORT = 3000
 API_PORT = 8000
 SERVER_PATH = 'localhost'
 # Data sets
-RATED_DATASETS_PATH = os.path.join('..', 'rated_datasets')
-MOCK_DATASETS_DIR = os.path.join('..', 'tests', 'data')
+RATED_DATASETS_PATH = path.join('..', 'rated_datasets')
+MOCK_DATASETS_DIR = path.join('..', 'tests', 'data')
 # Configuration for sessions saved on the file system
-SESSION_CACHE_DIR = os.path.join('tmp', 'sessions')
+SESSION_CACHE_DIR = path.join('..', 'tmp', 'sessions')
 SESSION_THRESHOLD = 500
 SESSION_MODE = '0700'
 

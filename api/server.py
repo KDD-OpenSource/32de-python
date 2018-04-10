@@ -1,31 +1,30 @@
 from flask import Flask, jsonify, request, abort, session
 from flask_session import Session
 from flask_cors import CORS
-from util.config import *
-from util.meta_path_loader_dispatcher import MetaPathLoaderDispatcher
-from util.graph_stats import GraphStats
-from active_learning.active_learner import UncertaintySamplingAlgorithm
-from explanation.explanation import SimilarityScore
 import json
 import os
 import time
 import datetime
 from flask_ask import Ask
+import logging
 
+from util.config import *
+from util.meta_path_loader_dispatcher import MetaPathLoaderDispatcher
+from util.graph_stats import GraphStats
+from active_learning.active_learner import UncertaintySamplingAlgorithm
+from explanation.explanation import SimilarityScore
 
 app = Flask(__name__)
 ask = Ask(app, '/alexa')
 
 """ 
     Logging guideline:
-    - Use flasks logger in this module. You can access it via app.logger.
-    - In the other modules use the MetaExp-Logger. For example if you wanted to equip the module Example with a logger, 
-      you would simply create a child logger by logging.getLogger('MetaExp.Example'). If you wanted to use a logger for 
-      each class, you would define it as self.logger = logging.getLogger('MetaExp.{}'.format(__class__.__name__)).
-      
-    To see the logging messages you have to start flask with the argument debug=True.
+    Use MetaExp-Logger. For example if you wanted to equip the module Example with a logger, 
+    you would simply create a child logger by logging.getLogger('MetaExp.Example'). If you wanted to use a logger for 
+    each class, you would define it as self.logger = logging.getLogger('MetaExp.{}'.format(__class__.__name__)).
 """
 set_up_logger()
+logger = logging.getLogger('MetaExp.Server')
 
 # TODO: Change if we have a database in the background
 SESSION_TYPE = 'filesystem'
@@ -61,25 +60,23 @@ def login():
     data = request.get_json()
 
     # retrieve data from login
-    app.logger.info("Login route received data: {}".format(data))
+    logger.debug("Login route received data: {}".format(data))
     session['username'] = data['username']
     session['dataset'] = data['dataset']
     session['purpose'] = data['purpose']
 
-    # setup dataset
+    # setup data
     # TODO use key from dataset to select data
     meta_path_loader = MetaPathLoaderDispatcher().get_loader(session['dataset'])
     meta_paths = meta_path_loader.load_meta_paths()
     # TODO get Graph stats for current dataset
     graph_stats = GraphStats()
-    session['active_learning_algorithm'] = UncertaintySamplingAlgorithm(meta_paths=meta_paths,
-                                                                        hypothesis='Gaussian Process')
+    session['active_learning_algorithm'] = UncertaintySamplingAlgorithm(meta_paths, hypothesis='Gaussian Process')
     session['meta_path_id'] = 1
     session['rated_meta_paths'] = []
     # TODO feed this selection to the ALgorithms
     session['selected_node_types'] = build_selection(graph_stats.get_node_types())
     session['selected_edge_types'] = build_selection(graph_stats.get_edge_types())
-
 
     return jsonify({'status': 200})
 
@@ -95,6 +92,7 @@ def logout():
         'purpose': session['purpose']
     }
     filename = '{}_{}_{}.json'.format(session['dataset'], session['username'], time.time())
+    logger.info("Writing results to file {}...".format(filename))
     path = os.path.join(RATED_DATASETS_PATH, filename)
     json.dump(rated_meta_paths, open(path, "w", encoding="utf8"))
     session.clear()
@@ -251,8 +249,9 @@ def send_next_metapaths_to_rate(batch_size):
         {'id': 3,
         'metapath': ['Phenotype', 'HAS', 'Association', 'HAS', 'SNP', 'HAS', 'Phenotype'],
         'rating': 0.5}
-        """
+    """
     next_metapaths, is_last_batch = session['active_learning_algorithm'].get_next(batch_size=batch_size)
+    logger.debug("Next metapaths are: {}".format(next_metapaths))
     for i in range(len(next_metapaths)):
         next_metapaths[i]['metapath'] = next_metapaths[i]['metapath'].as_list()
     paths = {'meta_paths': next_metapaths,
@@ -283,19 +282,27 @@ def receive_rated_metapaths():
     'rating': 0.75}
     """
     time_results_received = datetime.datetime.now()
-    # TODO: Check if necessary information is in request object
     if not request.is_json:
+        logger.info("Aborting, because request is not in json format")
         abort(400)
-    rated_metapaths = request.get_json()
-    session['active_learning_algorithm'].update(rated_metapaths)
-    for datapoint in rated_metapaths:
-        if not all(key in datapoint for key in ['id', 'metapath', 'rating']):
-            abort(400)  # malformed input
+
+    data = request.get_json()
+    logger.debug("Login route received data: {}".format(data))
+
+    expected_keys = ['id', 'metapath', 'rating']
+    for datapoint in data['meta_paths']:
+        if not all(key in datapoint for key in expected_keys):
+            logger.info("Aborting, because keys {} are misssing in this part of json: {}".format(
+                [key for key in expected_keys if key not in datapoint], datapoint))
+            abort(400)
+
+    logger.info("Updating active learning algorithm...")
+    session['active_learning_algorithm'].update(data['meta_paths'])
     if "time_old" in session.keys():
-        rated_metapaths.append({'time_to_rate': (time_results_received - session['time_old']).total_seconds()})
+        data['time_to_rate'] = (time_results_received - session['time_old']).total_seconds()
     else:
         if "time" in session.keys():
-            rated_metapaths.append({'time_to_rate': (time_results_received - session['time']).total_seconds()})
+            data['time_to_rate'] = (time_results_received - session['time']).total_seconds()
 
     return 'OK'
 
@@ -412,4 +419,4 @@ def scroll_up():
 
 
 if __name__ == '__main__':
-    app.run(port=API_PORT, threaded=True)
+    app.run(port=API_PORT, threaded=True, debug=True)
