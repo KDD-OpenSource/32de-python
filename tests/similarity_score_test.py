@@ -15,7 +15,7 @@ class SimilarityTestCase(unittest.TestCase):
              MetaPathRating(MetaPath(nodes=[1, 3, 2], edges=[1, 1]), 5, 2), MetaPathRating(MetaPath(nodes=[1, 3, 2], edges=[1, 1]), 4, 7),
              MetaPathRating(MetaPath(nodes=[1, 3, 2], edges=[1, 1]), 6, 3)]
 
-        similarity = SimilarityScore.calculate_similarity(test_paths)
+        similarity = self.sim_score.calculate_similarity(test_paths)
 
         self.assertEqual(similarity, 12.4)
 
