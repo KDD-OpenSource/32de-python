@@ -32,15 +32,3 @@ if __name__ == '__main__':
     args = parse_arguments()
 
     server.run(port=args.port, hostname=args.host, debug_mode=args.debug)
-
-    # beta: active learning of relevant meta-paths
-    active_learner = active_learning.ActiveLearner()
-    rated_paths = active_learner.retrieve_user_rating()
-
-    # gamma: score the learned paths
-    domain_score = domain_scoring.DomainScoring(rated_paths, mode=args.mode)
-
-    # delta
-    explanation = explanation.Explanation()
-
-    print("...did everything.")

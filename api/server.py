@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request, abort, session
 from flask_session import Session
 from flask_cors import CORS
-from util.config import SERVER_PATH, REACT_PORT, API_PORT, SESSION_CACHE_DIR, SESSION_MODE, SESSION_THRESHOLD, RATED_DATASETS_PATH
+from util.config import *
 from util.meta_path_loader_dispatcher import MetaPathLoaderDispatcher
 from util.graph_stats import GraphStats
 from active_learning.active_learner import UncertaintySamplingAlgorithm
@@ -11,6 +11,7 @@ import os
 import time
 import datetime
 from flask_ask import Ask
+
 
 app = Flask(__name__)
 ask = Ask(app, '/alexa')
@@ -27,44 +28,47 @@ app.config.from_object(__name__)
 app.config["SECRET_KEY"] = "37Y,=i9.,U3RxTx92@9j9Z[}"
 Session(app)
 
-#TODO: Fix CORS origins specification
+# TODO: Fix CORS origins specification
 # Configure Cross Site Scripting
 if "METAEXP_DEV" in os.environ.keys() and os.environ["METAEXP_DEV"] == "true":
     if REACT_PORT == 80:
         CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://{}".format(SERVER_PATH)}})
     else:
-        CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://{}:{}".format(SERVER_PATH, REACT_PORT)}})
+        CORS(app, supports_credentials=True,
+             resources={r"/*": {"origins": "http://{}:{}".format(SERVER_PATH, REACT_PORT)}})
 else:
     CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
+
 
 def run(port, hostname, debug_mode):
     app.run(host=hostname, port=port, debug=debug_mode, threaded=True)
 
 
-@app.route('/login', methods=["POST", "GET"])
+@app.route('/login', methods=["POST"])
 def login():
-    if request.method == 'POST' and 'username' not in session:
-        data = request.get_json()
+    session.clear()
+    data = request.get_json()
 
-        # retrieve data from login
-        print("Login route received data: {}".format(data))
-        session['username'] = data['username']
-        session['dataset'] = data['dataset']
-        session['purpose'] = data['purpose']
+    # retrieve data from login
+    app.logger.info("Login route received data: {}".format(data))
+    session['username'] = data['username']
+    session['dataset'] = data['dataset']
+    session['purpose'] = data['purpose']
 
-        # setup dataset
-        # TODO use key from dataset to select data
-        meta_path_loader = MetaPathLoaderDispatcher().get_loader(session['dataset'])
-        meta_paths = meta_path_loader.load_meta_paths()
-        # TODO get Graph stats for current dataset
-        graph_stats = GraphStats()
-        session['active_learning_algorithm'] = UncertaintySamplingAlgorithm(meta_paths=meta_paths,
-                                                                            hypothesis='Gaussian Process')
-        session['meta_path_id'] = 1
-        session['rated_meta_paths'] = []
-        # TODO feed this selection to the ALgorithms
-        session['selected_node_types'] = build_selection(graph_stats.get_node_types())
-        session['selected_edge_types'] = build_selection(graph_stats.get_edge_types())
+    # setup dataset
+    # TODO use key from dataset to select data
+    meta_path_loader = MetaPathLoaderDispatcher().get_loader(session['dataset'])
+    meta_paths = meta_path_loader.load_meta_paths()
+    # TODO get Graph stats for current dataset
+    graph_stats = GraphStats()
+    session['active_learning_algorithm'] = UncertaintySamplingAlgorithm(meta_paths=meta_paths,
+                                                                        hypothesis='Gaussian Process')
+    session['meta_path_id'] = 1
+    session['rated_meta_paths'] = []
+    # TODO feed this selection to the ALgorithms
+    session['selected_node_types'] = build_selection(graph_stats.get_node_types())
+    session['selected_edge_types'] = build_selection(graph_stats.get_edge_types())
+
 
     return jsonify({'status': 200})
 
@@ -128,48 +132,48 @@ def send_second_node_set():
 @app.route("/contributing-meta-paths", methods=["GET"])
 def send_contributing_meta_paths():
     contributing_meta_paths = [
-      {
-        "id": "make",
-        "label": "make",
-        "value": 551,
-        "color": "hsl(131, 70%, 50%)"
-      },
-      {
-        "id": "erlang",
-        "label": "erlang",
-        "value": 226,
-        "color": "hsl(358, 70%, 50%)"
-      },
-      {
-        "id": "c",
-        "label": "c",
-        "value": 129,
-        "color": "hsl(151, 70%, 50%)"
-      },
-      {
-        "id": "php",
-        "label": "php",
-        "value": 67,
-        "color": "hsl(52, 70%, 50%)"
-      },
-      {
-        "id": "java",
-        "label": "java",
-        "value": 452,
-        "color": "hsl(221, 70%, 50%)"
-      },
-      {
-        "id": "stylus",
-        "label": "stylus",
-        "value": 406,
-        "color": "hsl(102, 70%, 50%)"
-      },
-      {
-        "id": "ruby",
-        "label": "ruby",
-        "value": 433,
-        "color": "hsl(341, 70%, 50%)"
-      }
+        {
+            "id": "make",
+            "label": "make",
+            "value": 551,
+            "color": "hsl(131, 70%, 50%)"
+        },
+        {
+            "id": "erlang",
+            "label": "erlang",
+            "value": 226,
+            "color": "hsl(358, 70%, 50%)"
+        },
+        {
+            "id": "c",
+            "label": "c",
+            "value": 129,
+            "color": "hsl(151, 70%, 50%)"
+        },
+        {
+            "id": "php",
+            "label": "php",
+            "value": 67,
+            "color": "hsl(52, 70%, 50%)"
+        },
+        {
+            "id": "java",
+            "label": "java",
+            "value": 452,
+            "color": "hsl(221, 70%, 50%)"
+        },
+        {
+            "id": "stylus",
+            "label": "stylus",
+            "value": 406,
+            "color": "hsl(102, 70%, 50%)"
+        },
+        {
+            "id": "ruby",
+            "label": "ruby",
+            "value": 433,
+            "color": "hsl(341, 70%, 50%)"
+        }
     ]
 
     return jsonify({'contributing_meta_paths': contributing_meta_paths})
@@ -237,7 +241,6 @@ def send_next_metapaths_to_rate(batch_size):
         'metapath': ['Phenotype', 'HAS', 'Association', 'HAS', 'SNP', 'HAS', 'Phenotype'],
         'rating': 0.5}
         """
-
     next_metapaths, is_last_batch = session['active_learning_algorithm'].get_next(batch_size=batch_size)
     for i in range(len(next_metapaths)):
         next_metapaths[i]['metapath'] = next_metapaths[i]['metapath'].as_list()
@@ -324,6 +327,7 @@ def show_more_metapaths():
 @ask.intent('ShowResults')
 def show_results():
     raise NotImplementedError()
+
 
 # Built-in intents
 @ask.intent('AMAZON.CancelIntent')

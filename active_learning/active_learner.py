@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod, ABCMeta
 from enum import Enum
 from typing import List
-
 import numpy as np
 
 from util.datastructures import MetaPath
@@ -44,6 +43,7 @@ class AbstractActiveLearningAlgorithm(ABC):
         """
         is_last_batch = self.has_one_batch_left(batch_size)
         if is_last_batch:
+            print("Delivering last batch")
             batch_size = len(np.where(self.visited == State.NOT_VISITED)[0])
         ids = self._select(batch_size)
 
