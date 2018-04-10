@@ -16,6 +16,17 @@ from flask_ask import Ask
 app = Flask(__name__)
 ask = Ask(app, '/alexa')
 
+""" 
+    Logging guideline:
+    - Use flasks logger in this module. You can access it via app.logger.
+    - In the other modules use the MetaExp-Logger. For example if you wanted to equip the module Example with a logger, 
+      you would simply create a child logger by logging.getLogger('MetaExp.Example'). If you wanted to use a logger for 
+      each class, you would define it as self.logger = logging.getLogger('MetaExp.{}'.format(__class__.__name__)).
+      
+    To see the logging messages you have to start flask with the argument debug=True.
+"""
+set_up_logger()
+
 # TODO: Change if we have a database in the background
 SESSION_TYPE = 'filesystem'
 SESSION_FILE_DIR = SESSION_CACHE_DIR
