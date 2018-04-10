@@ -119,9 +119,12 @@ class HypothesisBasedAlgorithm(AbstractActiveLearningAlgorithm, metaclass=ABCMet
     available_hypotheses = {'Gaussian Process': GaussianProcessHypothesis}
 
     def __init__(self, meta_paths: List[MetaPath], seed: int = 42, **hypothesis_params):
-        if hypothesis_params['hypothesis'] not in self.available_hypotheses:
+        if 'hypothesis' not in hypothesis_params:
+            self.hypothesis = self.available_hypotheses['Gaussian Process'](meta_paths=meta_paths, **hypothesis_params)
+        elif hypothesis_params['hypothesis'] not in self.available_hypotheses:
             print('This Hypotheses is unavailable! Try another one.')
-        self.hypothesis = self.available_hypotheses[hypothesis_params['hypothesis']](meta_paths=meta_paths,**hypothesis_params)
+        else:
+            self.hypothesis = self.available_hypotheses[hypothesis_params['hypothesis']](meta_paths=meta_paths,**hypothesis_params)
         super().__init__(meta_paths, seed)
 
     def update(self, meta_paths):
