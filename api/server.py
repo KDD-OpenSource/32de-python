@@ -26,12 +26,18 @@ app.config.from_object(__name__)
 app.config["SECRET_KEY"] = "37Y,=i9.,U3RxTx92@9j9Z[}"
 Session(app)
 
-#TODO: Fix CORS origins specification
+# TODO: Fix CORS origins specification
 # Configure Cross Site Scripting
 if "METAEXP_DEV" in os.environ.keys() and os.environ["METAEXP_DEV"] == "true":
-    CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://{}".format(SERVER_PATH)}})
+    if REACT_PORT == 80:
+        CORS(app, supports_credentials=True,
+             resources={r"/*": {"origins": ["http://{}".format(i) for i in SERVER_PATH]}})
+    else:
+        CORS(app, supports_credentials=True,
+             resources={r"/*": {"origins": ["http://{}:{}".format(i, REACT_PORT) for i in SERVER_PATH]}})
 else:
-    CORS(app, supports_credentials=True, resources='*')
+    CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
+
 
 def run(port, hostname, debug_mode):
     app.run(host=hostname, port=port, debug=debug_mode, threaded=True)
