@@ -43,7 +43,7 @@ class Evaluator:
 
         while self.oracle._wants_to_continue() == True and not is_last_batch:
             # Retrieve next batch
-            next_metapaths, is_last_batch = self.algorithm.get_next(batch_size=self.batch_size)
+            next_metapaths, is_last_batch, ref_paths = self.algorithm.get_next(batch_size=self.batch_size)
             ids_to_be_rated = [mp['id'] for mp in next_metapaths]
             logger.info("\tRating paths:\t{}".format(ids_to_be_rated))
 
