@@ -1,8 +1,11 @@
-from .hypothesis import Hypothesis, GaussianProcessHypothesis
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod, ABCMeta
+from enum import Enum
 from typing import List
-from util.datastructures import MetaPath
 import numpy as np
+import logging
+
+from util.datastructures import MetaPath
+from .hypothesis import GaussianProcessHypothesis, MPLengthHypothesis
 
 # algorithm types
 NO_USER_FEEDBACK = 'no_user_feedback'
@@ -10,191 +13,272 @@ ITERATIVE_BATCHING = 'iterative_batching'
 COLLECT_ALL = 'collect_all'
 
 
-class ActiveLearningAlgorithm(ABC):
-    @abstractmethod
-    def __init__(self, data_set, model, interaction_config, seed_size):
-        self.data_set = data_set
-        self.model = model
-        self.interaction_config = interaction_config
-        return self.initial_label_request(seed_size)  # TODO better word for request
-
-    @abstractmethod
-    def initial_label_request(self, seed_size: int) -> List[MetaPath]:
-        """
-        Select the first meta-paths that should be labelled.
-        """
-        raise NotImplementedError("Subclass should implement.")
-
-    @abstractmethod
-    def available_hypotheses(self) -> List[Hypothesis]:
-        """
-        Return all hypothesises that are compatible with this ActiveLearningAlgorithm.
-        """
-        raise NotImplementedError("Subclass should implement.")
-
-    @abstractmethod
-    def update(self, meta_paths):
-        """
-        Receive new rated meta-paths and use them for criticising the hypothesis.
-        """
-        raise NotImplementedError("Subclass should implement.")
-
-    @abstractmethod
-    def get_next(self, batch_size: int) -> List[MetaPath]:
-        """
-        Select the next n meta-paths that should be rated.
-        """
-        raise NotImplementedError("Subclass should implement.")
-
-    @abstractmethod
-    def create_output(self) -> List[tuple]:
-        """
-        Make an output for whatever #TODO
-        """
-        raise NotImplementedError("Subclass should implement.")
-
-
-class RandomSelectionAlgorithm(ActiveLearningAlgorithm):
-    """
-        An active learning algorithm, that asks for randomly labeled instances.
-    """
-
+class State(Enum):
     VISITED = 0
     NOT_VISITED = 1
-    standard_rating = 0.5
-    random = None
 
-    def __init__(self, meta_paths: List[MetaPath], hypothesis: Hypothesis = None, seed=42):
-        self.hypothesis = hypothesis
-        assert hypothesis in self.available_hypotheses(), "Hypothesis {} not supported for this type of algorithm.".format(
-            hypothesis)
+
+class AbstractActiveLearningAlgorithm(ABC):
+    standard_rating = 0.5
+
+    def __init__(self, meta_paths: List[MetaPath], seed: int):
         self.meta_paths = np.array(meta_paths)
         self.meta_paths_rating = np.array(np.zeros(len(meta_paths)))
-        self.visited = np.array([self.NOT_VISITED] * len(meta_paths))
+        self.visited = np.array([State.NOT_VISITED] * len(meta_paths))
         self.random = np.random.RandomState(seed=seed)
+        self.logger = logging.getLogger('MetaExp.{}'.format(__class__.__name__))
 
-    def available_hypotheses(self):
-        return [None]
+    def __getstate__(self):
+        # Copy the object's state from self.__dict__ which contains
+        # all our instance attributes.
+        d = dict(self.__dict__)
+        # Remove the unpicklable entries.
+        del d['logger']
+        return d
 
-    def initial_label_request(self, seed_size):
-        return self.get_next(batch_size=seed_size)
+    def __setstate__(self, d):
+        self.__dict__.update(d)
+        self.logger = logging.getLogger('MetaExp.{}'.format(__class__.__name__))
+
+    def has_one_batch_left(self, batch_size):
+        if len(np.where(self.visited == State.NOT_VISITED)[0]) >= batch_size:
+            return False
+        return True
 
     def update(self, meta_paths):
         idx = [mp['id'] for mp in meta_paths]
         ratings = [mp['rating'] for mp in meta_paths]
-        self.visited[idx] = self.VISITED
+        self.visited[idx] = State.VISITED
+        self.logger.debug("Refreshed visited list: {}".format(self.visited))
         self.meta_paths_rating[idx] = ratings
+        self.logger.debug("Refreshed rating list: {}".format(self.meta_paths_rating))
 
     def get_next(self, batch_size=1) -> (List[MetaPath], bool):
         """
-        :return: requested number of next meta-paths to be shown.
+        :return: requested number of next meta-paths to be rated next.
         """
-        is_last_batch = False
-        if sum(self.visited) < batch_size:
-            batch_size = sum(self.visited)
-            is_last_batch = True
+        is_last_batch = self.has_one_batch_left(batch_size)
+        self.logger.info("Last Batch: {}".format(is_last_batch))
+        if is_last_batch:
+            batch_size = len(np.where(self.visited == State.NOT_VISITED)[0])
+        ids = self._select(batch_size)
 
-        idx = self.random.choice(range(len(self.meta_paths)), replace=False, p=self._prob_choose_meta_path(),
-                                 size=batch_size)
         mps = [{'id': int(meta_id),
-                'metapath': meta_path.as_list(),
-                'rating': self.standard_rating} for meta_id, meta_path in zip(idx, self.meta_paths[idx])]
+                'metapath': meta_path,
+                'rating': self.standard_rating} for meta_id, meta_path in
+               zip(ids, self.meta_paths[ids])]
+
         return mps, is_last_batch
+
+    @abstractmethod
+    def _select(self, n):
+        """
+        Select the next n paths to be labeled
+        """
+        pass
 
     def create_output(self):
         mps = [{'id': int(meta_id[0]),
                 'metapath': meta_path.as_list(),
                 'rating': self.meta_paths_rating[meta_id]} for meta_id, meta_path in np.ndenumerate(self.meta_paths) if
-               self.visited[meta_id] == self.VISITED]
+               self.visited[meta_id] == State.VISITED]
         return mps
 
+
+class RandomSelectionAlgorithm(AbstractActiveLearningAlgorithm):
+    """
+    An active learning algorithm, that asks for randomly labeled instances.
+    """
+
+    def __init__(self, meta_paths: List[MetaPath], standard_rating: float = 0.5, seed=42):
+        self.standard_rating = standard_rating
+        self.logger = logging.getLogger('MetaExp.{}'.format(__class__.__name__))
+        super(RandomSelectionAlgorithm, self).__init__(meta_paths, seed)
+
+    def __getstate__(self):
+        # Copy the object's state from self.__dict__ which contains
+        # all our instance attributes.
+        d = dict(self.__dict__)
+        # Remove the unpicklable entries.
+        del d['logger']
+        return d
+
+    def __setstate__(self, d):
+        self.__dict__.update(d)
+        self.logger = logging.getLogger('MetaExp.{}'.format(__class__.__name__))
+
+    def available_hypotheses(self):
+        return [None]
+
+    def _select(self, n):
+        """
+        Choose the next paths to be rated randomly.
+        """
+        return self.random.choice(range(len(self.meta_paths)), replace=False, p=self._prob_choose_meta_path(),
+                                  size=n)
+
     def _predict(self, id):
-        if self.visited[id] == self.VISITED:
+        if self.visited[id] == State.VISITED:
             return self.meta_paths_rating[id]
-        return sum(self.meta_paths_rating[np.where(self.visited == self.VISITED)])/len(self.meta_paths_rating)
+        return sum(self.meta_paths_rating[np.where(self.visited == State.VISITED)]) / len(self.meta_paths_rating)
 
     def _predict_rating(self, idx):
         return [self._predict(id) for id in idx]
 
     def get_all_predictions(self):
         idx = range(len(self.meta_paths))
-        return [{'id': id, 'rating': rating, 'metapath': self.meta_paths[id]} for id, rating in zip(idx, self._predict_rating(idx))]
+        return [{'id': id, 'rating': rating, 'metapath': self.meta_paths[id]} for id, rating in
+                zip(idx, self._predict_rating(idx))]
 
     """
     Functions
     """
 
     def _prob_choose_meta_path(self) -> np.ndarray:
-
-        if sum(self.visited):
-            return self.visited / sum(self.visited)
+        not_visited = np.where(self.visited == State.NOT_VISITED)[0]
+        if len(not_visited) > 0:
+            probs = np.zeros(len(self.meta_paths))
+            probs[not_visited] = 1.0
+            return probs / len(not_visited)
         else:
             return np.append(np.zeros(len(self.meta_paths) - 1), [1])
 
 
-class UncertaintySamplingAlgorithm(ActiveLearningAlgorithm):
+class HypothesisBasedAlgorithm(AbstractActiveLearningAlgorithm, metaclass=ABCMeta):
+
+    available_hypotheses = {'Gaussian Process': GaussianProcessHypothesis,
+                            'MP Length': MPLengthHypothesis}
+    default_hypotheses = 'Gaussian Process'
+
+    def __init__(self, meta_paths: List[MetaPath], seed: int = 42, **hypothesis_params):
+        self.logger = logging.getLogger('MetaExp.{}'.format(__class__.__name__))
+        if 'hypothesis' not in hypothesis_params:
+            self.logger.debug('Default hypothesis {} was set'.format(self.default_hypotheses))
+            self.hypothesis = self.available_hypotheses[self.default_hypotheses](meta_paths, **hypothesis_params)
+        elif hypothesis_params['hypothesis'] not in self.available_hypotheses:
+            self.logger.error('This Hypotheses is unavailable! Try another one.')
+        else:
+            self.logger.debug('Hypothesis {} was set'.format(hypothesis_params['hypothesis']))
+            self.hypothesis = self.available_hypotheses[hypothesis_params['hypothesis']](meta_paths,**hypothesis_params)
+        super().__init__(meta_paths, seed)
+
+    def __getstate__(self):
+        # Copy the object's state from self.__dict__ which contains
+        # all our instance attributes.
+        d = dict(self.__dict__)
+        # Remove the unpicklable entries.
+        del d['logger']
+        return d
+
+    def __setstate__(self, d):
+        self.__dict__.update(d)
+        self.logger = logging.getLogger('MetaExp.{}'.format(__class__.__name__))
+
+    def update(self, meta_paths):
+        super().update(meta_paths)
+        self.logger.debug("Fitting {} to new data points...".format(self.hypothesis.__class__.__name__))
+        self.hypothesis.update(np.where(self.visited == State.VISITED)[0],
+                               self.meta_paths_rating[np.where(self.visited == State.VISITED)[0]])
+
+    def _select(self, batch_size):
+        criterion = self.compute_selection_criterion()
+        criterion = criterion[np.where(self.visited == State.NOT_VISITED)]
+        self.logger.debug("Meta paths that were already rated were filtered: {}".format(criterion))
+        # np.argpartition is used to retrieve the k-max elements. It uses the unstable introselect algorithm.
+        most_uncertain_idx = np.argpartition(criterion, -batch_size)[-batch_size:]
+        most_uncertain_ids = np.where(self.visited == State.NOT_VISITED)[0][most_uncertain_idx]
+        self.logger.debug("Most {} uncertain ids are {}".format(batch_size, most_uncertain_ids))
+        return most_uncertain_ids
+
+    @abstractmethod
+    def compute_selection_criterion(self):
+        """
+        Select the next metapaths based on the uncertainty of them in the current model.
+        """
+        pass
+
+    def get_all_predictions(self):
+        idx = range(len(self.meta_paths))
+        return [{'id': id, 'rating': rating, 'metapath': self.meta_paths[id]} for id, rating in
+                zip(idx, self.hypothesis.predict_rating(idx))]
+
+
+class UncertaintySamplingAlgorithm(HypothesisBasedAlgorithm):
+    """
+        An active learning algorithm, that requests labels on the data he is most uncertain of.
+    """
+    def __init__(self, meta_paths: List[MetaPath], seed: int = 42, **hypothesis_params):
+        self.logger = logging.getLogger('MetaExp.{}'.format(__class__.__name__))
+        super().__init__(meta_paths, seed, **hypothesis_params)
+
+    def __getstate__(self):
+        # Copy the object's state from self.__dict__ which contains
+        # all our instance attributes.
+        d = dict(self.__dict__)
+        # Remove the unpicklable entries.
+        del d['logger']
+        return d
+
+    def __setstate__(self, d):
+        self.__dict__.update(d)
+        self.logger = logging.getLogger('MetaExp.{}'.format(__class__.__name__))
+
+    @staticmethod
+    def options():
+        return {}
+
+    def compute_selection_criterion(self):
+        """
+        Select the next meta paths based on the uncertainty of them in the current model.
+        """
+        self.logger.info('Computing selection criterion for next meta path batch')
+        std = self.hypothesis.get_uncertainty(range(len(self.meta_paths)))
+        return std
+
+class RandomSamplingAlgorithm(HypothesisBasedAlgorithm):
     """
         An active learning algorithm, that requests labels on the data he is most uncertain of.
     """
 
-    VISITED = 0
-    NOT_VISITED = 1
-    standard_rating = 0.5
-    random = None
-    available_hypotheses = {'Gaussian Process': GaussianProcessHypothesis}
+    @staticmethod
+    def options():
+        return {}
 
-    def __init__(self, meta_paths: List[MetaPath], hypothesis: str, seed=42):
-
-        # TODO this might not work
-        assert hypothesis in self.available_hypotheses.keys(), "Hypothesis {} not supported for this type of algorithm.".format(
-            hypothesis)
-        self.meta_paths = np.array(meta_paths)
-        self.meta_paths_rating = np.array(np.zeros(len(meta_paths)))
-        self.visited = np.array([self.NOT_VISITED] * len(meta_paths))
-        self.random = np.random.RandomState(seed=seed)
-        self.hypothesis = self.available_hypotheses[hypothesis](meta_paths=meta_paths)
-
-    def initial_label_request(self, seed_size):
-        return self.get_next(batch_size=seed_size)
-
-    def update(self, meta_paths):
-        idx = [mp['id'] for mp in meta_paths]
-        ratings = [mp['rating'] for mp in meta_paths]
-        self.visited[idx] = self.VISITED
-        self.meta_paths_rating[idx] = ratings
-        self.hypothesis.update(np.where(self.visited == self.VISITED), self.meta_paths_rating[np.where(self.visited == self.VISITED)])
-
-    def has_one_batch_left(self, batch_size):
-        if sum(self.visited) < batch_size:
-            return True
-        return False
-
-    def get_next(self, batch_size=1) -> (List[MetaPath], bool):
+    def compute_selection_criterion(self):
         """
-        :return: requested number of next meta-paths to be shown.
+        Select the next metapaths based on the uncertainty of them in the current model.
         """
-        is_last_batch = self.has_one_batch_left(batch_size)
+        random_criterion = self.random.randn(len(self.meta_paths))
+        return random_criterion
 
-        if is_last_batch:
-            batch_size = sum(self.visited)
+class GPSelect_Algorithm(HypothesisBasedAlgorithm):
+    """
+        An active learning algorithm, that selects the most uncertain data, but prefers more highly rated datapoints.
+        The parameter beta weights the trade-off between exploitation and exploration.
+        ...
+        Hastagiri P. Vanchinathan, Andreas Marfurt, Charles-Antoine Robelin, Donald Kossmann, and Andreas Krause. 2015. 
+        Discovering Valuable items from Massive Data. In Proceedings of the 21th ACM SIGKDD (KDD '15).
+        ACM, New York, NY, USA, 1195-1204. DOI: https://doi.org/10.1145/2783258.2783360
+    """
 
-        std = self.hypothesis.predict_std(range(len(self.meta_paths)))
-        std = std[np.where(self.visited)]
-        most_uncertain_idx = np.argpartition(std, -batch_size)[-batch_size:]
-        most_uncertain_ids = np.where(self.visited)[0][most_uncertain_idx]
-        mps = [{'id': int(meta_id),
-                'metapath': meta_path,
-                'rating': self.standard_rating} for meta_id, meta_path in
-               zip(most_uncertain_ids, self.meta_paths[most_uncertain_idx])]
-        return mps, is_last_batch
+    def __init__(self, meta_paths: List[MetaPath], seed: int = 42, **hypothesis_params):
+        super().__init__(meta_paths, seed, **hypothesis_params)
+        if 'beta' in hypothesis_params:
+            self.beta = hypothesis_params['beta']
+        else:
+            self.beta = 0.5
 
-    def get_all_predictions(self):
-        idx = range(len(self.meta_paths))
-        return [{'id': id, 'rating': rating, 'metapath': self.meta_paths[id]} for id, rating in zip(idx, self.hypothesis.predict_rating(idx))]
+    @staticmethod
+    def options():
+        return {
+            'hypothesis': [GaussianProcessHypothesis]
+        }
 
-    def create_output(self):
-        mps = [{'id': int(meta_id[0]),
-                'metapath': meta_path.as_list(),
-                'rating': self.meta_paths_rating[meta_id]} for meta_id, meta_path in np.ndenumerate(self.meta_paths) if
-               self.visited[meta_id] == self.VISITED]
-        return mps
+    def compute_selection_criterion(self):
+        """
+        Select the next metapaths based on the uncertainty of them in the current model.
+        """
+        all_paths = range(len(self.meta_paths))
+        criterion = np.sqrt(self.beta) * self.hypothesis.get_uncertainty(all_paths) \
+                    + self.hypothesis.predict_rating(all_paths)
+        return criterion

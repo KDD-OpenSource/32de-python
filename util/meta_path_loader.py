@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from .datastructures import MetaPath
 from typing import List
 import pandas as pd
-from .config import ROTTEN_TOMATO_PATH
+from .config import MOCK_DATASETS_DIR
 import os
 import io
 import logging
@@ -42,7 +42,7 @@ class RottenTomatoMetaPathLoader(AbstractMetaPathLoader):
 
     def load_meta_paths(self) -> List[MetaPath]:
         df = pd.read_csv(
-            os.path.join(ROTTEN_TOMATO_PATH, self.dataset_filename))
+            os.path.join(MOCK_DATASETS_DIR, 'rotten_tomatoes', self.dataset_filename))
         df.columns = ['b', 'a', 'node_types', 'edge_types']
         df.a = df.a.apply(eval)
         df.b = df.b.apply(eval)
