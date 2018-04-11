@@ -9,16 +9,25 @@ class Neo4j:
     def close(self):
         self._driver.close()
 
-    def start_precomputation(self, mode:str):
+    def start_precomputation(self, mode:str, length:int):
         # mode = {full, high-degree}
-        pass
-
+        with self._driver.session() as session:
+            probably_json = session.run(
+                "Call computeAllMetaPaths($length);",
+                length = length)
+        
     def get_metapaths(self, nodeset_A: List[Node], nodeset_B: List[Node], length:int):
-        pass
-
+        with self._driver.session() as session:
+            probably_json = session.run(
+                "Call computeAllMetaPathsForInstances($startNodeIds, $endNodeIds, $length);",
+                startNodeIds = nodeset_A, endNodeIds = nodeset_B, length = length)
+        
     def get_all_metapaths(self):
-        pass
-
+        with self._driver.session() as session:
+            probably_json = session.run(
+                "Call readPrecomputedMetaPaths($filePath);",
+                filePath = "../../../precomputed/Precomputed_MetaPaths_BioL6.txt")
+        
     # TODO: Implement different return types (node instances, node types)
     # TODO: What are the parameters of the neo4j procedure?
     def random_walk(self, maybe_start_id: int, maybe_number_of_random_walks: int, maybe_walk_length: int):
