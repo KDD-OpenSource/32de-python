@@ -1,4 +1,4 @@
-from neo4j import GraphDatabase
+from neo4j import GraphDatabase, Node
 from typing import List
 
 
@@ -9,10 +9,14 @@ class Neo4j:
     def close(self):
         self._driver.close()
 
-    def start_precomputation(self):
+    def start_precomputation(self, mode:str):
+        # mode = {full, high-degree}
         pass
 
-    def get_metapaths(self, nodeset_A: List, nodeset_B: List):
+    def get_metapaths(self, nodeset_A: List[Node], nodeset_B: List[Node], length:int):
+        pass
+
+    def get_all_metapaths(self):
         pass
 
     # TODO: Implement different return types (node instances, node types)
@@ -24,5 +28,3 @@ class Neo4j:
                 "CALL random_walk($maybe_start_id, $maybe_number_of_random_walks, $maybe_walk_length);",
                 maybe_start_id=maybe_start_id, maybe_number_of_random_walks=maybe_number_of_random_walks,
                 maybe_walk_length=maybe_walk_length)
-
-    # TODO: Does group delta need a method to loop through all nodes?
