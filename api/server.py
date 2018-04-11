@@ -314,6 +314,8 @@ def send_similarity_score():
     """
     similarity_score = SimilarityScore()
     return jsonify({'similarity_score': similarity_score.get_similarity_score()})
+
+
 @app.route("/contributing-meta-paths", methods=["GET"])
 def send_contributing_meta_paths():
     contributing_meta_paths = [
@@ -363,6 +365,7 @@ def send_contributing_meta_paths():
 
     return jsonify({'contributing_meta_paths': contributing_meta_paths})
 
+
 @app.route("/contributing-meta-path/<int:meta_path_id>", methods=["GET"])
 def send_contributing_meta_path(meta_path_id):
     contributing_meta_path = {
@@ -380,6 +383,7 @@ def send_contributing_meta_path(meta_path_id):
     }
 
     return jsonify({'meta_path': contributing_meta_path})
+
 
 @app.route("/similar-nodes", methods=["GET"])
 def send_similar_nodes():
