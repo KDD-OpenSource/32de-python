@@ -8,6 +8,7 @@ It incorporates the domain knowledge of the user to define a unique and personal
 ## Contact and citation
 > Behrens, F., Bischoff, S., Ladenburger, P., Rückin, J., Seidel, L., Stolp, F., Vaichenker, M.,  Ziegler, A., Mottin, D., Aghaei, F., Müller, E., Preisse, M., Müller, N. & Hunger, M. (2018). MetaExp: Interactive Explanation and Exploration of Large Knowledge Graphs. *WWW*
 
+## Description
 We present MetaExp, a system that assists the user during the exploration of large knowledge graphs, given two sets of initial nodes.
 At its core, MetaExp presents a small set of meta-paths to the user, which are sequences of relationships among node types.
 Such meta-paths do not overwhelm the user with complex structures, yet they preserve semantically-rich relationships in a graph.
