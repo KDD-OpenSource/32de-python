@@ -7,6 +7,7 @@ import time
 import datetime
 from flask_ask import Ask
 import logging
+from typing import Dict
 
 from util.config import *
 from util.meta_path_loader_dispatcher import MetaPathLoaderDispatcher
@@ -243,15 +244,25 @@ def send_next_metapaths_to_rate(batch_size):
         'metapath': ['Phenotype', 'HAS', 'Association', 'HAS', 'SNP', 'HAS', 'Phenotype'],
         'rating': 0.5}
     """
-    next_metapaths, is_last_batch = session['active_learning_algorithm'].get_next(batch_size=batch_size)
-    logger.debug("Next metapaths are: {}".format(next_metapaths))
+    next_metapaths, is_last_batch, reference_paths = session['active_learning_algorithm'].get_next(batch_size=batch_size)
+
     for i in range(len(next_metapaths)):
         next_metapaths[i]['metapath'] = next_metapaths[i]['metapath'].as_list()
+
     paths = {'meta_paths': next_metapaths,
              'next_batch_available': not is_last_batch}
+    if reference_paths:
+        logger.info("Appending reference paths to response...")
+        min_path = reference_paths['min_path']
+        max_path = reference_paths['max_path']
+        paths['min_path']= min_path
+        paths['max_path']= max_path
+
+    logger.debug("Responding to server: {}".format(paths))
     if "time" in session.keys():
         session['time_old'] = session['time']
     session['time'] = datetime.datetime.now()
+
     return jsonify(paths)
 
 
@@ -263,20 +274,55 @@ def get_available_datasets():
     return jsonify(MetaPathLoaderDispatcher().get_available_datasets())
 
 
+def transform_rating(data:Dict) -> Dict:
+    logger.info("Transforming ratings")
+
+    new_min_path_rating = data['min_path']['rating']
+    new_max_path_rating = data['max_path']['rating']
+    if new_max_path_rating < new_min_path_rating:
+        logger.error("The modified rating of the min_path must always be smaller then the one of max_path!")
+        abort(400)
+    # Extract ids of meta_paths, which received a smaller rating than min_path
+    new_min_paths = [mp for mp in data['meta_paths'] if mp['rating'] < new_min_path_rating]
+    logger.debug("Found meta paths, which are rated less than the min path: {}".format(new_min_paths))
+    # Extract ids of meta_pats, which received a higher rating than max_path
+    new_max_paths = [mp for mp in data['meta_paths'] if mp['rating'] > new_max_path_rating]
+    logger.debug("Found meta paths, which are rated better than the max path: {}".format(new_max_paths))
+    # Transform rating of new_min_paths meta paths
+    for min_path in new_min_paths:
+        rating_diff_to_min_path = abs(min_path['rating'] - data['min_path']['rating'])
+        logger.debug(rating_diff_to_min_path)
+        min_ref_path = session['active_learning_algorithm'].get_min_ref_path()
+        logger.debug(min_ref_path)
+        min_path['rating'] = min_ref_path['rating'] - rating_diff_to_min_path
+
+    # Transform rating of new_max_paths meta paths
+    for max_path in new_max_paths:
+        rating_diff_to_min_path = abs(max_path['rating'] - data['max_path']['rating'])
+        logger.debug(rating_diff_to_min_path)
+        min_ref_path = session['active_learning_algorithm'].get_max_ref_path()
+        logger.debug(min_ref_path)
+        max_path['rating'] = min_ref_path['rating'] + rating_diff_to_min_path
+
+    logger.debug("Rating was transformed: {}".format(data['meta_paths']))
+    return data
+
 # TODO: Maybe post each rated meta-path
 @app.route("/rate-meta-paths", methods=["POST"])
 def receive_rated_metapaths():
     """
     Receives the rated meta-paths.
 
-    Meta-paths are formated like this:
-    {'id': 3,
-    'metapath': ['Phenotype', 'HAS', 'Association', 'HAS', 'SNP', 'HAS', 'Phenotype'],
-    'rating': 0.75}
+    Format:
+    'meta_paths': [{'id': 3,
+                   'metapath': ['Phenotype', 'HAS', 'Association', 'HAS', 'SNP', 'HAS', 'Phenotype'],
+                   'rating': 0.75},...]
+    'min_path':{}
+    'max_path':{}
     """
     time_results_received = datetime.datetime.now()
     if not request.is_json:
-        logger.info("Aborting, because request is not in json format")
+        logger.error("Aborting, because request is not in json format")
         abort(400)
 
     data = request.get_json()
@@ -285,9 +331,12 @@ def receive_rated_metapaths():
     expected_keys = ['id', 'metapath', 'rating']
     for datapoint in data['meta_paths']:
         if not all(key in datapoint for key in expected_keys):
-            logger.info("Aborting, because keys {} are misssing in this part of json: {}".format(
+            logger.error("Aborting, because keys {} are misssing in this part of json: {}".format(
                 [key for key in expected_keys if key not in datapoint], datapoint))
             abort(400)
+
+    if not session['active_learning_algorithm'].is_first_batch():
+       data = transform_rating(data)
 
     logger.info("Updating active learning algorithm...")
     session['active_learning_algorithm'].update(data['meta_paths'])

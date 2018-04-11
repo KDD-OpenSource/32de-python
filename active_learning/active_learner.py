@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod, ABCMeta
 from enum import Enum
-from typing import List
+from typing import List, Dict
 import numpy as np
 import logging
 
@@ -40,10 +40,35 @@ class AbstractActiveLearningAlgorithm(ABC):
         self.__dict__.update(d)
         self.logger = logging.getLogger('MetaExp.{}'.format(__class__.__name__))
 
+    #TODO handle corner case that all paths in first batch were rated the same. max_ref_path and min_ref_path would same.
+    def get_max_ref_path(self) -> Dict:
+        idx = np.where(self.visited == State.VISITED)
+        max_ref_path_idx = np.argmax(self.meta_paths_rating[idx])
+        max_ref_path_id = np.where(self.visited == State.VISITED)[0][max_ref_path_idx]
+        self.logger.debug("Max ref path is {} with rating {}".format(max_ref_path_id, self.meta_paths_rating[max_ref_path_id]))
+        return {'id': int(max_ref_path_id),
+                'metapath': self.meta_paths[max_ref_path_id].as_list(),
+                'rating': self.meta_paths_rating[max_ref_path_id]}
+
+    def get_min_ref_path(self) -> Dict:
+        idx = np.where(self.visited == State.VISITED)
+        min_ref_path_idx = np.argmin(self.meta_paths_rating[idx])
+        min_ref_path_id = np.where(self.visited == State.VISITED)[0][min_ref_path_idx]
+        self.logger.debug(
+            "Max ref path is {} with rating {}".format(min_ref_path_id, self.meta_paths_rating[min_ref_path_id]))
+        return {'id': int(min_ref_path_id),
+                'metapath': self.meta_paths[min_ref_path_id].as_list(),
+                'rating': self.meta_paths_rating[min_ref_path_id]}
+
     def has_one_batch_left(self, batch_size):
         if len(np.where(self.visited == State.NOT_VISITED)[0]) >= batch_size:
             return False
         return True
+
+    def is_first_batch(self):
+        if len(np.where(self.visited == State.NOT_VISITED)[0]) == len(self.meta_paths):
+            return True
+        return False
 
     def update(self, meta_paths):
         idx = [mp['id'] for mp in meta_paths]
@@ -68,7 +93,9 @@ class AbstractActiveLearningAlgorithm(ABC):
                 'rating': self.standard_rating} for meta_id, meta_path in
                zip(ids, self.meta_paths[ids])]
 
-        return mps, is_last_batch
+        reference_paths = {'max_path': self.get_max_ref_path(),
+                           'min_path': self.get_min_ref_path()} if not self.is_first_batch() else {}
+        return mps, is_last_batch, reference_paths
 
     @abstractmethod
     def _select(self, n):
@@ -145,6 +172,7 @@ class RandomSelectionAlgorithm(AbstractActiveLearningAlgorithm):
 
 
 class HypothesisBasedAlgorithm(AbstractActiveLearningAlgorithm, metaclass=ABCMeta):
+
 
     available_hypotheses = {'Gaussian Process': GaussianProcessHypothesis,
                             'MP Length': MPLengthHypothesis}
