@@ -13,3 +13,4 @@ pytest-cov
 Flask-Session
 cryptography==2.1.4
 flask-ask
+tensorflow
