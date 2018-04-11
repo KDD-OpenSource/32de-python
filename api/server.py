@@ -16,13 +16,6 @@ from explanation.explanation import SimilarityScore
 
 app = Flask(__name__)
 ask = Ask(app, '/alexa')
-
-""" 
-    Logging guideline:
-    Use MetaExp-Logger. For example if you wanted to equip the module Example with a logger, 
-    you would simply create a child logger by logging.getLogger('MetaExp.Example'). If you wanted to use a logger for 
-    each class, you would define it as self.logger = logging.getLogger('MetaExp.{}'.format(__class__.__name__)).
-"""
 set_up_logger()
 logger = logging.getLogger('MetaExp.Server')
 

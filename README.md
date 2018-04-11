@@ -13,3 +13,7 @@ If you start the additional neo4j containers with `run-neo4j-helmholtz.sh` and `
 All the neo4j containers are based on the `neo4j-graph-algorithms` image. To change the default port simply specify the `PORT` parameter when running `deployment/run-*.sh [PORT]`.
 
 Tutorials for installing Docker: [Mac](https://docs.docker.com/docker-for-mac/install/), [Windows](https://docs.docker.com/docker-for-windows/install/) and [Ubuntu](https://docs.docker.com/engine/installation/linux/docker-ce/ubuntu/).
+
+# Logging Guideline
+Use MetaExp-Logger. For example if you wanted to equip the module Example with a logger, you would simply create a child logger by `logging.getLogger('MetaExp.Example')`. If you wanted to use a logger for
+each class, you would define it as `self.logger = logging.getLogger('MetaExp.{}'.format(__class__.__name__))`.
