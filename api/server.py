@@ -137,57 +137,6 @@ def send_first_node_set():
 def send_second_node_set():
     return jsonify({'node_set_query': 'MATCH (n)-[r]->(m) RETURN n,r,m'})
 
-
-@app.route("/contributing-meta-paths", methods=["GET"])
-def send_contributing_meta_paths():
-    contributing_meta_paths = [
-        {
-            "id": "make",
-            "label": "make",
-            "value": 551,
-            "color": "hsl(131, 70%, 50%)"
-        },
-        {
-            "id": "erlang",
-            "label": "erlang",
-            "value": 226,
-            "color": "hsl(358, 70%, 50%)"
-        },
-        {
-            "id": "c",
-            "label": "c",
-            "value": 129,
-            "color": "hsl(151, 70%, 50%)"
-        },
-        {
-            "id": "php",
-            "label": "php",
-            "value": 67,
-            "color": "hsl(52, 70%, 50%)"
-        },
-        {
-            "id": "java",
-            "label": "java",
-            "value": 452,
-            "color": "hsl(221, 70%, 50%)"
-        },
-        {
-            "id": "stylus",
-            "label": "stylus",
-            "value": 406,
-            "color": "hsl(102, 70%, 50%)"
-        },
-        {
-            "id": "ruby",
-            "label": "ruby",
-            "value": 433,
-            "color": "hsl(341, 70%, 50%)"
-        }
-    ]
-
-    return jsonify({'contributing_meta_paths': contributing_meta_paths})
-
-
 # TODO: If functionality "meta-paths for node set A and B" will be written in Java, team alpha will need this information in Java
 @app.route("/set-edge-types", methods=["POST"])
 def receive_edge_types():
