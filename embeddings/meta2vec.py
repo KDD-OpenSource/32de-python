@@ -1,14 +1,15 @@
 from typing import Tuple
-from tensorflow import tf
+import tensorflow as tf
+
 
 class Input:
     @classmethod
     def from_json(cls, data):
         raise NotImplementedError()
 
-
     def input(self) -> Tuple:
         raise NotImplementedError()
+
 
 class MetaPathsInput(Input):
 
@@ -22,10 +23,10 @@ class MetaPathsInput(Input):
         return cls(dataset)
 
     def apply_transformation(self, dataset):
-
+        pass
 
     @classmethod
-    def parse_meta_paths(json, min_size = 5, seperator = " | "):
+    def parse_meta_paths(json, min_size=5, seperator=" | "):
         walk_list = []
         available_nodes = set()
         for meta_paths in json.keys():
@@ -38,3 +39,45 @@ class MetaPathsInput(Input):
 
     def input(self):
         return self.dataset
+
+
+class NodeInput(Input):
+    pass
+
+
+def model_word2vec_skipgram():
+    pass
+
+
+def model_word2vec_cbow():
+    pass
+
+
+def model_paragraph_vectors_skipgram():
+    pass
+
+
+def model_paragraph_vectors_cbow():
+    pass
+
+
+def create_estimator():
+    pass
+
+
+def parse_arguments():
+    pass
+
+
+if __name__ == "__main__":
+    args = parse_arguments()
+    classifier = create_estimator()
+
+    if args.mode == 'train':
+        # TODO: Create Dataset
+        dataset = tf.data.Dataset()
+        classifier.train(input_fn=MetaPathsInput(dataset).input())
+    elif args.mode == 'predict':
+        raise NotImplementedError()
+    elif args.mode == 'eval':
+        raise NotImplementedError()
