@@ -43,7 +43,8 @@ class LongWalkBatchGenerator(BatchGenerator):
                 self.iterator = self.global_window_iterator(self.walk_list, self.skip_window)
                 window = next(self.iterator, None)
 
-            window[0], window[len(window) / 2] = window[len(window) / 2], window[
+            middle = int(len(window) / 2)
+            window[0], window[middle] = window[middle], window[
                 0]  # swap middle with first element
             focus_node = window[0]
 
