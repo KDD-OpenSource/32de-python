@@ -221,16 +221,19 @@ def model_paragraph_vectors_dbow():
     pass
 
 
-def create_estimator(model_dir, model_fn, input: Input, embedding_size: int, loss: str):
+def create_estimator(model_dir, model_fn, input: Input, embedding_size: int, loss: str, gpu_memory: int):
     features = tf.feature_column.categorical_column_with_identity('features',
                                                                   num_buckets=input.get_vocab_size())
     indicator_column = tf.feature_column.indicator_column(features)
+    session_config = tf.ConfigProto()
+    session_config.gpu_options.per_process_gpu_memory_fraction = gpu_memory
     run_config = tf.estimator.RunConfig(tf_random_seed=42,
                                         save_summary_steps=500,
                                         save_checkpoints_steps=1000,
                                         keep_checkpoint_max=5,
                                         keep_checkpoint_every_n_hours=0.25,
-                                        log_step_count_steps=50)
+                                        log_step_count_steps=50,
+                                        session_config=session_config)
     classifier = tf.estimator.Estimator(
         model_fn=model_fn,
         model_dir=model_dir,
@@ -272,6 +275,10 @@ def parse_arguments():
                         required=True)
     parser.add_argument('--embedding_size',
                         help='Specify the size of the embedding',
+                        type=int,
+                        required=True)
+    parser.add_argument('--gpu_memory',
+                        help='Specify amount of GPU memory this process is allowed to use',
                         type=int,
                         required=True)
     parser.add_argument('--loss',
@@ -318,7 +325,7 @@ if __name__ == "__main__":
                                                 json_path=args.json_path)
 
     classifier = create_estimator(model_dir=args.model_dir, model_fn=model_fn, input=input,
-                                  embedding_size=args.embedding_size, loss=args.loss)
+                                  embedding_size=args.embedding_size, loss=args.loss, gpu_memory=args.gpu_memory)
 
     if args.mode == 'train':
         classifier.train(input_fn=input_fn)
