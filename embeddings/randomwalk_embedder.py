@@ -69,9 +69,16 @@ class LongWalkBatchGenerator(BatchGenerator):
             yield win
 
     @staticmethod
-    def prepare_edge_for_window(seq, edge_size):
-        dummy = [None] * edge_size
-        prepared = dummy + seq + dummy
+    def prepare_edge_for_window(seq, padding_size):
+        dummy_front = []
+        for i in range(padding_size):
+            dummy_front[i] = seq[i % len(seq)]
+
+        dummy_back = []
+        for i in range(padding_size):
+            dummy_back[i] = seq[len(seq) - (i % len(seq))]
+
+        prepared = dummy_front + seq + dummy_back
         return prepared
 
 
