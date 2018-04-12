@@ -123,7 +123,11 @@ class WalkLoader:
 class BatchGeneratorWrapper:
 
     def __init__(self, walk_list, available_nodes, batch_generator_class:BatchGenerator.__class__):
-        self.id_mapping = self.create_id_mapping(available_nodes)
+        id_mapping = self.create_id_mapping(available_nodes=available_nodes)
+        return self.__init__(walk_list, available_nodes, id_mapping, batch_generator_class)
+
+    def __init__(self, walk_list, available_nodes, id_mapping, batch_generator_class:BatchGenerator.__class__):
+        self.id_mapping = id_mapping
         self.inverse_mapping = {v: k for k, v in self.id_mapping.items()}
         converted_walks = self.convert_walks(walk_list, self.id_mapping)
 
@@ -149,6 +153,9 @@ class BatchGeneratorWrapper:
 
     def get_original_id(self, own_id):
         return self.inverse_mapping[own_id]
+
+    def get_translated_id(self, original_id):
+        return self.id_mapping[original_id]
 
 
 
