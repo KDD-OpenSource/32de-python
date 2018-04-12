@@ -13,6 +13,9 @@ class Input:
     def input(self) -> Tuple:
         raise NotImplementedError()
 
+    def get_vocab_size(self) -> Number:
+        raise NotImplementedError()
+
 
 class MetaPathsInput(Input):
 
@@ -51,7 +54,7 @@ class MetaPathsInput(Input):
         return self
 
     @classmethod
-    def from_json(cls, json, seperator = " | "):
+    def from_json(cls, json, seperator=" | "):
         meta_paths = []
         node_types = set()
         for meta_paths in json.keys():
@@ -69,7 +72,7 @@ class MetaPathsInput(Input):
                 left_keys = self._left_context(node_key, self.window_size)
                 right_keys = self._right_context(node_key + 1, len(paths), self.window_size)
                 context_keys = np.array(left_keys + right_keys) + 1
-                context = np.array([self.padding_value - 1] + paths, dtype = np.float32) + 1
+                context = np.array([self.padding_value - 1] + paths, dtype=np.float32) + 1
                 context = context[context_keys]
 
                 features['node'].append(node)
@@ -188,8 +191,22 @@ def model_paragraph_vectors_dbow():
     pass
 
 
-def create_estimator():
-    pass
+def create_estimator(model_dir, model_fn, input: Input):
+    features = tf.feature_column.categorical_column_with_identity('features',
+                                                                  num_buckets=input.get_vocab_size())
+    run_config = tf.contrib.learn(gpu_memory_fraction=1,
+                                  tf_random_seed=42,
+                                  save_summary_steps=500,
+                                  save_checkpoints_steps=1000,
+                                  keep_checkpoint_max=5,
+                                  keep_checkpoint_every_n_hours=0.25,
+                                  log_step_count_steps=50)
+    classifier = tf.estimator.Estimator(
+        model_fn=model_fn,
+        model_dir=model_dir,
+        params={'feature_columns': [features]},
+        config=run_config)
+    return classifier
 
 
 def parse_arguments():
@@ -198,12 +215,10 @@ def parse_arguments():
 
 if __name__ == "__main__":
     args = parse_arguments()
-    classifier = create_estimator()
+    classifier = create_estimator(model_dir=None, model_fn=None, input=None)
 
     if args.mode == 'train':
-        # TODO: Create Dataset
-        dataset = tf.data.Dataset()
-        classifier.train(input_fn=MetaPathsInput(dataset).input())
+        classifier.train(input_fn=None)
     elif args.mode == 'predict':
         raise NotImplementedError()
     elif args.mode == 'eval':
