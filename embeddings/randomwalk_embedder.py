@@ -70,11 +70,11 @@ class LongWalkBatchGenerator(BatchGenerator):
 
     @staticmethod
     def prepare_edge_for_window(seq, padding_size):
-        dummy_front = []
+        dummy_front = [None] * padding_size
         for i in range(padding_size):
             dummy_front[i] = seq[i % len(seq)]
 
-        dummy_back = []
+        dummy_back = [None] * padding_size
         for i in range(padding_size):
             dummy_back[i] = seq[len(seq) - (i % len(seq))]
 
