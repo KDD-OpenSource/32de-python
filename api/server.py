@@ -220,7 +220,7 @@ def add_new_dataset():
 
     data = request.get_json()
 
-    if 'url' not in data or 'username' not in data or 'password' not in data:
+    if 'url' not in data or 'name' not in data or 'username' not in data or 'password' not in data:
         abort(422)
 
     return jsonify({'status': 200})
