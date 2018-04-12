@@ -87,14 +87,14 @@ class MetaPathsInput(Input):
                 node = paths[node_key]
                 left_keys = self._left_context(node_key, self.window_size)
                 right_keys = self._right_context(node_key + 1, len(paths), self.window_size)
-                context_keys = np.array(left_keys + right_keys) + 1
-                context = np.array([self.padding_value - 1] + paths, dtype=np.float32) + 1
+                context_keys = np.array(left_keys + right_keys, dtype=np.int32) + 1
+                context = np.array([self.padding_value - 1] + paths, dtype=np.int32) + 1
                 context = context[context_keys]
 
                 features['node'].append(node)
                 features['context'].append(context)
         # Finally convert to array
-        features['context'] = np.array(features['context'])
+        features['context'] = np.array(features['context'], np.int32)
         return features['node'], features['context']
 
     @staticmethod
