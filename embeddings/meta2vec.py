@@ -1,5 +1,8 @@
-from typing import Tuple
+from numbers import Number
+from typing import Tuple, List
 import tensorflow as tf
+import numpy as np
+import random
 
 
 class Input:
@@ -13,32 +16,107 @@ class Input:
 
 class MetaPathsInput(Input):
 
-    def __init__(self, dataset):
-        self.dataset = self.apply_transformation(dataset)
+    def __init__(self,
+                 meta_paths: List[List[Number]],
+                 node_types: List[Number],
+                 windows_size: Number = 2,
+                 padding_value: Number = 0,
+                 random_seed: Number = 42):
+        self.meta_paths = meta_paths
+        self.nodes = []
+        self.node_types = node_types
+        self.random_seed = random_seed
+
+        self.window_size = windows_size
+        self.padding_value = padding_value
+
+    def set_window_size(self, window_size: Number):
+        """
+        Set the window size. This number of nodes are each taken from the left and right of the feature node
+        for the context.
+        :param window_size: the value it should be set to.
+        :return: the object itself.
+        """
+        self.window_size = window_size
+        return self
+
+    def set_padding_value(self, padding_value: Number):
+        """
+        Set the padding value. With this value meta-paths will be padded at the beginning and end. This value will,
+        for example, occur when the first or last node context is extracted.
+        :param padding_value: the value it should be set to.
+        :return: the object itself.
+        """
+        self.padding_value = padding_value
+        return self
 
     @classmethod
-    def from_json(cls, data):
-        dataset = tf.data.Dataset()
-
-        return cls(dataset)
-
-    def apply_transformation(self, dataset):
-        pass
-
-    @classmethod
-    def parse_meta_paths(json, min_size=5, seperator=" | "):
-        walk_list = []
-        available_nodes = set()
+    def from_json(cls, json, seperator = " | "):
+        meta_paths = []
+        node_types = set()
         for meta_paths in json.keys():
             node_ids = [int(id) for id in meta_paths.split(seperator)]
-            if (len(node_ids) < min_size):
-                continue
-            walk_list.append(node_ids)
-            available_nodes |= set(node_ids)
-        return walk_list, available_nodes
+            meta_paths.append(node_ids)
+            node_types |= set(node_ids)
 
-    def input(self):
-        return self.dataset
+        return cls(meta_paths, node_types)
+
+    def _apply_transformation(self, meta_paths):
+        features = {'node': [], 'context': []}
+        for paths in meta_paths:
+            for node_key in range(len(paths)):
+                node = paths[node_key]
+                left_keys = self._left_context(node_key, self.window_size)
+                right_keys = self._right_context(node_key + 1, len(paths), self.window_size)
+                context_keys = np.array(left_keys + right_keys) + 1
+                context = np.array([self.padding_value - 1] + paths, dtype = np.float32) + 1
+                context = context[context_keys]
+
+                features['node'].append(node)
+                features['context'].append(context)
+        # Finally convert to array
+        features['context'] = np.array(features['context'])
+        return features['node'], features['context']
+
+    @staticmethod
+    def _left_context(max_key, win_size):
+        return MetaPathsInput._primitive_context(list(range(max_key)), win_size)
+
+    @staticmethod
+    def _right_context(min_key, max_key, win_size):
+        return MetaPathsInput._primitive_context(list(range(min_key, max_key)), win_size)
+
+    @staticmethod
+    def _primitive_context(key_range, windows_size):
+        if len(key_range) < windows_size:
+            return [-1] * (windows_size - len(key_range)) + key_range
+        return random.sample(key_range, windows_size)
+
+    def _update(self):
+        if len(self.nodes) < 1:
+            self.nodes, self.contexts = self._apply_transformation(self.meta_paths)
+
+    def skip_gram_input(self) -> tf.data.Dataset:
+        """
+        Get the dataset to train on in skip-gram format.
+        :return: the dataset with nodes as features and context as labels.
+        """
+        self._update()
+        return tf.data.Dataset().from_tensor_slices(({'node': self.nodes}, self.contexts))
+
+    def bag_of_words_input(self) -> tf.data.Dataset:
+        """
+        Get the dataset to train on in continuous bag of words format.
+        :return: the dataset with context as features and nodes as labels.
+        """
+        self._update()
+        return tf.data.Dataset().from_tensor_slices(({'context': self.contexts}, self.nodes))
+
+    def get_vocab_size(self) -> Number:
+        return len(self.nodes)
+
+    def get_vocab(self) -> List[Number]:
+        return self.nodes
 
 
 class NodeInput(Input):
