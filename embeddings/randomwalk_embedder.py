@@ -103,7 +103,7 @@ class ShortWalkBatchGenerator(BatchGenerator):
 
 
 # Walks are given like [2314, 123123, 4324, 2344, 2344]; the first line contains the column names and is therefore skipped
-def read_walks(self, file_name):
+def read_walks(file_name):
     walk_list = []
     available_nodes = set()
     with open(file_name) as file:
