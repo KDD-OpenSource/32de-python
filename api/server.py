@@ -213,6 +213,19 @@ def send_next_metapaths_to_rate(batch_size):
     return jsonify(paths)
 
 
+@app.route("/save-new-dataset", methods=["POST"])
+def add_new_dataset():
+    if not request.json:
+        abort(400)
+
+    data = request.get_json()
+
+    if 'url' not in data or 'username' not in data or 'password' not in data:
+        abort(422)
+
+    return jsonify({'status': 200})
+
+
 @app.route("/get-available-datasets", methods=["GET"])
 def get_available_datasets():
     """
