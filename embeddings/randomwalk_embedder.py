@@ -102,40 +102,40 @@ class ShortWalkBatchGenerator(BatchGenerator):
         return batch, context
 
 
-class WalkLoader:
+# Walks are given like [2314, 123123, 4324, 2344, 2344]; the first line contains the column names and is therefore skipped
+def read_walks(file_name):
+    walk_list = []
+    available_nodes = set()
+    with open(file_name) as file:
+        file.__next__()  # skip first line
+        for line in file:
+            content = line[line.find("[") + 1:line.find("]")]
+            node_ids = [int(id) for id in content.split(", ")]
 
-    # Walks are given like [2314, 123123, 4324, 2344, 2344]; the first line contains the column names and is therefore skipped
-    @staticmethod
-    def read_walks(self, file_name):
-        walk_list = []
-        available_nodes = set()
-        with open(file_name) as file:
-            file.__next__()  # skip first line
-            for line in file:
-                content = line[line.find("[") + 1:line.find("]")]
-                node_ids = [int(id) for id in content.split(", ")]
-
-                walk_list.append(node_ids)
-                available_nodes |= set(node_ids)
-        return walk_list, available_nodes
+            walk_list.append(node_ids)
+            available_nodes |= set(node_ids)
+    return walk_list, available_nodes
 
 
 class BatchGeneratorWrapper:
 
-    def __init__(self, walk_list, available_nodes, batch_generator_class:BatchGenerator.__class__):
-        self.id_mapping = self.create_id_mapping(available_nodes)
+    def __init__(self, walk_list, available_nodes, batch_generator_class: BatchGenerator.__class__, id_mapping=None):
+        self.id_mapping = id_mapping
+        if self.id_mapping is None:
+            self.id_mapping = self.create_id_mapping(available_nodes=available_nodes)
+
         self.inverse_mapping = {v: k for k, v in self.id_mapping.items()}
         converted_walks = self.convert_walks(walk_list, self.id_mapping)
 
         self.batch_generator = batch_generator_class(converted_walks)
 
     @staticmethod
-    def create_id_mapping(self, available_nodes):
+    def create_id_mapping(available_nodes):
         available_nodes_counter = range(len(available_nodes))
         return dict(zip(available_nodes, available_nodes_counter))
 
     @staticmethod
-    def convert_walks(self, walk_list, id_mapping):
+    def convert_walks(walk_list, id_mapping):
         converted_walks = []
         for walk in walk_list:
             converted_path = []
@@ -149,6 +149,9 @@ class BatchGeneratorWrapper:
 
     def get_original_id(self, own_id):
         return self.inverse_mapping[own_id]
+
+    def get_translated_id(self, original_id):
+        return self.id_mapping[original_id]
 
 
 
