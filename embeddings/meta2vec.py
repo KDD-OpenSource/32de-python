@@ -121,7 +121,7 @@ class MetaPathsInput(Input):
         :return: the dataset with nodes as features and context as labels.
         """
         self._update()
-        return tf.data.Dataset().from_tensor_slices(({'node': self.nodes}, self.contexts))
+        return tf.data.Dataset().from_tensor_slices(({'features': self.nodes}, self.contexts))
 
     def bag_of_words_input(self) -> tf.data.Dataset:
         """
@@ -129,7 +129,7 @@ class MetaPathsInput(Input):
         :return: the dataset with context as features and nodes as labels.
         """
         self._update()
-        return tf.data.Dataset().from_tensor_slices(({'context': self.contexts}, self.nodes))
+        return tf.data.Dataset().from_tensor_slices(({'features': self.contexts}, self.nodes))
 
     def get_vocab_size(self) -> Number:
         return len(self.nodes)
