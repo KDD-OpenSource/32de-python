@@ -76,7 +76,7 @@ class LongWalkBatchGenerator(BatchGenerator):
 
         dummy_back = [None] * padding_size
         for i in range(padding_size):
-            dummy_back[i] = seq[len(seq) - (i % len(seq))]
+            dummy_back[i] = seq[(len(seq) - 1 - i) % len(seq)]
 
         prepared = dummy_front + seq + dummy_back
         return prepared
