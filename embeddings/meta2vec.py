@@ -3,6 +3,8 @@ from typing import Tuple, List
 import tensorflow as tf
 import numpy as np
 import random
+import argparse
+import json
 
 
 class Input:
@@ -68,7 +70,7 @@ class MetaPathsInput(Input):
         return self
 
     @classmethod
-    def from_json(cls, json, seperator = " | ") -> 'MetaPathsInput':
+    def from_json(cls, json, seperator=" | ") -> 'MetaPathsInput':
         meta_paths = []
         node_types = set()
         for meta_paths in json.keys():
@@ -206,7 +208,7 @@ def model_paragraph_vectors_dbow():
     pass
 
 
-def create_estimator(model_dir, model_fn, input_fn: Input):
+def create_estimator(model_dir, model_fn, input: Input):
     features = tf.feature_column.categorical_column_with_identity('features',
                                                                   num_buckets=input_fn.get_vocab_size())
     run_config = tf.contrib.learn(gpu_memory_fraction=1,
@@ -225,15 +227,67 @@ def create_estimator(model_dir, model_fn, input_fn: Input):
 
 
 def parse_arguments():
-    pass
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument('--input_type',
+                        choices=["meta-paths", "nodes"],
+                        help='Choose input type of data in json',
+                        type=str,
+                        required=True)
+    parser.add_argument('--json_path',
+                        help='Specify path of json with input data',
+                        type=str,
+                        required=True)
+    parser.add_argument('--model_dir',
+                        help='Specify directory where checkpoints etc. should be saved',
+                        type=str,
+                        required=True)
+    parser.add_argument('--model',
+                        choices=["word2vec", "paragraph_vectors"],
+                        help='Choose which model should be used',
+                        type=str,
+                        required=True)
+    parser.add_argument('--model_type',
+                        choices=["bag-of-words", "skip-gram"],
+                        help='Choose which model type should be used',
+                        type=str,
+                        required=True)
+    return parser.parse_args()
+
+
+def choose_function(model: str, model_type: str, input_type: str, json_path: str):
+    json_file = open(json_path, mode='r')
+    json_data = json.load(json_file)
+    if input_type == "meta-paths":
+        input = MetaPathsInput.from_json(json_data)
+        if model_type == "bag-of-words":
+            input_fn = input.bag_of_words_input
+        elif model_type == "skip-gram":
+            input_fn = input.skip_gram_input
+    elif input_type == "meta-nodes":
+        input = NodeInput.from_json(json_data)
+        if model_type == "bag-of-words":
+            input_fn = input.bag_of_words_input
+        elif model_type == "skip-gram":
+            input_fn = input.skip_gram_input
+    if model == "word2vec":
+        model_fn = model_word2vec
+    elif model == "paragraph_vectors":
+        if model_type == "bag-of-words":
+            model_fn = model_paragraph_vectors_dbow
+        elif model_type == "skip-gram":
+            model_fn = model_paragraph_vectors_skipgram
+    return input, model_fn, input_fn
 
 
 if __name__ == "__main__":
     args = parse_arguments()
-    classifier = create_estimator(model_dir=None, model_fn=None, input_fn=None)
+    input, model_fn, input_fn = choose_function(model=args.model, model_type=args.model_type, input_type=args.input_type,
+                                                json_path=args.json_path)
+
+    classifier = create_estimator(model_dir=args.model_dir, model_fn=model_fn, input=input)
 
     if args.mode == 'train':
-        classifier.train(input_fn=None)
+        classifier.train(input_fn=input_fn)
     elif args.mode == 'predict':
         raise NotImplementedError()
     elif args.mode == 'eval':
