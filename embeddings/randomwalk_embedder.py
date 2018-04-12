@@ -78,7 +78,7 @@ class LongWalkBatchGenerator(BatchGenerator):
 # generate batch data from short walks: the whole walk is taken as the context for the start node
 class ShortWalkBatchGenerator(BatchGenerator):
 
-    def __init__(self, walk_list):
+    def __init__(self, walk_list, skip_window):
         self.walk_list = walk_list
         self.data_index = 0
 
@@ -119,7 +119,7 @@ def read_walks(file_name):
 
 class BatchGeneratorWrapper:
 
-    def __init__(self, walk_list, available_nodes, batch_generator_class: BatchGenerator.__class__, id_mapping=None):
+    def __init__(self, walk_list, skip_window, available_nodes, batch_generator_class: BatchGenerator.__class__, id_mapping=None):
         self.id_mapping = id_mapping
         if self.id_mapping is None:
             self.id_mapping = self.create_id_mapping(available_nodes=available_nodes)
@@ -127,7 +127,7 @@ class BatchGeneratorWrapper:
         self.inverse_mapping = {v: k for k, v in self.id_mapping.items()}
         converted_walks = self.convert_walks(walk_list, self.id_mapping)
 
-        self.batch_generator = batch_generator_class(converted_walks)
+        self.batch_generator = batch_generator_class(converted_walks, skip_window)
 
     @staticmethod
     def create_id_mapping(available_nodes):
