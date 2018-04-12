@@ -143,6 +143,7 @@ class NodeInput(Input):
 def model_word2vec(features, labels, mode, params):
     """
     Word2vec model from "Efficient Estimation of Word Representations in Vector Space" (Mikolov et al.)
+    TODO: Add documentation
     :return:
     """
     input = tf.feature_column.input_layer(features, params['feature_columns'])
