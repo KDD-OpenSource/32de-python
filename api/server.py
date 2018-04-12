@@ -12,7 +12,7 @@ from util.config import *
 from util.meta_path_loader_dispatcher import MetaPathLoaderDispatcher
 from util.graph_stats import GraphStats
 from active_learning.active_learner import UncertaintySamplingAlgorithm
-from explanation.explanation import SimilarityScore
+from explanation.explanation import SimilarityScore, Explanation
 
 app = Flask(__name__)
 ask = Ask(app, '/alexa')
@@ -117,31 +117,28 @@ def receive_node_sets():
     raise NotImplementedError("This API endpoint isn't implemented in the moment")
 
 
-@app.route("/node-sets", methods=["GET"])
-def send_node_sets():
-    """
-    Returns the node sets which the user previously selected on the "Setup" page.
-    """
-    # TODO: Does active_learning really needs this endpoint? Does someone needs this endpoint?
-    # TODO: Call fitting method in active_learning
-    # TODO: Check if necessary information is in request object
-    raise NotImplementedError("This API endpoint isn't implemented in the moment")
-
-
 @app.route("/first-node -set-query", methods=["GET"])
 def send_first_node_set():
+    """
+    :return: first node set as a cypher query as input for the neo4jGraphRenderer
+    TODO: Build query dynamically depending on selected node-IDs
+    """
     return jsonify({'node_set_query': 'MATCH (n)-[r]->(m) RETURN n,r,m'})
 
 
 @app.route("/second-node-set-query", methods=["GET"])
 def send_second_node_set():
+    """
+    :return: second node set as a cypher query as input for the neo4jGraphRenderer
+    TODO: Build query dynamically depending on selected node-IDs
+    """
     return jsonify({'node_set_query': 'MATCH (n)-[r]->(m) RETURN n,r,m'})
 
-# TODO: If functionality "meta-paths for node set A and B" will be written in Java, team alpha will need this information in Java
+
 @app.route("/set-edge-types", methods=["POST"])
 def receive_edge_types():
     """
-    Receives the node and edge types which are selected (types which are active) on the "Config" page.
+    Receives edge types which are selected on the Config page
     """
 
     # TODO: Check if necessary information is in request object
@@ -150,14 +147,14 @@ def receive_edge_types():
 
     edge_types = request.get_json()
     session['selected_edge_types'] = edge_types
-    return 'OK'
+
+    return jsonify({'edge_types': edge_types})
 
 
-# TODO: If functionality "meta-paths for node set A and B" will be written in Java, team alpha will need this information in Java
 @app.route("/set-node-types", methods=["POST"])
 def receive_node_types():
     """
-    Receives the node and edge types which are selected (types which are active) on the "Config" page.
+    Receives node types which are selected on the Config page
     """
 
     # TODO: Check if necessary information is in request object
@@ -166,13 +163,14 @@ def receive_node_types():
 
     node_types = request.get_json()
     session['selected_node_types'] = node_types
-    return 'OK'
+
+    return jsonify({'node_types': node_types})
 
 
 @app.route("/get-edge-types", methods=["GET"])
 def send_edge_types():
     """
-    Returns the available edge types for the "Config" page
+    :return: Array of available edge types for the Config page
     """
     return jsonify(session['selected_edge_types'])
 
@@ -180,7 +178,7 @@ def send_edge_types():
 @app.route("/get-node-types", methods=["GET"])
 def send_node_types():
     """
-    Returns the available node types for the "Config" page
+    :return: Array of available node types for the Config page
     """
     return jsonify(session['selected_node_types'])
 
@@ -214,7 +212,7 @@ def send_next_metapaths_to_rate(batch_size):
 @app.route("/get-available-datasets", methods=["GET"])
 def get_available_datasets():
     """
-        Deliver all available data sets for rating and a short description of each.
+        Returns all data sets registered on the server and a short description of each
     """
     return jsonify(MetaPathLoaderDispatcher().get_available_datasets())
 
@@ -259,7 +257,7 @@ def receive_rated_metapaths():
 @app.route("/get-similarity-score", methods=["GET"])
 def send_similarity_score():
     """
-    TODO: Endpoint needs to request similarity score dynamically at SimilarityScore Class
+    :return: float, that is a similarity score between both node sets
     """
     similarity_score = SimilarityScore()
     return jsonify({'similarity_score': similarity_score.get_similarity_score()})
@@ -267,108 +265,34 @@ def send_similarity_score():
 
 @app.route("/contributing-meta-paths", methods=["GET"])
 def send_contributing_meta_paths():
-    contributing_meta_paths = [
-      {
-        "id": 1,
-        "label": "make",
-        "value": 551,
-        "color": "hsl(131, 70%, 50%)"
-      },
-      {
-        "id": 2,
-        "label": "erlang",
-        "value": 226,
-        "color": "hsl(358, 70%, 50%)"
-      },
-      {
-        "id": 3,
-        "label": "c",
-        "value": 129,
-        "color": "hsl(151, 70%, 50%)"
-      },
-      {
-        "id": 4,
-        "label": "php",
-        "value": 67,
-        "color": "hsl(52, 70%, 50%)"
-      },
-      {
-        "id": 5,
-        "label": "java",
-        "value": 452,
-        "color": "hsl(221, 70%, 50%)"
-      },
-      {
-        "id": 6,
-        "label": "stylus",
-        "value": 406,
-        "color": "hsl(102, 70%, 50%)"
-      },
-      {
-        "id": 7,
-        "label": "ruby",
-        "value": 433,
-        "color": "hsl(341, 70%, 50%)"
-      }
-    ]
-
-    return jsonify({'contributing_meta_paths': contributing_meta_paths})
+    """
+    :return: Array of dictionaries, that hold necessary information for a pie chart visualization
+            about k-most contributing meta-paths to overall similarity score
+    """
+    similarity_score = SimilarityScore()
+    return jsonify({'contributing_meta_paths': similarity_score.get_contributing_meta_paths()})
 
 
 @app.route("/contributing-meta-path/<int:meta_path_id>", methods=["GET"])
 def send_contributing_meta_path(meta_path_id):
-    contributing_meta_path = {
-        "id": meta_path_id,
-        "name": "Meta-Path " + str(meta_path_id),
-        "structural_value": 10,
-        "contribution_ranking": 2,
-        "contribution_value": 25.55,
-        "meta_path": "PERSON - acted_id - MOVIE - directed - PERSON - directed - MOVIE",
-        "instance_queries": [
-            "MATCH (n)-[r]->(m) RETURN n,r,m",
-            "MATCH (n)-[r]->(m) RETURN n,r,m",
-            "MATCH (n)-[r]->(m) RETURN n,r,m"
-        ]
-    }
+    """
+    :param meta_path_id: Integer, that is a unique identifier for a meta-path
+    :return: Dictionary, that holds detailed information about the belonging meta-path
+    """
 
-    return jsonify({'meta_path': contributing_meta_path})
+    similarity_score = SimilarityScore()
+    return jsonify({'meta_path': similarity_score.get_contributing_meta_path(meta_path_id)})
 
 
 @app.route("/similar-nodes", methods=["GET"])
 def send_similar_nodes():
-    similar_nodes = [
-        {
-            "cypher_query": "MATCH (n) RETURN n LIMIT 1",
-            "properties": {
-                "name": "Node A",
-                "label": "Node Type A"
-            }
-        },
-        {
-            "cypher_query": "MATCH (n) RETURN n LIMIT 1",
-            "properties": {
-                "name": "Node B",
-                "label": "Node Type B"
-            }
-        },
-        {
-            "cypher_query": "MATCH (n) RETURN n LIMIT 1",
-            "properties": {
-                "name": "Node C",
-                "label": "Node Type A"
-            }
-        },
-        {
-            "name": "Node D",
-            "cypher_query": "MATCH (n) RETURN n LIMIT 1",
-            "properties": {
-                "name": "Node D",
-                "label": "Node Type B"
-            }
-        }
-    ]
+    """
+    :return: Array of dictionaries, that hold a 1-neighborhood query and properties about
+             k-similar nodes regarding both node sets
+    """
 
-    return jsonify({'similar_nodes': similar_nodes})
+    explanation = Explanation()
+    return jsonify({'similar_nodes': explanation.get_similar_nodes()})
 
 
 # Self defined intents
