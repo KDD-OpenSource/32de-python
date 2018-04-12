@@ -119,7 +119,7 @@ def read_walks(file_name):
 
 class BatchGeneratorWrapper:
 
-    def __init__(self, walk_list, available_nodes, batch_generator_class:BatchGenerator.__class__, id_mapping=None):
+    def __init__(self, walk_list, available_nodes, batch_generator_class: BatchGenerator.__class__, id_mapping=None):
         self.id_mapping = id_mapping
         if self.id_mapping is None:
             self.id_mapping = self.create_id_mapping(available_nodes=available_nodes)
@@ -128,7 +128,6 @@ class BatchGeneratorWrapper:
         converted_walks = self.convert_walks(walk_list, self.id_mapping)
 
         self.batch_generator = batch_generator_class(converted_walks)
-        return BatchGeneratorWrapper(walk_list, available_nodes, id_mapping, batch_generator_class)
 
     @staticmethod
     def create_id_mapping(self, available_nodes):
