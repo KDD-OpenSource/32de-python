@@ -19,7 +19,9 @@ class State(Enum):
 
 
 class AbstractActiveLearningAlgorithm(ABC):
-    standard_rating = 0.5
+    STANDARD_RATING = 0.5
+    UI_MAX_VALUE = 1.0
+    UI_MIN_VALUE = 0.0
 
     def __init__(self, meta_paths: List[MetaPath], seed: int):
         self.meta_paths = np.array(meta_paths)
@@ -40,15 +42,17 @@ class AbstractActiveLearningAlgorithm(ABC):
         self.__dict__.update(d)
         self.logger = logging.getLogger('MetaExp.{}'.format(__class__.__name__))
 
-    #TODO handle corner case that all paths in first batch were rated the same. max_ref_path and min_ref_path would same.
     def get_max_ref_path(self) -> Dict:
         idx = np.where(self.visited == State.VISITED)
-        max_ref_path_idx = np.argmax(self.meta_paths_rating[idx])
+        # Retrieve the last occurrence of the maximum value, so that max_ref_path and min_ref_path are never the same.
+        reversed_ratings = self.meta_paths_rating[idx][::-1]
+        max_ref_path_idx = len(reversed_ratings) - np.argmax(reversed_ratings) - 1
         max_ref_path_id = np.where(self.visited == State.VISITED)[0][max_ref_path_idx]
-        self.logger.debug("Max ref path is {} with rating {}".format(max_ref_path_id, self.meta_paths_rating[max_ref_path_id]))
+        self.logger.debug(
+            "Max ref path is {} with rating {}".format(max_ref_path_id, self.meta_paths_rating[max_ref_path_id]))
         return {'id': int(max_ref_path_id),
                 'metapath': self.meta_paths[max_ref_path_id].as_list(),
-                'rating': self.meta_paths_rating[max_ref_path_id]}
+                'rating': self.UI_MAX_VALUE}
 
     def get_min_ref_path(self) -> Dict:
         idx = np.where(self.visited == State.VISITED)
@@ -58,7 +62,7 @@ class AbstractActiveLearningAlgorithm(ABC):
             "Max ref path is {} with rating {}".format(min_ref_path_id, self.meta_paths_rating[min_ref_path_id]))
         return {'id': int(min_ref_path_id),
                 'metapath': self.meta_paths[min_ref_path_id].as_list(),
-                'rating': self.meta_paths_rating[min_ref_path_id]}
+                'rating': self.UI_MIN_VALUE}
 
     def has_one_batch_left(self, batch_size):
         if len(np.where(self.visited == State.NOT_VISITED)[0]) >= batch_size:
@@ -90,7 +94,7 @@ class AbstractActiveLearningAlgorithm(ABC):
 
         mps = [{'id': int(meta_id),
                 'metapath': meta_path,
-                'rating': self.standard_rating} for meta_id, meta_path in
+                'rating': self.STANDARD_RATING} for meta_id, meta_path in
                zip(ids, self.meta_paths[ids])]
 
         reference_paths = {'max_path': self.get_max_ref_path(),
@@ -172,8 +176,6 @@ class RandomSelectionAlgorithm(AbstractActiveLearningAlgorithm):
 
 
 class HypothesisBasedAlgorithm(AbstractActiveLearningAlgorithm, metaclass=ABCMeta):
-
-
     available_hypotheses = {'Gaussian Process': GaussianProcessHypothesis,
                             'MP Length': MPLengthHypothesis}
     default_hypotheses = 'Gaussian Process'
@@ -187,7 +189,8 @@ class HypothesisBasedAlgorithm(AbstractActiveLearningAlgorithm, metaclass=ABCMet
             self.logger.error('This Hypotheses is unavailable! Try another one.')
         else:
             self.logger.debug('Hypothesis {} was set'.format(hypothesis_params['hypothesis']))
-            self.hypothesis = self.available_hypotheses[hypothesis_params['hypothesis']](meta_paths,**hypothesis_params)
+            self.hypothesis = self.available_hypotheses[hypothesis_params['hypothesis']](meta_paths,
+                                                                                         **hypothesis_params)
         super().__init__(meta_paths, seed)
 
     def __getstate__(self):
@@ -235,6 +238,7 @@ class UncertaintySamplingAlgorithm(HypothesisBasedAlgorithm):
     """
         An active learning algorithm, that requests labels on the data he is most uncertain of.
     """
+
     def __init__(self, meta_paths: List[MetaPath], seed: int = 42, **hypothesis_params):
         self.logger = logging.getLogger('MetaExp.{}'.format(__class__.__name__))
         super().__init__(meta_paths, seed, **hypothesis_params)
@@ -263,6 +267,7 @@ class UncertaintySamplingAlgorithm(HypothesisBasedAlgorithm):
         std = self.hypothesis.get_uncertainty(range(len(self.meta_paths)))
         return std
 
+
 class RandomSamplingAlgorithm(HypothesisBasedAlgorithm):
     """
         An active learning algorithm, that requests labels on the data he is most uncertain of.
@@ -278,6 +283,7 @@ class RandomSamplingAlgorithm(HypothesisBasedAlgorithm):
         """
         random_criterion = self.random.randn(len(self.meta_paths))
         return random_criterion
+
 
 class GPSelect_Algorithm(HypothesisBasedAlgorithm):
     """
