@@ -34,6 +34,11 @@ Tutorials for installing Docker: [Mac](https://docs.docker.com/docker-for-mac/in
 ## Usage
 This is the server component of the MetaExp system.
 
+# Development
+## Logging Guideline
+Use MetaExp-Logger. For example if you wanted to equip the module Example with a logger, you would simply create a child logger by `logging.getLogger('MetaExp.Example')`. If you wanted to use a logger for
+each class, you would define it as `self.logger = logging.getLogger('MetaExp.{}'.format(__class__.__name__))`.
+
 ## Contributors
 Freya Behrens, Sebastian Bischoff, Pius Ladenburger, Julius Rückin, Laurenz Seidel, Fabian Stolp, Michael Vaichenker and Adrian Ziegler.
 

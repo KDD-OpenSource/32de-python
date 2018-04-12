@@ -26,7 +26,6 @@ class SimilarityScore:
     Later, we will fetch meta-paths dynamically. At the moment, we pass meta paths
     directly from the tests.
     '''
-    @staticmethod
     def fetch_meta_paths(self) -> List[MetaPathRating]:
         return self.meta_paths
 
@@ -35,8 +34,7 @@ class SimilarityScore:
     over all meta-paths, normalized by each meta-path length. First simplified,
     not experimentally tested baseline.
     '''
-    @staticmethod
-    def calculate_similarity(meta_path_ratings: List[MetaPathRating]) -> float:
+    def calculate_similarity(self, meta_path_ratings: List[MetaPathRating]) -> float:
         structural_values = np.array([])
         domain_values = np.array([])
 
@@ -44,4 +42,14 @@ class SimilarityScore:
             structural_values = np.append(structural_values, [meta_path_rating.structural_value])
             domain_values = np.append(domain_values, [meta_path_rating.domain_value])
 
-        return np.sum(structural_values * domain_values) / len(meta_path_ratings)
+        self.similarity_score = np.sum(structural_values * domain_values) / len(meta_path_ratings)
+        return self.similarity_score
+
+    '''
+    Getter for similarity score.
+    TODO: Return similarity score dynamically after computation
+    '''
+    @staticmethod
+    def get_similarity_score() -> float:
+        # return self.similarity_score
+        return 10.53

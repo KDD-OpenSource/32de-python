@@ -1,5 +1,5 @@
 import pandas as pd
-from util.config import ROTTEN_TOMATO_PATH
+from util.config import MOCK_DATASETS_DIR
 import os
 
 class GraphStats:
@@ -8,7 +8,7 @@ class GraphStats:
 
     def load_dataframe(self):
         df = pd.read_csv(
-            os.path.join(ROTTEN_TOMATO_PATH, self.dataset_filename))
+            os.path.join(MOCK_DATASETS_DIR, 'rotten_tomatoes', self.dataset_filename))
         df.columns = ['b', 'a', 'node_types', 'edge_types']
         return df
 

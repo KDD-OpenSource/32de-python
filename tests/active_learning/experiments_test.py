@@ -1,4 +1,6 @@
-from active_learning.oracles import UserOracle, MockOracle, FlexibleOracle
+from active_learning.oracles import UserOracle, FunctionalOracle
+from active_learning.evaluation import Evaluator
+from active_learning.active_learner import RandomSelectionAlgorithm, GPSelect_Algorithm, UncertaintySamplingAlgorithm
 from active_learning.rating import length_based
 import unittest
 
@@ -11,36 +13,25 @@ class ActiveLearningExperimentsTest(unittest.TestCase):
         print("Hear, hear!"
               "The Oracle of Merlin and Felix ... ")
 
-        merlin = UserOracle(dataset_name='Rotten Tomato',
-                            ground_truth_path='rated_datasets/Rotten Tomato_Merlin_1519148528.2417703.json',
-                            is_zero_indexed=False,
-                            batch_size=5)
-        felix = UserOracle(dataset_name='Rotten Tomato',
-                           ground_truth_path='rated_datasets/Rotten Tomato_mcfelix_1519142949.904623.json',
-                           is_zero_indexed=False,
-                           batch_size=5,
-                           default_rating=0.5)
-        stats = merlin.compute()
-        stats = felix.compute()
+        merlin_eval = Evaluator('Rotten Tomato', 5, UncertaintySamplingAlgorithm,
+                                UserOracle('rated_datasets/Rotten Tomato_Merlin_1519148528.2417703.json'))
+        felix_eval = Evaluator('Rotten Tomato', 5, UncertaintySamplingAlgorithm,
+                               UserOracle('rated_datasets/Rotten Tomato_mcfelix_1519142949.904623.json'))
+        stats = merlin_eval.compute()
+        stats = felix_eval.compute()
+        print(stats)
 
-    def test_mockOracle(self):
+    def test_randomSelection(self):
         """
         An example for using the MockOracle on the Rotten Tomato dataset.
         """
-        oracle = MockOracle(dataset_name='Rotten Tomato')
-        stats = oracle.compute()
-    def test_flexibleOracle(self):
-        """
-        Using the a FlexibleOracle for rating the Rotten Tomato dataset.
-        """
+        eval = Evaluator('Rotten Tomato', 5, RandomSelectionAlgorithm, FunctionalOracle())
+        stats = eval.compute()
 
-        oracle = FlexibleOracle(dataset_name='Rotten Tomato', rating_func=length_based)
-        stats = oracle.compute()
-        print(stats)
 
-        oracle = FlexibleOracle(dataset_name='Rotten Tomato', rating_func=length_based)
-        stats = oracle.compute()
-        print(stats)
+    def test_gp_select(self):
+        eval = Evaluator('Rotten Tomato', 5, GPSelect_Algorithm, FunctionalOracle(rating_func= length_based), beta=0.12)
+        eval.compute()
 
 
 if __name__ == '__main__':
