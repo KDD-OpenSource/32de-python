@@ -71,14 +71,14 @@ class MetaPathsInput(Input):
 
     @classmethod
     def from_json(cls, json, seperator=" | ") -> 'MetaPathsInput':
-        meta_paths = []
+        converted_meta_paths = []
         node_types = set()
         for meta_paths in json.keys():
             node_ids = [int(id) for id in meta_paths.split(seperator)]
-            meta_paths.append(node_ids)
+            converted_meta_paths.append(node_ids)
             node_types |= set(node_ids)
 
-        return cls(meta_paths, node_types)
+        return cls(converted_meta_paths, node_types)
 
     def _apply_transformation(self, meta_paths):
         features = {'node': [], 'context': []}
