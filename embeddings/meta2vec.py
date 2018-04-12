@@ -158,6 +158,9 @@ def model_word2vec(features, labels, mode, params):
 
     # Look up embedding for all words
     embedded_words = tf.nn.embedding_lookup(word_embeddings, tf.argmax(input, axis=1))
+    assert embedded_words.shape == (
+        input.shape[0].value, params['embedding_size']), 'Shape expected ({}, {}), but was {}'.format(
+        input.shape[0].value, params['embedding_size'], embedded_words.shape)
 
     return _model_word2vec(mode, size_of_vocabulary, params['loss'], labels, embedded_words)
 
@@ -165,16 +168,25 @@ def model_word2vec(features, labels, mode, params):
 def _model_word2vec(mode, size_of_vocabulary, loss: str, labels, embedded_words):
     # Concatenate vectors
     concatenated_embeddings = tf.concat(tf.unstack(embedded_words, axis=0), axis=0)
+    assert concatenated_embeddings.shape == (
+        embedded_words.shape[0].value * embedded_words.shape[1].value, 1), 'Shape expected ({}, {}), but was {}'.format(
+        embedded_words.shape[0].value * embedded_words.shape[1].value, 1, concatenated_embeddings.shape)
 
     # Transform embeddings linearly
     hidden_layer = tf.layers.dense(inputs=concatenated_embeddings, units=size_of_vocabulary, activation=None,
                                    use_bias=True,
                                    name="linear_transformation",
                                    kernel_initializer=tf.random_uniform_initializer(minval=-1, maxval=1))
+    assert hidden_layer.shape == (
+        size_of_vocabulary, 1), 'Shape expected ({}, {}), but was {}'.format(
+        size_of_vocabulary, 1, hidden_layer.shape)
 
     # Apply softmax and calulate loss
     if loss == 'cross_entropy':
         labels = tf.one_hot(indices=labels, depth=size_of_vocabulary)
+        assert labels.shape == (
+            size_of_vocabulary, 1), 'Shape expected ({}, {}), but was {}'.format(
+            size_of_vocabulary, 1, labels.shape)
         loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=hidden_layer, labels=labels),
                               name="cross_entropy_loss")
     else:
