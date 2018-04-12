@@ -213,14 +213,27 @@ class HypothesisBasedAlgorithm(AbstractActiveLearningAlgorithm, metaclass=ABCMet
 
     def _select(self, batch_size):
         criterion = self.compute_selection_criterion()
-        criterion = criterion[np.where(self.visited == State.NOT_VISITED)]
-        self.logger.debug("Meta paths that were already rated were filtered: {}".format(criterion))
-        # np.argpartition is used to retrieve the k-max elements. It uses the unstable introselect algorithm.
-        # TODO randomise retrieval of k-max elements
-        most_uncertain_idx = np.argpartition(criterion, -batch_size)[-batch_size:]
-        most_uncertain_ids = np.where(self.visited == State.NOT_VISITED)[0][most_uncertain_idx]
-        self.logger.debug("Most {} uncertain ids are {}".format(batch_size, most_uncertain_ids))
-        return most_uncertain_ids
+        ids = np.array(range(len(criterion)))
+        unvisited = np.where(self.visited == State.NOT_VISITED)[0]
+
+        #self.logger.debug("Meta paths that were already rated were filtered: {}".format(criterion))
+        selected_ids = []
+        for i in range(batch_size):
+            if len(unvisited) > 0:
+                # TODO randomise retrieval of k-max elements
+                criterion_unvisited = criterion[unvisited]
+                ids_unvisited = ids[unvisited]
+                most_uncertain = np.random.choice(np.where(criterion_unvisited == np.amax(criterion_unvisited))[0])
+                most_uncertain_id = ids_unvisited[most_uncertain]
+                unvisited = np.delete(unvisited, np.where(most_uncertain_id == unvisited))
+                selected_ids.append(most_uncertain_id)
+            else:
+                print("Not items left")
+
+
+
+        self.logger.debug("Most {} uncertain ids are {}".format(batch_size, selected_ids))
+        return selected_ids
 
     @abstractmethod
     def compute_selection_criterion(self):
