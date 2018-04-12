@@ -130,12 +130,12 @@ class BatchGeneratorWrapper:
         self.batch_generator = batch_generator_class(converted_walks)
 
     @staticmethod
-    def create_id_mapping(self, available_nodes):
+    def create_id_mapping(available_nodes):
         available_nodes_counter = range(len(available_nodes))
         return dict(zip(available_nodes, available_nodes_counter))
 
     @staticmethod
-    def convert_walks(self, walk_list, id_mapping):
+    def convert_walks(walk_list, id_mapping):
         converted_walks = []
         for walk in walk_list:
             converted_path = []
