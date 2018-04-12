@@ -167,10 +167,10 @@ def model_word2vec(features, labels, mode, params):
 
 def _model_word2vec(mode, size_of_vocabulary, loss: str, labels, embedded_words):
     # Concatenate vectors
-    concatenated_embeddings = tf.concat(tf.unstack(embedded_words, axis=0), axis=0)
+    concatenated_embeddings = tf.reshape(tf.concat(tf.unstack(embedded_words, axis=0), axis=0), shape=[1, -1])
     assert concatenated_embeddings.shape == (
-        embedded_words.shape[0].value * embedded_words.shape[1].value, 1), 'Shape expected ({}, {}), but was {}'.format(
-        embedded_words.shape[0].value * embedded_words.shape[1].value, 1, concatenated_embeddings.shape)
+        1, embedded_words.shape[0].value * embedded_words.shape[1].value), 'Shape expected ({}), but was {}'.format(
+        1, embedded_words.shape[0].value * embedded_words.shape[1].value, concatenated_embeddings.shape)
 
     # Transform embeddings linearly
     hidden_layer = tf.layers.dense(inputs=concatenated_embeddings, units=size_of_vocabulary, activation=None,
@@ -178,15 +178,15 @@ def _model_word2vec(mode, size_of_vocabulary, loss: str, labels, embedded_words)
                                    name="linear_transformation",
                                    kernel_initializer=tf.random_uniform_initializer(minval=-1, maxval=1))
     assert hidden_layer.shape == (
-        size_of_vocabulary, 1), 'Shape expected ({}, {}), but was {}'.format(
-        size_of_vocabulary, 1, hidden_layer.shape)
+        1, size_of_vocabulary), 'Shape expected ({}, {}), but was {}'.format(
+        1, size_of_vocabulary, hidden_layer.shape)
 
     # Apply softmax and calulate loss
     if loss == 'cross_entropy':
-        labels = tf.one_hot(indices=labels, depth=size_of_vocabulary)
+        labels = tf.reshape(tf.one_hot(indices=labels, depth=size_of_vocabulary), shape=[1, -1])
         assert labels.shape == (
-            size_of_vocabulary, 1), 'Shape expected ({}, {}), but was {}'.format(
-            size_of_vocabulary, 1, labels.shape)
+            1, size_of_vocabulary), 'Shape expected ({}, {}), but was {}'.format(
+            1, size_of_vocabulary, labels.shape)
         loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=hidden_layer, labels=labels),
                               name="cross_entropy_loss")
     else:
