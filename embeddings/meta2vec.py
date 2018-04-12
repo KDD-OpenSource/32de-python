@@ -45,19 +45,29 @@ class NodeInput(Input):
     pass
 
 
-def model_word2vec_skipgram():
-    pass
+def model_word2vec(features, labels, mode, params):
+    """
+    Word2vec model from "Efficient Estimation of Word Representations in Vector Space" (Mikolov et al.)
+    :return:
+    """
+    input = tf.feature_column.input_layer(features, params['feature_columns'])
 
+    size_of_vocabulary = input.shape[1]
 
-def model_word2vec_cbow(mode, size_of_vocabulary: int, loss: str):
-    labels = None
-    embeddings = None
-    ids = None
+    word_embeddings = tf.Variable(
+        initial_value=tf.random_uniform(shape=[size_of_vocabulary, params['embedding_size']], minval=-1, maxval=1),
+        name='word_embeddings')
 
     # Look up embedding for all words
-    embedded_words = tf.nn.embedding_lookup(embeddings, ids)
+    embedded_words = tf.nn.embedding_lookup(word_embeddings, tf.argmax(input, axis=0))
+
+    return _model_word2vec(mode, size_of_vocabulary, params['loss'], labels, embedded_words)
+
+
+def _model_word2vec(mode, size_of_vocabulary, loss, labels, embedded_words):
     # Concatenate vectors
     concatenated_embeddings = embedded_words
+
     # Transform embeddings linearly
     hidden_layer = tf.layers.dense(inputs=concatenated_embeddings, units=size_of_vocabulary, activation=None,
                                    use_bias=True,
@@ -85,10 +95,18 @@ def model_word2vec_cbow(mode, size_of_vocabulary: int, loss: str):
 
 
 def model_paragraph_vectors_skipgram():
+    """
+    Distributed Memory Model of Paragraph Vectors (PV-DM) from "Distributed Representations of Sentences and Documents" (Mikolov et al.)
+    :return:
+    """
     pass
 
 
-def model_paragraph_vectors_cbow():
+def model_paragraph_vectors_dbow():
+    """
+    Distributed Bag of Words version of Paragraph Vector (PV-DBOW) from "Distributed Representations of Sentences and Documents" (Mikolov et al.)
+    :return:
+    """
     pass
 
 
