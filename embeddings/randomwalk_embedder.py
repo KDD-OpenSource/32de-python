@@ -10,19 +10,16 @@ import datetime as dt
 import numpy as np
 import tensorflow as tf
 
+class BatchGenerator:
+    def generate_batch(self, batch_size, num_skips):
+        raise NotImplementedError()
 
-class LongWalkBatchGenerator:
+class LongWalkBatchGenerator(BatchGenerator):
 
-    def __init__(self, walk_list, available_nodes, skip_window):
+    def __init__(self, walk_list, skip_window):
         self.walk_list = walk_list
-        self.available_nodes = available_nodes
         self.skip_window = skip_window
         self.iterator = self.global_window_iterator(self.walk_list, self.skip_window)
-      
-    @classmethod
-    def fromfilename(cls, file_name, skip_window):
-        walk_list, available_nodes = self.read_walks(file_name)
-        return cls(walk_list, available_nodes, skip_window)
     
     @staticmethod
     def global_window_iterator(self, walk_list, skip_window):
@@ -32,7 +29,6 @@ class LongWalkBatchGenerator:
             for window in self.sliding_window(prepared_walk_list, span_size):
                 yield window
 
-    # generate batch data from long walks: the walk is read as a "sentence" using a sliding window
     def generate_batch(self, batch_size, num_skips):
         assert batch_size % num_skips == 0
         assert num_skips <= 2 * self.skip_window
@@ -41,7 +37,7 @@ class LongWalkBatchGenerator:
         context = np.ndarray(shape=(batch_size, 1), dtype=np.int32)
 
         for i in range(batch_size // num_skips):
-            window  = next(self.iterator, None)
+            window = next(self.iterator, None)
 
             # if iterator has finished restart it
             if window is None:
@@ -78,47 +74,14 @@ class LongWalkBatchGenerator:
         prepared = dummy + seq + dummy
         return prepared
 
-    @staticmethod
-    def read_walks(self, file_name):
-        walk_list = []
-        available_nodes = set()
-        with open(file_name) as file:
-            for line in file:
-                node_ids = [int(id) for id in line.split()]
 
-                walk_list.append(node_ids)
-                available_nodes |= set(node_ids)
-        return walk_list, available_nodes
+# generate batch data from short walks: the whole walk is taken as the context for the start node
+class ShortWalkBatchGenerator(BatchGenerator):
 
-
-class ShortWalkBatchGenerator:
-
-    def __init__(self, walk_list, available_nodes):
+    def __init__(self, walk_list):
         self.walk_list = walk_list
-        self.available_nodes = available_nodes
         self.data_index = 0
-        
-    @classmethod
-    def fromfilename(cls, file_name, skip_window):
-        walk_list, available_nodes = self.read_walks(file_name)
-        return cls(walk_list, available_nodes, skip_window)
 
-    @staticmethod
-    def read_walks(file_name):
-        walk_list = []
-        available_nodes = set()
-        with open(file_name) as file:
-            for line in file:
-                node_ids = line.split()
-
-                start_id = int(node_ids[0])
-                walk_id_list = [int(id) for id in node_ids[1:]]
-
-                walk_list.append([start_id, walk_id_list])
-                available_nodes.add(start_id)
-        return walk_list, available_nodes
-
-    # generate batch data from short walks: the whole walk is taken as the context for the start node
     # TODO should nodes at the beginning of a walk have a higher selection probabilty?
     def generate_batch(self, batch_size, num_skips):
         assert batch_size % num_skips == 0
@@ -126,18 +89,69 @@ class ShortWalkBatchGenerator:
         context = np.ndarray(shape=(batch_size, 1), dtype=np.int32)
         for i in range(batch_size // num_skips):
             current_walk = self.walk_list[self.data_index]
-            focus_key = int(len(current_walk)/2)
-            focus_node = current_walk[focus_key]
-            walk = np.delete(np.array(current_walk), focus_key)
+            focus_node = current_walk[0]
 
             assert len(current_walk) >= num_skips, "{} >= {}".format(len(current_walk), num_skips)
 
-            selected_context_nodes = random.sample(range(0, len(walk)), num_skips)
+            selected_context_nodes = random.sample(range(1, len(current_walk)), num_skips)
             for counter, selection in enumerate(selected_context_nodes):
                 batch[i * num_skips + counter] = focus_node
-                context[i * num_skips + counter, 0] = walk[selection]
+                context[i * num_skips + counter, 0] = current_walk[selection]
 
-                self.data_index = (self.data_index + 1) % len(self.walk_list)
+            self.data_index = (self.data_index + 1) % len(self.walk_list)
         return batch, context
+
+
+# Walks are given like [2314, 123123, 4324, 2344, 2344]; the first line contains the column names and is therefore skipped
+def read_walks(file_name):
+    walk_list = []
+    available_nodes = set()
+    with open(file_name) as file:
+        file.__next__()  # skip first line
+        for line in file:
+            content = line[line.find("[") + 1:line.find("]")]
+            node_ids = [int(id) for id in content.split(", ")]
+
+            walk_list.append(node_ids)
+            available_nodes |= set(node_ids)
+    return walk_list, available_nodes
+
+
+class BatchGeneratorWrapper:
+
+    def __init__(self, walk_list, available_nodes, batch_generator_class: BatchGenerator.__class__, id_mapping=None):
+        self.id_mapping = id_mapping
+        if self.id_mapping is None:
+            self.id_mapping = self.create_id_mapping(available_nodes=available_nodes)
+
+        self.inverse_mapping = {v: k for k, v in self.id_mapping.items()}
+        converted_walks = self.convert_walks(walk_list, self.id_mapping)
+
+        self.batch_generator = batch_generator_class(converted_walks)
+
+    @staticmethod
+    def create_id_mapping(available_nodes):
+        available_nodes_counter = range(len(available_nodes))
+        return dict(zip(available_nodes, available_nodes_counter))
+
+    @staticmethod
+    def convert_walks(walk_list, id_mapping):
+        converted_walks = []
+        for walk in walk_list:
+            converted_path = []
+            for id in walk:
+                converted_path.append(id_mapping[id])
+            converted_walks.append(converted_path)
+        return converted_walks
+
+    def generate_batch(self, batch_size, num_skips):
+        return self.batch_generator.generate_batch(batch_size, num_skips)
+
+    def get_original_id(self, own_id):
+        return self.inverse_mapping[own_id]
+
+    def get_translated_id(self, original_id):
+        return self.id_mapping[original_id]
+
 
 
