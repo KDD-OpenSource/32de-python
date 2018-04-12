@@ -102,22 +102,19 @@ class ShortWalkBatchGenerator(BatchGenerator):
         return batch, context
 
 
-class WalkLoader:
+# Walks are given like [2314, 123123, 4324, 2344, 2344]; the first line contains the column names and is therefore skipped
+def read_walks(self, file_name):
+    walk_list = []
+    available_nodes = set()
+    with open(file_name) as file:
+        file.__next__()  # skip first line
+        for line in file:
+            content = line[line.find("[") + 1:line.find("]")]
+            node_ids = [int(id) for id in content.split(", ")]
 
-    # Walks are given like [2314, 123123, 4324, 2344, 2344]; the first line contains the column names and is therefore skipped
-    @staticmethod
-    def read_walks(self, file_name):
-        walk_list = []
-        available_nodes = set()
-        with open(file_name) as file:
-            file.__next__()  # skip first line
-            for line in file:
-                content = line[line.find("[") + 1:line.find("]")]
-                node_ids = [int(id) for id in content.split(", ")]
-
-                walk_list.append(node_ids)
-                available_nodes |= set(node_ids)
-        return walk_list, available_nodes
+            walk_list.append(node_ids)
+            available_nodes |= set(node_ids)
+    return walk_list, available_nodes
 
 
 class BatchGeneratorWrapper:
