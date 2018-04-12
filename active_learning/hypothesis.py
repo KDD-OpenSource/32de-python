@@ -43,7 +43,7 @@ class GaussianProcessHypothesis:
     def __init__(self, meta_paths, **hypothesis_params):
         self.logger = logging.getLogger('MetaExp.{}'.format(__class__.__name__))
         kernel = 1.0 * RBF(length_scale=1.0, length_scale_bounds=(1e-1, 10.0))
-        self.gp = GaussianProcessRegressor(kernel=kernel,optimizer=None)
+        self.gp = GaussianProcessRegressor(kernel=kernel, optimizer=None)
         if not 'embedding_strategy' in hypothesis_params:
             self.meta_paths = self._tfidf_transform(meta_paths)
         else:

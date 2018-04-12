@@ -216,6 +216,7 @@ class HypothesisBasedAlgorithm(AbstractActiveLearningAlgorithm, metaclass=ABCMet
         criterion = criterion[np.where(self.visited == State.NOT_VISITED)]
         self.logger.debug("Meta paths that were already rated were filtered: {}".format(criterion))
         # np.argpartition is used to retrieve the k-max elements. It uses the unstable introselect algorithm.
+        # TODO randomise retrieval of k-max elements
         most_uncertain_idx = np.argpartition(criterion, -batch_size)[-batch_size:]
         most_uncertain_ids = np.where(self.visited == State.NOT_VISITED)[0][most_uncertain_idx]
         self.logger.debug("Most {} uncertain ids are {}".format(batch_size, most_uncertain_ids))
