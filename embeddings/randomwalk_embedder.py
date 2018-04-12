@@ -20,8 +20,7 @@ class LongWalkBatchGenerator(BatchGenerator):
         self.walk_list = walk_list
         self.skip_window = skip_window
         self.iterator = self.global_window_iterator(self.walk_list, self.skip_window)
-    
-    @staticmethod
+
     def global_window_iterator(self, walk_list, skip_window):
         span_size = 2 * skip_window + 1  # [ skip_window input_word skip_window ]
         for walk in walk_list:
@@ -59,7 +58,7 @@ class LongWalkBatchGenerator(BatchGenerator):
         return batch, context
 
     @staticmethod
-    def sliding_window(self, seq, span_size):
+    def sliding_window(seq, span_size):
         it = iter(seq)
         win = deque((next(it, None) for _ in range(span_size)), maxlen=span_size)
         yield win
@@ -69,7 +68,7 @@ class LongWalkBatchGenerator(BatchGenerator):
             yield win
 
     @staticmethod
-    def prepare_edge_for_window(self, seq, edge_size):
+    def prepare_edge_for_window(seq, edge_size):
         dummy = [None] * edge_size
         prepared = dummy + seq + dummy
         return prepared
