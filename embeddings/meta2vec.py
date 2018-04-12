@@ -10,10 +10,24 @@ class Input:
     def from_json(cls, data):
         raise NotImplementedError()
 
-    def input(self) -> Tuple:
+    def skip_gram_input(self) -> tf.data.Dataset:
+        """
+        Get the dataset to train on in skip-gram format.
+        :return: the dataset with nodes as features and context as labels.
+        """
+        raise NotImplementedError()
+
+    def bag_of_words_input(self) -> tf.data.Dataset:
+        """
+        Get the dataset to train on in continuous bag of words format.
+        :return: the dataset with context as features and nodes as labels.
+        """
         raise NotImplementedError()
 
     def get_vocab_size(self) -> Number:
+        raise NotImplementedError()
+
+    def get_vocab(self) -> List[Number]:
         raise NotImplementedError()
 
 
@@ -33,7 +47,7 @@ class MetaPathsInput(Input):
         self.window_size = windows_size
         self.padding_value = padding_value
 
-    def set_window_size(self, window_size: Number):
+    def set_window_size(self, window_size: Number) -> 'MetaPathsInput':
         """
         Set the window size. This number of nodes are each taken from the left and right of the feature node
         for the context.
@@ -43,7 +57,7 @@ class MetaPathsInput(Input):
         self.window_size = window_size
         return self
 
-    def set_padding_value(self, padding_value: Number):
+    def set_padding_value(self, padding_value: Number) -> 'MetaPathsInput':
         """
         Set the padding value. With this value meta-paths will be padded at the beginning and end. This value will,
         for example, occur when the first or last node context is extracted.
@@ -54,7 +68,7 @@ class MetaPathsInput(Input):
         return self
 
     @classmethod
-    def from_json(cls, json, seperator=" | "):
+    def from_json(cls, json, seperator = " | ") -> 'MetaPathsInput':
         meta_paths = []
         node_types = set()
         for meta_paths in json.keys():
@@ -191,9 +205,9 @@ def model_paragraph_vectors_dbow():
     pass
 
 
-def create_estimator(model_dir, model_fn, input: Input):
+def create_estimator(model_dir, model_fn, input_fn: Input):
     features = tf.feature_column.categorical_column_with_identity('features',
-                                                                  num_buckets=input.get_vocab_size())
+                                                                  num_buckets=input_fn.get_vocab_size())
     run_config = tf.contrib.learn(gpu_memory_fraction=1,
                                   tf_random_seed=42,
                                   save_summary_steps=500,
@@ -215,7 +229,7 @@ def parse_arguments():
 
 if __name__ == "__main__":
     args = parse_arguments()
-    classifier = create_estimator(model_dir=None, model_fn=None, input=None)
+    classifier = create_estimator(model_dir=None, model_fn=None, input_fn=None)
 
     if args.mode == 'train':
         classifier.train(input_fn=None)
