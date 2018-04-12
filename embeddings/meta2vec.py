@@ -221,7 +221,7 @@ def model_paragraph_vectors_dbow():
     pass
 
 
-def create_estimator(model_dir, model_fn, input: Input, embedding_size: int, loss: str, gpu_memory: int):
+def create_estimator(model_dir, model_fn, input: Input, embedding_size: int, loss: str, gpu_memory: float):
     features = tf.feature_column.categorical_column_with_identity('features',
                                                                   num_buckets=input.get_vocab_size())
     indicator_column = tf.feature_column.indicator_column(features)
@@ -279,7 +279,7 @@ def parse_arguments():
                         required=True)
     parser.add_argument('--gpu_memory',
                         help='Specify amount of GPU memory this process is allowed to use',
-                        type=int,
+                        type=float,
                         required=True)
     parser.add_argument('--loss',
                         choices=["cross_entropy"],
