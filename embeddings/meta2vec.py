@@ -42,8 +42,8 @@ class MetaPathsInput(Input):
                  padding_value: Number = 0,
                  random_seed: Number = 42):
         self.meta_paths = meta_paths
-        self.nodes = []
-        self.node_types = node_types
+        self.node_types = []
+        self.distinct_node_types = node_types
         self.random_seed = random_seed
 
         self.window_size = windows_size
@@ -97,45 +97,46 @@ class MetaPathsInput(Input):
         features['context'] = np.array(features['context'], np.int32)
         return features['node'], features['context']
 
-    @staticmethod
-    def _left_context(max_key, win_size):
-        return MetaPathsInput._primitive_context(list(range(max_key)), win_size)
+    def _left_context(self, max_key, win_size):
+        return self._primitive_context(list(range(max_key)), win_size)
 
-    @staticmethod
-    def _right_context(min_key, max_key, win_size):
-        return MetaPathsInput._primitive_context(list(range(min_key, max_key)), win_size)
+    def _right_context(self, min_key, max_key, win_size):
+        return self._primitive_context(list(range(min_key, max_key)), win_size)
 
-    @staticmethod
-    def _primitive_context(key_range, windows_size):
+    def _primitive_context(self, key_range, windows_size):
         if len(key_range) < windows_size:
             return [-1] * (windows_size - len(key_range)) + key_range
+        random.seed(self.random_seed)
         return random.sample(key_range, windows_size)
 
     def _update(self):
-        if len(self.nodes) < 1:
-            self.nodes, self.contexts = self._apply_transformation(self.meta_paths)
+        if len(self.node_types) < 1:
+            self.node_types, self.contexts = self._apply_transformation(self.meta_paths)
 
     def skip_gram_input(self) -> tf.data.Dataset:
         """
         Get the dataset to train on in skip-gram format.
-        :return: the dataset with nodes as features and context as labels.
+        :return: the dataset with node types as features and context as labels.
         """
         self._update()
-        return tf.data.Dataset().from_tensor_slices(({'features': self.nodes}, self.contexts))
+        return self._create_dataset(self.node_types, self.contexts)
 
     def bag_of_words_input(self) -> tf.data.Dataset:
         """
         Get the dataset to train on in continuous bag of words format.
-        :return: the dataset with context as features and nodes as labels.
+        :return: the dataset with context as features and node types as labels.
         """
         self._update()
-        return tf.data.Dataset().from_tensor_slices(({'features': self.contexts}, self.nodes))
+        return self._create_dataset(self.contexts, self.node_types)
+
+    def _create_dataset(self, features, labels):
+        return tf.data.Dataset().from_tensor_slices(({'features': features}, labels))
 
     def get_vocab_size(self) -> Number:
-        return len(self.nodes)
+        return len(self.distinct_node_types)
 
     def get_vocab(self) -> List[Number]:
-        return self.nodes
+        return self.distinct_node_types
 
 
 class NodeInput(Input):
@@ -222,8 +223,9 @@ def model_paragraph_vectors_dbow():
 
 
 def create_estimator(model_dir, model_fn, input: Input, embedding_size: int, loss: str, gpu_memory: float):
-    features = tf.feature_column.categorical_column_with_identity('features',
-                                                                  num_buckets=input.get_vocab_size())
+    features = tf.feature_column.categorical_column_with_hash_bucket('features',
+                                                                     input.get_vocab_size(),
+                                                                     dtype=tf.int32)
     indicator_column = tf.feature_column.indicator_column(features)
     session_config = tf.ConfigProto()
     session_config.gpu_options.per_process_gpu_memory_fraction = gpu_memory
@@ -295,18 +297,14 @@ def choose_function(model: str, model_type: str, input_type: str, json_path: str
     if input_type == "meta-paths":
         input = MetaPathsInput.from_json(json_data)
         if model_type == "bag-of-words":
-            input.bag_of_words_input()
             input_fn = input.bag_of_words_input
         elif model_type == "skip-gram":
-            input.skip_gram_input()
             input_fn = input.skip_gram_input
-    elif input_type == "meta-nodes":
+    elif input_type == "nodes":
         input = NodeInput.from_json(json_data)
         if model_type == "bag-of-words":
-            input.bag_of_words_input()
             input_fn = input.bag_of_words_input
         elif model_type == "skip-gram":
-            input.skip_gram_input()
             input_fn = input.skip_gram_input
     if model == "word2vec":
         model_fn = model_word2vec
