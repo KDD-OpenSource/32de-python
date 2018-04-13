@@ -48,6 +48,7 @@ class GaussianProcessHypothesis:
             self.meta_paths = self._tfidf_transform(meta_paths)
         else:
             self.meta_paths = hypothesis_params['embedding_strategy'](meta_paths)
+        self.similarity = kernel(self.meta_paths,self.meta_paths)
 
     def __getstate__(self):
         # Copy the object's state from self.__dict__ which contains
@@ -90,3 +91,9 @@ class GaussianProcessHypothesis:
         uncertainty_all_meta_paths = self.gp.predict(self.meta_paths[idx], return_std=True)[1]
         self.logger.debug("The uncertainty for the meta paths is: {}".format(uncertainty_all_meta_paths))
         return uncertainty_all_meta_paths
+
+    def get_similarity(self):
+        """
+        Computes the complete similarity matrix according to the kernel.
+        """
+        return self.similarity
