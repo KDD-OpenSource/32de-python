@@ -37,6 +37,9 @@ class SamplingStrategy():
     def iterator(self, path_length, samples):
         raise NotImplementedError()
 
+    def index(self, path, index):
+        raise NotImplementedError()
+
 
 class CBOWSampling(SamplingStrategy):
 
@@ -52,6 +55,9 @@ class CBOWSampling(SamplingStrategy):
 
     def iterator(self, path_length, samples):
         return range(1, len(path_length))
+
+    def index(self, path, index):
+        return path[index]
 
 
 class SkipGramSampling(SamplingStrategy):
@@ -69,6 +75,9 @@ class SkipGramSampling(SamplingStrategy):
 
     def iterator(self, path_length, samples):
         return range(samples)
+
+    def index(self, path, index):
+        return None
 
 
 class Input:
@@ -225,7 +234,7 @@ class MetaPathsInput(Input):
                                                                                             self.window_size)]
 
                 paths.append(path_id)
-                indices.append(iteration)
+                indices.append(sampling_strategy.index(path, iteration))
                 contexts.append(context)
             path_id += 1
 
