@@ -41,7 +41,8 @@ class SamplingStrategy():
 class CBOWSampling(SamplingStrategy):
 
     def sample_word(self, node_key, _, window_size):
-        return self._primitive_context(list(range(max(1, node_key - window_size), node_key)), 2 * window_size)
+        window_size = 2 * window_size
+        return self._primitive_context(list(range(max(1, node_key - window_size), node_key)), window_size)
 
     def sample_paragraph(self, node_key, path_length, window_size):
         return self.sample_word(node_key, path_length, window_size)
@@ -78,8 +79,9 @@ class Input:
                  windows_size: Number = 2,
                  padding_value: Number = -1,
                  random_seed: Number = 42):
-        self.vocabulary = [padding_value] + list(vocabulary)
+        self.vocabulary = list(vocabulary)
         self.padding_index = 0
+        self.padding_mapping = 0
         self.padding_value = padding_value
         self.random_seed = random_seed
         self.window_size = windows_size
@@ -96,7 +98,7 @@ class Input:
 
         for mp in meta_paths:
             path = []
-            path.append(id_mapping[self.padding_value])
+            path.append(self.padding_mapping)
             for n in mp:
                 path.append(id_mapping[n])
                 normalized_paths.append(path)
@@ -158,10 +160,10 @@ class Input:
         return len(self.vocabulary)
 
     def get_vocab(self) -> List[Number]:
-        return list(range(self.get_vocab_size()))
+        return list(range(1, self.get_vocab_size() + 1))
 
     def get_node_id(self, mapped_id):
-        return self.vocabulary[mapped_id]
+        return self.vocabulary[mapped_id - 1]
 
     def _apply_transformation(self, meta_paths: List[List[Number]], sampling_strategy: SamplingStrategy):
         raise NotImplementedError()
@@ -299,9 +301,8 @@ def _model_word2vec(mode, size_of_vocabulary, loss: str, labels, embedded_words)
 
     # Apply softmax and calulate loss
     if loss == 'cross_entropy':
-        print(labels)
+        # TODO: Reduce to one vector when using skip-grams (so shape is (1, 14) and not (1, 56))
         labels = tf.reshape(tf.one_hot(indices=labels, depth=size_of_vocabulary), shape=[1, -1])
-        print(labels)
         assert labels.shape == (
             1, size_of_vocabulary), 'Shape expected ({}, {}), but was {}'.format(
             1, size_of_vocabulary, labels.shape)
