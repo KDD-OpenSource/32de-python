@@ -7,49 +7,95 @@ import argparse
 import json
 
 
+class SamplingKeyStrategy():
+
+    def __init__(self, padding_index, random_seed):
+        self.random_seed = random_seed
+        self.padding_index = padding_index
+
+    def _left_context(self, max_key, win_size):
+        return self._primitive_context(list(range(1, max_key)), win_size)
+
+    def _right_context(self, min_key, max_key, win_size):
+        return self._primitive_context(list(range(min_key + 1, max_key)), win_size)
+
+    def _primitive_context(self, key_range, windows_size):
+        if len(key_range) < windows_size:
+            return [self.padding_index] * (windows_size - len(key_range)) + key_range
+        random.seed(self.random_seed)
+        return random.sample(key_range, windows_size)
+
+    def sample_keys(self, node_key, path_length, window_size):
+        raise NotImplementedError()
+
+    def iterator(self, path_length, samples):
+        raise NotImplementedError()
+
+
+class SkipGramSampling(SamplingKeyStrategy):
+
+    def sample_keys(self, node_key, _, window_size):
+        return self._primitive_context(list(range(max(1, node_key - window_size), node_key)), 2 * window_size)
+
+    def iterator(self, path_length, samples):
+        return range(len(path_length))
+
+
+class CBOWSampling(SamplingKeyStrategy):
+
+    def sample_keys(self, node_key, _, window_size):
+        return self._primitive_context(list(range(max(1, node_key - window_size), node_key)), 2 * window_size)
+
+    def iterator(self, path_length, samples):
+        return range(samples)
+
+
 class Input:
-    @classmethod
-    def from_json(cls, data):
-        raise NotImplementedError()
-
-    def skip_gram_input(self) -> tf.data.Dataset:
-        """
-        Get the dataset to train on in skip-gram format.
-        :return: the dataset with nodes as features and context as labels.
-        """
-        raise NotImplementedError()
-
-    def bag_of_words_input(self) -> tf.data.Dataset:
-        """
-        Get the dataset to train on in continuous bag of words format.
-        :return: the dataset with context as features and nodes as labels.
-        """
-        raise NotImplementedError()
-
-    def get_vocab_size(self) -> Number:
-        raise NotImplementedError()
-
-    def get_vocab(self) -> List[Number]:
-        raise NotImplementedError()
-
-
-class MetaPathsInput(Input):
 
     def __init__(self,
-                 meta_paths: List[List[Number]],
-                 node_types: List[Number],
+                 paths: List[List[Number]],
+                 vocabulary: List[Number],
                  windows_size: Number = 2,
-                 padding_value: Number = 0,
+                 padding_value: Number = -1,
                  random_seed: Number = 42):
-        self.meta_paths = meta_paths
-        self.node_types = []
-        self.distinct_node_types = node_types
-        self.random_seed = random_seed
-
-        self.window_size = windows_size
+        self.vocabulary = [padding_value] + list(vocabulary)
+        self.padding_index = 0
         self.padding_value = padding_value
+        self.random_seed = random_seed
+        self.window_size = windows_size
+        self.samplingStrategies = {
+            'cbow': CBOWSampling(self.padding_index, self.random_seed),
+            'skip-gram': SkipGramSampling(self.padding_index, self.random_seed)
+        }
 
-    def set_window_size(self, window_size: Number) -> 'MetaPathsInput':
+        self.paths = self._normalize_node_ids(paths)
+
+    def _normalize_node_ids(self, meta_paths):
+        normalized_paths = []
+        id_mapping = dict(zip(self.vocabulary, self.get_vocab()))
+
+        for mp in meta_paths:
+            path = []
+            path.append(id_mapping[self.padding_value])
+            for n in mp:
+                path.append(id_mapping[n])
+                normalized_paths.append(path)
+
+        return normalized_paths
+
+    @classmethod
+    def from_json(cls, json, seperator=" | ") -> 'Input':
+        converted_paths = []
+        vocabulary = set()
+        for paths in json.keys():
+            node_ids = [int(id) for id in paths.split(seperator)]
+            converted_paths.append(node_ids)
+            vocabulary |= set(node_ids)
+
+        return cls(converted_paths, vocabulary)
+
+
+    def set_window_size(self, window_size: Number) -> 'NodeEdgeTypeInput':
         """
         Set the window size. This number of nodes are each taken from the left and right of the feature node
         for the context.
@@ -59,7 +105,7 @@ class MetaPathsInput(Input):
         self.window_size = window_size
         return self
 
-    def set_padding_value(self, padding_value: Number) -> 'MetaPathsInput':
+    def set_padding_value(self, padding_value: Number) -> 'NodeEdgeTypeInput':
         """
         Set the padding value. With this value meta-paths will be padded at the beginning and end. This value will,
         for example, occur when the first or last node context is extracted.
@@ -69,75 +115,93 @@ class MetaPathsInput(Input):
         self.padding_value = padding_value
         return self
 
-    @classmethod
-    def from_json(cls, json, seperator=" | ") -> 'MetaPathsInput':
-        converted_meta_paths = []
-        node_types = set()
-        for meta_paths in json.keys():
-            node_ids = [int(id) for id in meta_paths.split(seperator)]
-            converted_meta_paths.append(node_ids)
-            node_types |= set(node_ids)
-
-        return cls(converted_meta_paths, node_types)
-
-    def _apply_transformation(self, meta_paths):
-        features = {'node': [], 'context': []}
-        for paths in meta_paths:
-            for node_key in range(len(paths)):
-                node = paths[node_key]
-                left_keys = self._left_context(node_key, self.window_size)
-                right_keys = self._right_context(node_key + 1, len(paths), self.window_size)
-                context_keys = np.array(left_keys + right_keys, dtype=np.int32) + 1
-                context = np.array([self.padding_value - 1] + paths, dtype=np.int32) + 1
-                context = context[context_keys]
-
-                features['node'].append(node)
-                features['context'].append(context)
-        # Finally convert to array
-        features['context'] = np.array(features['context'], np.int32)
-        return features['node'], features['context']
-
-    def _left_context(self, max_key, win_size):
-        return self._primitive_context(list(range(max_key)), win_size)
-
-    def _right_context(self, min_key, max_key, win_size):
-        return self._primitive_context(list(range(min_key, max_key)), win_size)
-
-    def _primitive_context(self, key_range, windows_size):
-        if len(key_range) < windows_size:
-            return [-1] * (windows_size - len(key_range)) + key_range
-        random.seed(self.random_seed)
-        return random.sample(key_range, windows_size)
-
-    def _update(self):
-        if len(self.node_types) < 1:
-            self.node_types, self.contexts = self._apply_transformation(self.meta_paths)
-
     def skip_gram_input(self) -> tf.data.Dataset:
         """
         Get the dataset to train on in skip-gram format.
         :return: the dataset with node types as features and context as labels.
         """
-        self._update()
-        return self._create_dataset(self.node_types, self.contexts)
+        embedding_value, context = self._apply_transformation(self.paths, self.samplingStrategies['skip-gram'])
+        return self._create_dataset(np.reshape(embedding_value, (-1, 1)), context)
 
     def bag_of_words_input(self) -> tf.data.Dataset:
         """
         Get the dataset to train on in continuous bag of words format.
         :return: the dataset with context as features and node types as labels.
         """
-        self._update()
-        return self._create_dataset(self.contexts, self.node_types)
+        embedding_value, context = self._apply_transformation(self.paths, self.samplingStrategies['cbow'])
+        return self._create_dataset(context, embedding_value)
 
     def _create_dataset(self, features, labels):
         return tf.data.Dataset().from_tensor_slices(({'features': features}, labels))
 
     def get_vocab_size(self) -> Number:
-        return len(self.distinct_node_types)
+        return len(self.vocabulary)
 
     def get_vocab(self) -> List[Number]:
-        return self.distinct_node_types
+        return list(range(self.get_vocab_size()))
 
+    def get_node_id(self, mapped_id):
+        return self.vocabulary[mapped_id]
+
+    def _apply_transformation(self, meta_paths: List[List[Number]], key_strategy: SamplingKeyStrategy):
+        raise NotImplementedError()
+
+
+class NodeEdgeTypeInput(Input):
+
+    def _apply_transformation(self, meta_paths: List[List[Number]], key_strategy: SamplingKeyStrategy):
+        features = {'node': [], 'context': []}
+        for path in meta_paths:
+            for node_key in range(1, len(path)):
+                node = path[node_key]
+                context = np.array(path, dtype=np.int32)[key_strategy.sample(node_key, len(path), self.window_size)]
+
+                features['node'].append(node)
+                features['context'].append(context)
+        # Finally convert to array
+        features['context'] = np.array(features['context'], np.int32)
+        features['node'] = np.array(features['node'], np.int32)
+        return features['node'], features['context']
+
+
+class MetaPathsInput(Input):
+
+    def __init__(self,
+                 paths: List[List[Number]],
+                 vocabulary: List[Number],
+                 windows_size: Number = 2,
+                 padding_value: Number = 0,
+                 samples: Number = 5,
+                 random_seed: Number = 42):
+        super().__init__(paths, vocabulary, windows_size, padding_value, random_seed)
+        self.samples = samples
+
+    def set_samples(self, samples: Number) -> 'MetaPathsInput':
+        # TODO: Max this value for each mp to (len(mp) over window_size)
+        """
+        Set the number samples. For each meta-paths random node samples are taken, this is repeated *samples* times.
+        :param samples: the number of training samples to create for each meta-paths.
+        :return: Input object itself.
+        """
+        self.samples = samples
+        return self
+
+
+
+    def _apply_transformation(self, meta_paths: List[List[Number]], key_strategy: SamplingKeyStrategy):
+        features = {'path': [], 'context': []}
+        path_id = 0
+        for path in meta_paths:
+            for node_key in key_strategy.iterator(len(path), self.samples):
+                context = np.array(path, dtype=np.int32)[key_strategy.sample(node_key + 1, len(path), self.window_size)]
+
+                features['path'].append(path_id)
+                features['context'].append(context)
+            path_id += 1
+        # Finally convert to array
+        features['context'] = np.array(features['context'], np.int32)
+        features['path'] = np.array(features['path'], np.int32)
+        return features['path'], features['context']
 
 class NodeInput(Input):
     pass
@@ -150,7 +214,6 @@ def model_word2vec(features, labels, mode, params):
     :return:
     """
     input = tf.feature_column.input_layer(features, params['feature_columns'])
-
     size_of_vocabulary = input.shape[1].value
 
     word_embeddings = tf.Variable(
@@ -184,7 +247,9 @@ def _model_word2vec(mode, size_of_vocabulary, loss: str, labels, embedded_words)
 
     # Apply softmax and calulate loss
     if loss == 'cross_entropy':
+        print(labels)
         labels = tf.reshape(tf.one_hot(indices=labels, depth=size_of_vocabulary), shape=[1, -1])
+        print(labels)
         assert labels.shape == (
             1, size_of_vocabulary), 'Shape expected ({}, {}), but was {}'.format(
             1, size_of_vocabulary, labels.shape)
@@ -295,7 +360,7 @@ def choose_function(model: str, model_type: str, input_type: str, json_path: str
     json_file = open(json_path, mode='r')
     json_data = json.load(json_file)
     if input_type == "meta-paths":
-        input = MetaPathsInput.from_json(json_data)
+        input = NodeEdgeTypeInput.from_json(json_data)
         if model_type == "bag-of-words":
             input_fn = input.bag_of_words_input
         elif model_type == "skip-gram":
