@@ -7,7 +7,7 @@ import argparse
 import json
 
 
-class SamplingKeyStrategy():
+class SamplingStrategy():
 
     def __init__(self, padding_index, random_seed):
         self.random_seed = random_seed
@@ -25,26 +25,37 @@ class SamplingKeyStrategy():
         random.seed(self.random_seed)
         return random.sample(key_range, windows_size)
 
-    def sample_keys(self, node_key, path_length, window_size):
+    def sample_word(self, node_key, path_length, window_size):
+        raise NotImplementedError()
+
+    def sample_paragraph(self, node_key, path_length, window_size):
         raise NotImplementedError()
 
     def iterator(self, path_length, samples):
         raise NotImplementedError()
 
 
-class SkipGramSampling(SamplingKeyStrategy):
+class SkipGramSampling(SamplingStrategy):
 
-    def sample_keys(self, node_key, _, window_size):
+    def sample_word(self, node_key, _, window_size):
         return self._primitive_context(list(range(max(1, node_key - window_size), node_key)), 2 * window_size)
+
+    def sample_paragraph(self, node_key, path_length, window_size):
+        return self.sample_word(node_key, path_length, window_size)
 
     def iterator(self, path_length, samples):
-        return range(len(path_length))
+        return range(1, len(path_length))
 
 
-class CBOWSampling(SamplingKeyStrategy):
+class CBOWSampling(SamplingStrategy):
 
-    def sample_keys(self, node_key, _, window_size):
-        return self._primitive_context(list(range(max(1, node_key - window_size), node_key)), 2 * window_size)
+    def sample_word(self, node_key, path_length, window_size):
+        left_keys = self._left_context(node_key, window_size)
+        right_keys = self._right_context(node_key, path_length, window_size)
+        return left_keys + right_keys
+
+    def sample_paragraph(self, node_key, path_length, window_size):
+        return self._primitive_context(list(range(1, path_length)), 2 * window_size)
 
     def iterator(self, path_length, samples):
         return range(samples)
@@ -143,18 +154,20 @@ class Input:
     def get_node_id(self, mapped_id):
         return self.vocabulary[mapped_id]
 
-    def _apply_transformation(self, meta_paths: List[List[Number]], key_strategy: SamplingKeyStrategy):
+    def _apply_transformation(self, meta_paths: List[List[Number]], key_strategy: SamplingStrategy):
         raise NotImplementedError()
 
 
 class NodeEdgeTypeInput(Input):
 
-    def _apply_transformation(self, meta_paths: List[List[Number]], key_strategy: SamplingKeyStrategy):
+    def _apply_transformation(self, meta_paths: List[List[Number]], key_strategy: SamplingStrategy):
         features = {'node': [], 'context': []}
         for path in meta_paths:
             for node_key in range(1, len(path)):
                 node = path[node_key]
-                context = np.array(path, dtype=np.int32)[key_strategy.sample(node_key, len(path), self.window_size)]
+                context = np.array(path, dtype=np.int32)[key_strategy.sample_word(node_key,
+                                                                                  len(path),
+                                                                                  self.window_size)]
 
                 features['node'].append(node)
                 features['context'].append(context)
@@ -188,14 +201,17 @@ class MetaPathsInput(Input):
 
 
 
-    def _apply_transformation(self, meta_paths: List[List[Number]], key_strategy: SamplingKeyStrategy):
-        features = {'path': [], 'context': []}
+    def _apply_transformation(self, meta_paths: List[List[Number]], key_strategy: SamplingStrategy):
+        features = {'path': [], 'index': [], 'context': []}
         path_id = 0
         for path in meta_paths:
-            for node_key in key_strategy.iterator(len(path), self.samples):
-                context = np.array(path, dtype=np.int32)[key_strategy.sample(node_key + 1, len(path), self.window_size)]
+            for iteration in key_strategy.iterator(len(path), self.samples):
+                context = np.array(path, dtype=np.int32)[key_strategy.sample_paragraph(iteration,
+                                                                                       len(path),
+                                                                                       self.window_size)]
 
                 features['path'].append(path_id)
+                features['index'].append(iteration)
                 features['context'].append(context)
             path_id += 1
         # Finally convert to array
