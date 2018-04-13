@@ -31,11 +31,14 @@ class SamplingStrategy():
     def sample_paragraph(self, node_key, path_length, window_size):
         raise NotImplementedError()
 
+    def paragraph_postprocess(self, paragraph_id, node_predict, context):
+        raise NotImplementedError()
+
     def iterator(self, path_length, samples):
         raise NotImplementedError()
 
 
-class SkipGramSampling(SamplingStrategy):
+class CBOWSampling(SamplingStrategy):
 
     def sample_word(self, node_key, _, window_size):
         return self._primitive_context(list(range(max(1, node_key - window_size), node_key)), 2 * window_size)
@@ -43,11 +46,14 @@ class SkipGramSampling(SamplingStrategy):
     def sample_paragraph(self, node_key, path_length, window_size):
         return self.sample_word(node_key, path_length, window_size)
 
+    def paragraph_postprocess(self, paragraph_id, node_predict, context):
+        return paragraph_id, context, node_predict
+
     def iterator(self, path_length, samples):
         return range(1, len(path_length))
 
 
-class CBOWSampling(SamplingStrategy):
+class SkipGramSampling(SamplingStrategy):
 
     def sample_word(self, node_key, path_length, window_size):
         left_keys = self._left_context(node_key, window_size)
@@ -56,6 +62,9 @@ class CBOWSampling(SamplingStrategy):
 
     def sample_paragraph(self, node_key, path_length, window_size):
         return self._primitive_context(list(range(1, path_length)), 2 * window_size)
+
+    def paragraph_postprocess(self, paragraph_id, node_predict, context):
+        return paragraph_id, context, []
 
     def iterator(self, path_length, samples):
         return range(samples)
@@ -131,16 +140,16 @@ class Input:
         Get the dataset to train on in skip-gram format.
         :return: the dataset with node types as features and context as labels.
         """
-        embedding_value, context = self._apply_transformation(self.paths, self.samplingStrategies['skip-gram'])
-        return self._create_dataset(np.reshape(embedding_value, (-1, 1)), context)
+        node, context = self._apply_transformation(self.paths, self.samplingStrategies['skip-gram'])
+        return self._create_dataset(np.reshape(node, (-1, 1)), context)
 
     def bag_of_words_input(self) -> tf.data.Dataset:
         """
         Get the dataset to train on in continuous bag of words format.
         :return: the dataset with context as features and node types as labels.
         """
-        embedding_value, context = self._apply_transformation(self.paths, self.samplingStrategies['cbow'])
-        return self._create_dataset(context, embedding_value)
+        node, context = self._apply_transformation(self.paths, self.samplingStrategies['cbow'])
+        return self._create_dataset(context, node)
 
     def _create_dataset(self, features, labels):
         return tf.data.Dataset().from_tensor_slices(({'features': features}, labels))
@@ -154,27 +163,29 @@ class Input:
     def get_node_id(self, mapped_id):
         return self.vocabulary[mapped_id]
 
-    def _apply_transformation(self, meta_paths: List[List[Number]], key_strategy: SamplingStrategy):
+    def _apply_transformation(self, meta_paths: List[List[Number]], sampling_strategy: SamplingStrategy):
         raise NotImplementedError()
 
 
 class NodeEdgeTypeInput(Input):
 
-    def _apply_transformation(self, meta_paths: List[List[Number]], key_strategy: SamplingStrategy):
-        features = {'node': [], 'context': []}
+    def _apply_transformation(self, meta_paths: List[List[Number]], sampling_strategy: SamplingStrategy):
+        nodes = []
+        contexts = []
+
         for path in meta_paths:
             for node_key in range(1, len(path)):
                 node = path[node_key]
-                context = np.array(path, dtype=np.int32)[key_strategy.sample_word(node_key,
-                                                                                  len(path),
-                                                                                  self.window_size)]
+                context = np.array(path, dtype=np.int32)[sampling_strategy.sample_word(node_key,
+                                                                                       len(path),
+                                                                                       self.window_size)]
 
-                features['node'].append(node)
-                features['context'].append(context)
+                nodes.append(node)
+                contexts.append(context)
         # Finally convert to array
-        features['context'] = np.array(features['context'], np.int32)
-        features['node'] = np.array(features['node'], np.int32)
-        return features['node'], features['context']
+        contexts = np.array(contexts, np.int32)
+        nodes = np.array(nodes, np.int32)
+        return nodes, contexts
 
 
 class MetaPathsInput(Input):
@@ -199,25 +210,50 @@ class MetaPathsInput(Input):
         self.samples = samples
         return self
 
+    def _apply_transformation(self, meta_paths: List[List[Number]], sampling_strategy: SamplingStrategy):
+        paths = []
+        indices = []
+        contexts = []
 
-
-    def _apply_transformation(self, meta_paths: List[List[Number]], key_strategy: SamplingStrategy):
-        features = {'path': [], 'index': [], 'context': []}
         path_id = 0
         for path in meta_paths:
-            for iteration in key_strategy.iterator(len(path), self.samples):
-                context = np.array(path, dtype=np.int32)[key_strategy.sample_paragraph(iteration,
-                                                                                       len(path),
-                                                                                       self.window_size)]
+            for iteration in sampling_strategy.iterator(len(path), self.samples):
+                context = np.array(path, dtype=np.int32)[sampling_strategy.sample_paragraph(iteration,
+                                                                                            len(path),
+                                                                                            self.window_size)]
 
-                features['path'].append(path_id)
-                features['index'].append(iteration)
-                features['context'].append(context)
+                paths.append(path_id)
+                indices.append(iteration)
+                contexts.append(context)
             path_id += 1
-        # Finally convert to array
-        features['context'] = np.array(features['context'], np.int32)
-        features['path'] = np.array(features['path'], np.int32)
-        return features['path'], features['context']
+
+        paths = np.array(paths, np.int32)
+        indices = np.array(indices, np.int32)
+        contexts = np.array(contexts, np.int32)
+        return sampling_strategy.paragraph_postprocess(paths, indices, contexts)
+
+    def skip_gram_input(self) -> tf.data.Dataset:
+        """
+        Get the dataset to train on in skip-gram format.
+        :return: the dataset with node types as features and context as labels.
+        """
+        paragraphs, context, _ = self._apply_transformation(self.paths, self.samplingStrategies['skip-gram'])
+        return self._create_dataset(np.reshape(paragraphs, (-1, 1)), context)
+
+    def bag_of_words_input(self) -> tf.data.Dataset:
+        """
+        Get the dataset to train on in continuous bag of words format.
+        :return: the dataset with context as features and node types as labels.
+        """
+        paragraphs, context, node = self._apply_transformation(self.paths, self.samplingStrategies['cbow'])
+        return self._create_dataset(paragraphs, context, node)
+
+    def _create_dataset(self, paragraphs, features, labels):
+        return tf.data.Dataset().from_tensor_slices(({
+                                                         'features': features,
+                                                         'paragraphs': paragraphs
+                                                     },
+                                                     labels))
 
 class NodeInput(Input):
     pass
