@@ -61,7 +61,7 @@ def login():
 
     # setup data
     # TODO use key from dataset to select data
-    meta_path_loader = MetaPathLoaderDispatcher().get_loader(session['dataset'])
+    meta_path_loader = MetaPathLoaderDispatcher().get_loader('Rotten Tomato')
     meta_paths = meta_path_loader.load_meta_paths()
     # TODO get Graph stats for current dataset
     graph_stats = GraphStats()
@@ -216,9 +216,24 @@ def send_next_metapaths_to_rate(batch_size):
 @app.route("/get-available-datasets", methods=["GET"])
 def get_available_datasets():
     """
-        Returns all data sets registered on the server and a short description of each
+    :return:  all data sets registered on the server and a dataset access properties of each
     """
-    return jsonify(MetaPathLoaderDispatcher().get_available_datasets())
+    available_datasets = [
+        {
+            'name': 'Freebase',
+            'url': 'http://172.20.14.22:7504',
+            'username': 'neo4j',
+            'password': 'neo4j'
+        },
+        {
+            'name': 'Helmholtz',
+            'url': 'http://172.20.14.22:7584',
+            'username': 'neo4j',
+            'password': 'neo4j'
+        }
+    ]
+
+    return jsonify(available_datasets)
 
 
 def transform_rating(data:Dict) -> Dict:
