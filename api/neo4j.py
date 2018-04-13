@@ -13,6 +13,13 @@ class Neo4j:
         self._driver.close()
 
     def start_precomputation(self, mode: str, length: int):
+        """
+        Precomputes all meta-paths (or all meta-paths for high degree nodes, depending on 'mode') up to a
+        meta-path-length given by 'length' and saves them in a file named 'Precomputed_MetaPaths.txt'
+        :param mode:
+        :param length:
+        :return:
+        """
         # mode = {full, high-degree}
         with self._driver.session() as session:
             probably_json = session.run(
@@ -21,6 +28,15 @@ class Neo4j:
             return probably_json.records()
 
     def get_metapaths(self, nodeset_A: List[int], nodeset_B: List[int], length: int):
+        """
+        Computes all meta-paths up to a meta-path-length given by 'length' that start with start-nodes and end with
+        end-nodes given by 'nodeset_A' and 'nodeset_B' and saves them in a file named
+        'Precomputed_MetaPaths_Instances.txt'
+        :param nodeset_A:
+        :param nodeset_B:
+        :param length:
+        :return:
+        """
         nodeset_A = self._convert_node_set(nodeset_A)
         nodeset_B = self._convert_node_set(nodeset_B)
 
@@ -31,10 +47,24 @@ class Neo4j:
             return probably_json.records()
 
     def get_all_metapaths(self):
+        """
+        Reads and returns computed meta-paths and their counts from a file given by 'filePath'
+        :return:
+        """
         with self._driver.session() as session:
             probably_json = session.run(
                 "Call algo.readPrecomputedMetaPaths($filePath);",
                 filePath="../../../precomputed/Precomputed_MetaPaths_BioL6.txt")
+            return probably_json.single()
+
+    def get_id_label_mapping(self):
+        """
+        Returns the mapping from label IDs to label names
+        :return:
+        """
+        with self._driver.session() as session:
+            probably_json = session.run(
+                "CALL algo.getLabelIdToLabelNameMapping();")
             return probably_json.single()
 
     # TODO: Implement different return types (node instances, node types)
