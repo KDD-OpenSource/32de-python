@@ -7,9 +7,27 @@ This will install a clean version from the alpha-dev and the master branches and
 If the API should be served ssl encrypted, set the environment variable `METAEXP_HTTPS` to `true` and provide `api.crt` and `api.key` in the `https` folder.
 
 # Development
-To build your own local code use `deployment/build-*.sh /path/to/code` (e.g. `deployment/build-server.sh .`) and to run a single container `deployment/run-*.sh [PORT]`.
-By default Neo4j browser is listening on port `7474`, bolt is available on port `7687` and our server is listening on port `8000` for all hosts.
-If you start the additional neo4j containers with `run-neo4j-helmholtz.sh` and `run-neo4j-commerzbank.sh`, they are listening on the ports +10 for Helmholtz and +20 for the Commerzbank data.
-All the neo4j containers are based on the `neo4j-graph-algorithms` image. To change the default port simply specify the `PORT` parameter when running `deployment/run-*.sh [PORT]`.
+We have a collection of some helpful scripts you might want to use when developing for this project.
+
+## Scripts
+
+### Build and run
+To build your own local code use `deployment/build-*.sh /path/to/code` (e.g. `deployment/build-server.sh .`) and to 
+run a single container `deployment/run-*.sh [PORT]`.
+By default Neo4j browser is listening on port `7474`, bolt is available on port `7687` and 
+our server is listening on port `8000` for all hosts.
+If you start the additional neo4j containers with `run-neo4j-helmholtz.sh` and `run-neo4j-commerzbank.sh`, 
+they are listening on the ports +10 for Helmholtz and +20 for the Commerzbank data.
+All the neo4j containers are based on the `neo4j-graph-algorithms` image.
+To change the default port simply specify the `PORT` parameter when running `deployment/run-*.sh [PORT]`.
+
+
+### Updating files in containers
+If you want to update any files in your container you can use the
+`deployment/copy-to-container.sh [CONTAINER] [PATH/IN/CONTAINER]` command.
+All you have to do is specify the container name or id you want to copy your updated files to.
+The second parameter is optional.
+If you have changed the path to the project files *in the container* you need to specify this path here.
+**WARNING** This will overwrite any changes made in the container.
 
 Tutorials for installing Docker: [Mac](https://docs.docker.com/docker-for-mac/install/), [Windows](https://docs.docker.com/docker-for-windows/install/) and [Ubuntu](https://docs.docker.com/engine/installation/linux/docker-ce/ubuntu/).
