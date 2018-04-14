@@ -12,3 +12,4 @@ if "METAEXP_DEV" in os.environ.keys() and os.environ["METAEXP_DEV"] == "true":
 if "METAEXP_HTTPS" in os.environ.keys() and os.environ["METAEXP_HTTPS"] == "true":
     certfile = "/32de-python/https/api.crt"
     keyfile = "/32de-python/https/api.key"
+timeout = 99999
