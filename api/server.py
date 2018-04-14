@@ -15,6 +15,7 @@ from util.graph_stats import GraphStats
 from active_learning.active_learner import UncertaintySamplingAlgorithm
 from explanation.explanation import SimilarityScore, Explanation
 from api.neo4j import Neo4j
+from embeddings.input import Input
 
 METAPATH_LENGTH = 3
 
@@ -72,12 +73,8 @@ def login():
     session['neo4j'].start_precomputation(mode=None, length=METAPATH_LENGTH)
 
     # setup data
-    # TODO use key from dataset to select data
-    meta_path_loader = MetaPathLoaderDispatcher().get_loader('Rotten Tomato')
-    meta_paths = meta_path_loader.load_meta_paths()
     # TODO get Graph stats for current dataset
     graph_stats = GraphStats()
-    session['active_learning_algorithm'] = UncertaintySamplingAlgorithm(meta_paths, hypothesis='Gaussian Process')
     session['meta_path_id'] = 1
     session['rated_meta_paths'] = []
     # TODO feed this selection to the ALgorithms
@@ -103,10 +100,9 @@ def logout():
     json.dump(rated_meta_paths, open(path, "w", encoding="utf8"))
     session['neo4j'].close()
     session.clear()
-    return 'OK'
+    return jsonify({'status': 200})
 
 
-# TODO: If functionality "meta-paths for node set A and B" will be written in Java, team alpha will need this information in Java
 @app.route("/node-sets", methods=["POST"])
 def receive_node_sets():
     """
@@ -119,8 +115,11 @@ def receive_node_sets():
     therefore can begin to retrieve the corresponding node sets.
     """
     # TODO: Check if necessary information is in request object
-    if not request.json:
-        abort(400)
+    json = request.get_json()
+    session['meta-paths'] = session['neo4j'].get_metapaths(nodeset_A=json['node_set_A'], nodeset_B=json['node_set_B'],
+                                                           length=METAPATH_LENGTH)
+    meta_paths = Input.from_json(session['meta-paths']).paths
+    session['active_learning_algorithm'] = UncertaintySamplingAlgorithm(meta_paths, hypothesis='Gaussian Process')
     return jsonify({'status': 200})
 
 
@@ -186,7 +185,8 @@ def send_next_metapaths_to_rate(batch_size):
         'metapath': ['Phenotype', 'HAS', 'Association', 'HAS', 'SNP', 'HAS', 'Phenotype'],
         'rating': 0.5}
     """
-    next_metapaths, is_last_batch, reference_paths = session['active_learning_algorithm'].get_next(batch_size=batch_size)
+    next_metapaths, is_last_batch, reference_paths = session['active_learning_algorithm'].get_next(
+        batch_size=batch_size)
 
     for i in range(len(next_metapaths)):
         next_metapaths[i]['metapath'] = next_metapaths[i]['metapath'].as_list()
@@ -197,8 +197,8 @@ def send_next_metapaths_to_rate(batch_size):
         logger.info("Appending reference paths to response...")
         min_path = reference_paths['min_path']
         max_path = reference_paths['max_path']
-        paths['min_path']= min_path
-        paths['max_path']= max_path
+        paths['min_path'] = min_path
+        paths['max_path'] = max_path
 
     logger.debug("Responding to server: {}".format(paths))
     if "time" in session.keys():
@@ -206,6 +206,7 @@ def send_next_metapaths_to_rate(batch_size):
     session['time'] = datetime.datetime.now()
 
     return jsonify(paths)
+
 
 available_datasets = [
         {
@@ -224,6 +225,7 @@ available_datasets = [
         }
     ]
 
+
 @app.route("/get-available-datasets", methods=["GET"])
 def get_available_datasets():
     """
@@ -233,7 +235,7 @@ def get_available_datasets():
     return jsonify(available_datasets)
 
 
-def transform_rating(data:Dict) -> Dict:
+def transform_rating(data: Dict) -> Dict:
     logger.info("Transforming ratings")
 
     new_min_path_rating = data['min_path']['rating']
@@ -266,6 +268,7 @@ def transform_rating(data:Dict) -> Dict:
     logger.debug("Rating was transformed: {}".format(data['meta_paths']))
     return data
 
+
 # TODO: Maybe post each rated meta-path
 @app.route("/rate-meta-paths", methods=["POST"])
 def receive_rated_metapaths():
@@ -295,7 +298,7 @@ def receive_rated_metapaths():
             abort(400)
 
     if not session['active_learning_algorithm'].is_first_batch():
-       data = transform_rating(data)
+        data = transform_rating(data)
 
     logger.info("Updating active learning algorithm...")
     session['active_learning_algorithm'].update(data['meta_paths'])
