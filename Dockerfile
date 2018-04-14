@@ -9,10 +9,11 @@ RUN echo "deb-src http://downloads.skewed.de/apt/xenial xenial universe" | tee -
 RUN apt-get update && apt-get install -y libboost-all-dev
 RUN apt-get update -qq && apt-get install -y python3-graph-tool
 
-COPY . /32de-python/
-
-WORKDIR /32de-python
 # Please add dependencies here and in requirements.txt or deployment/deployment.txt
 RUN pip3 install numpy==1.14.0 sklearn typing pytest flask pandas flask-cors scipy pytest-cov Flask-Session graphviz cryptography==2.1.4 flask-ask
 RUN pip3 install gunicorn
+
+COPY . /32de-python/
+
+WORKDIR /32de-python
 ENTRYPOINT ["gunicorn", "--config", "deployment/gunicorn-config.py", "api.server:app"]
