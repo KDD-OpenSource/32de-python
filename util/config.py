@@ -30,10 +30,18 @@ def set_up_logger():
                 'class': 'logging.StreamHandler',
                 'formatter': 'default',
                 'level': 'DEBUG'
-            }},
+            },
+            'file': {
+                'class': 'logging.FileHandler',
+                'formatter': 'default',
+                'filename': 'log/debug.log',
+                'mode': 'w',
+                'level': 'DEBUG'
+            },
+        },
         'loggers': {
             'MetaExp': {
-                'handlers': ['default']
+                'handlers': ['default', 'file']
             }
         },
         'root': {

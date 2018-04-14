@@ -212,7 +212,7 @@ available_datasets = [
         {
             'name': 'Freebase',
             'url': 'http://172.20.14.22:7504',
-            'bolt-url': 'bolt://172.20.14.22:32775',
+            'bolt-url': 'bolt://172.20.14.22:32776',
             'username': 'neo4j',
             'password': 'neo4j'
         },
