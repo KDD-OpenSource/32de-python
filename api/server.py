@@ -63,7 +63,7 @@ def login():
     session['dataset'] = data['dataset']
     session['purpose'] = data['purpose']
 
-    for dataset in None:
+    for dataset in available_datasets:
         if dataset['name'] == session['dataset']:
             choosen_dataset = dataset
         else:
@@ -212,14 +212,14 @@ available_datasets = [
         {
             'name': 'Freebase',
             'url': 'http://172.20.14.22:7504',
-            'bolt-url': 'http://172.20.14.22:32775',
+            'bolt-url': 'bolt://172.20.14.22:32775',
             'username': 'neo4j',
             'password': 'neo4j'
         },
         {
             'name': 'Helmholtz',
             'url': 'http://172.20.14.22:7484',
-            'bolt-url': 'http://172.20.14.22:7697',
+            'bolt-url': 'bolt://172.20.14.22:7697',
             'username': 'neo4j',
             'password': 'neo4j'
         }
