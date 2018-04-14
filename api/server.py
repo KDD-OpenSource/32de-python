@@ -14,6 +14,9 @@ from util.meta_path_loader_dispatcher import MetaPathLoaderDispatcher
 from util.graph_stats import GraphStats
 from active_learning.active_learner import UncertaintySamplingAlgorithm
 from explanation.explanation import SimilarityScore, Explanation
+from api.neo4j import Neo4j
+
+METAPATH_LENGTH = 3
 
 app = Flask(__name__)
 ask = Ask(app, '/alexa')
@@ -59,6 +62,15 @@ def login():
     session['dataset'] = data['dataset']
     session['purpose'] = data['purpose']
 
+    for dataset in None:
+        if dataset['name'] == session['dataset']:
+            choosen_dataset = dataset
+        else:
+            logger.error('Dataset not available')
+    session['neo4j'] = Neo4j(uri=choosen_dataset['bolt-url'], user=choosen_dataset['username'],
+                             password=choosen_dataset['password'])
+    session['neo4j'].start_precomputation(mode=None, length=METAPATH_LENGTH)
+
     # setup data
     # TODO use key from dataset to select data
     meta_path_loader = MetaPathLoaderDispatcher().get_loader('Rotten Tomato')
@@ -89,6 +101,7 @@ def logout():
     logger.info("Writing results to file {}...".format(filename))
     path = os.path.join(RATED_DATASETS_PATH, filename)
     json.dump(rated_meta_paths, open(path, "w", encoding="utf8"))
+    session['neo4j'].close()
     session.clear()
     return 'OK'
 
@@ -212,26 +225,28 @@ def send_next_metapaths_to_rate(batch_size):
 
     return jsonify(paths)
 
-
-@app.route("/get-available-datasets", methods=["GET"])
-def get_available_datasets():
-    """
-    :return:  all data sets registered on the server and a dataset access properties of each
-    """
-    available_datasets = [
+available_datasets = [
         {
             'name': 'Freebase',
             'url': 'http://172.20.14.22:7504',
+            'bolt-url': 'http://172.20.14.22:32775',
             'username': 'neo4j',
             'password': 'neo4j'
         },
         {
             'name': 'Helmholtz',
             'url': 'http://172.20.14.22:7584',
+            'bolt-url': 'http://172.20.14.22:7697',
             'username': 'neo4j',
             'password': 'neo4j'
         }
     ]
+
+@app.route("/get-available-datasets", methods=["GET"])
+def get_available_datasets():
+    """
+    :return:  all data sets registered on the server and a dataset access properties of each
+    """
 
     return jsonify(available_datasets)
 
