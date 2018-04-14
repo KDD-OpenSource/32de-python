@@ -116,11 +116,7 @@ class SimilarityScore:
             "contribution_ranking": 2,
             "contribution_value": 25.55,
             "meta_path": "PERSON - acted_id - MOVIE - directed - PERSON - directed - MOVIE",
-            "instance_queries": [
-                "MATCH (n)-[r]->(m) RETURN n,r,m",
-                "MATCH (n)-[r]->(m) RETURN n,r,m",
-                "MATCH (n)-[r]->(m) RETURN n,r,m"
-            ]
+            "instance_query": "MATCH (n)-[r]->(m) RETURN n,r,m LIMIT 2"
         }
 
         return contributing_meta_path
