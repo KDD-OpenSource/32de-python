@@ -121,25 +121,7 @@ def receive_node_sets():
     # TODO: Check if necessary information is in request object
     if not request.json:
         abort(400)
-    raise NotImplementedError("This API endpoint isn't implemented in the moment")
-
-
-@app.route("/first-node -set-query", methods=["GET"])
-def send_first_node_set():
-    """
-    :return: first node set as a cypher query as input for the neo4jGraphRenderer
-    TODO: Build query dynamically depending on selected node-IDs
-    """
-    return jsonify({'node_set_query': 'MATCH (n)-[r]->(m) RETURN n,r,m'})
-
-
-@app.route("/second-node-set-query", methods=["GET"])
-def send_second_node_set():
-    """
-    :return: second node set as a cypher query as input for the neo4jGraphRenderer
-    TODO: Build query dynamically depending on selected node-IDs
-    """
-    return jsonify({'node_set_query': 'MATCH (n)-[r]->(m) RETURN n,r,m'})
+    return jsonify({'status': 200})
 
 
 @app.route("/set-edge-types", methods=["POST"])
@@ -235,7 +217,7 @@ available_datasets = [
         },
         {
             'name': 'Helmholtz',
-            'url': 'http://172.20.14.22:7584',
+            'url': 'http://172.20.14.22:7484',
             'bolt-url': 'http://172.20.14.22:7697',
             'username': 'neo4j',
             'password': 'neo4j'
