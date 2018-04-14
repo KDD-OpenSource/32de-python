@@ -14,7 +14,8 @@ class Input:
                  vocabulary: List[Number],
                  windows_size: Number = 2,
                  padding_value: Number = -1,
-                 random_seed: Number = 42):
+                 random_seed: Number = 42,
+                 normalize_node_ids=True):
         self.vocabulary = list(vocabulary)
         self.padding_index = 0
         self.padding_mapping = 0
@@ -26,7 +27,10 @@ class Input:
             'skip-gram': SkipGramSampling(self.padding_index, self.random_seed)
         }
 
-        self.paths = self._normalize_node_ids(paths)
+        if (normalize_node_ids):
+            self.paths = self._normalize_node_ids(paths)
+        else:
+            self.paths = paths
 
     def _normalize_node_ids(self, meta_paths):
         normalized_paths = []
