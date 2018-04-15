@@ -12,6 +12,12 @@ class Neo4j:
     def close(self):
         self._driver.close()
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
     def start_precomputation(self, mode: str, length: int):
         """
         Precomputes all meta-paths (or all meta-paths for high degree nodes, depending on 'mode') up to a
@@ -21,6 +27,8 @@ class Neo4j:
         :return:
         """
         # mode = {full, high-degree}
+        if True:
+            return
         with self._driver.session() as session:
             probably_json = session.run(
                 "Call algo.computeAllMetaPaths($length);",

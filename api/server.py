@@ -62,15 +62,18 @@ def login():
     session['username'] = data['username']
     session['dataset'] = data['dataset']
     session['purpose'] = data['purpose']
-
+    chosen_dataset = None
     for dataset in available_datasets:
         if dataset['name'] == session['dataset']:
-            choosen_dataset = dataset
-        else:
-            logger.error('Dataset not available')
-    session['neo4j'] = Neo4j(uri=choosen_dataset['bolt-url'], user=choosen_dataset['username'],
-                             password=choosen_dataset['password'])
-    session['neo4j'].start_precomputation(mode=None, length=METAPATH_LENGTH)
+            chosen_dataset = dataset
+    if not chosen_dataset:
+        logger.error('Dataset {} not available'.format(data['dataset']))
+    session['dataset'] = chosen_dataset
+
+    with Neo4j(uri=session['dataset']['bolt-url'], user=session['dataset']['username'],
+                             password=session['dataset']['password']) as neo4j:
+        logger.debug("Start Computation of meta paths...")
+        neo4j.start_precomputation(mode="", length=METAPATH_LENGTH)
 
     # setup data
     # TODO get Graph stats for current dataset
@@ -80,7 +83,7 @@ def login():
     # TODO feed this selection to the ALgorithms
     session['selected_node_types'] = build_selection(graph_stats.get_node_types())
     session['selected_edge_types'] = build_selection(graph_stats.get_edge_types())
-
+    logger.debug(session)
     return jsonify({'status': 200})
 
 
@@ -98,7 +101,6 @@ def logout():
     logger.info("Writing results to file {}...".format(filename))
     path = os.path.join(RATED_DATASETS_PATH, filename)
     json.dump(rated_meta_paths, open(path, "w", encoding="utf8"))
-    session['neo4j'].close()
     session.clear()
     return jsonify({'status': 200})
 
@@ -116,8 +118,13 @@ def receive_node_sets():
     """
     # TODO: Check if necessary information is in request object
     json = request.get_json()
-    session['meta-paths'] = session['neo4j'].get_metapaths(nodeset_A=json['node_set_A'], nodeset_B=json['node_set_B'],
+
+    with Neo4j(uri=session['dataset']['bolt-url'], user=session['dataset']['username'],
+                             password=session['dataset']['password']) as neo4j:
+        logger.debug("Start Computation of meta paths between node sets...")
+        neo4j.get_metapaths(nodeset_A=json['node_set_A'], nodeset_B=json['node_set_B'],
                                                            length=METAPATH_LENGTH)
+
     meta_paths = Input.from_json(session['meta-paths']).paths
     session['active_learning_algorithm'] = UncertaintySamplingAlgorithm(meta_paths, hypothesis='Gaussian Process')
     return jsonify({'status': 200})
@@ -220,6 +227,13 @@ available_datasets = [
             'name': 'Helmholtz',
             'url': 'http://172.20.14.22:7484',
             'bolt-url': 'bolt://172.20.14.22:7697',
+            'username': 'neo4j',
+            'password': 'neo4j'
+        },
+        {
+            'name': 'Commerzbank',
+            'url': 'http://172.18.16.106:7494',
+            'bolt-url': 'bolt://172.18.16.106:7707',
             'username': 'neo4j',
             'password': 'neo4j'
         }
