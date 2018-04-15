@@ -17,7 +17,7 @@ from explanation.explanation import SimilarityScore, Explanation
 from api.neo4j import Neo4j
 from embeddings.input import Input
 
-METAPATH_LENGTH = 3
+METAPATH_LENGTH = 2
 
 app = Flask(__name__)
 ask = Ask(app, '/alexa')
@@ -126,6 +126,7 @@ def receive_node_sets():
                                                            length=METAPATH_LENGTH)
 
     meta_paths = Input.from_json(session['meta-paths']).paths
+    logger.debug(meta_paths)
     session['active_learning_algorithm'] = UncertaintySamplingAlgorithm(meta_paths, hypothesis='Gaussian Process')
     return jsonify({'status': 200})
 
@@ -219,7 +220,7 @@ available_datasets = [
         {
             'name': 'Freebase',
             'url': 'http://172.20.14.22:7504',
-            'bolt-url': 'bolt://172.20.14.22:32776',
+            'bolt-url': 'bolt://172.20.14.22:32777',
             'username': 'neo4j',
             'password': 'neo4j'
         },
