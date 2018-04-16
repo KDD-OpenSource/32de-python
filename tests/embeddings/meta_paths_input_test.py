@@ -1,5 +1,6 @@
 import unittest
-from embeddings.meta2vec import NodeEdgeTypeInput
+from embeddings.input import NodeEdgeTypeInput
+
 
 class MetaPathsInputTest(unittest.TestCase):
 

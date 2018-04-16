@@ -1,5 +1,6 @@
 import unittest
-from embeddings.meta2vec import *
+from embeddings.sampling_strategy import CBOWSampling, SkipGramSampling
+
 
 class MetaPathsInputTest(unittest.TestCase):
 
