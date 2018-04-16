@@ -18,7 +18,7 @@ class Neo4j:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
-    def start_precomputation(self, mode: str, length: int):
+    def start_precomputation(self, mode: str, length: int, ratio: float = 0.0):
         """
         Precomputes all meta-paths (or all meta-paths for high degree nodes, depending on 'mode') up to a
         meta-path-length given by 'length' and saves them in a file named 'Precomputed_MetaPaths.txt'
