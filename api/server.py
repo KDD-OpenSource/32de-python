@@ -219,14 +219,14 @@ def send_next_metapaths_to_rate(batch_size):
 available_datasets = [
         {
             'name': 'Freebase',
-            'url': 'http://172.20.14.22:7504',
+            'url': 'https://hpi.de/mueller/metaexp-demo-neo4j',
             'bolt-url': 'bolt://172.20.14.22:32777',
             'username': 'neo4j',
             'password': 'neo4j'
         },
         {
             'name': 'Helmholtz',
-            'url': 'http://172.20.14.22:7484',
+            'url': 'https://hpi.de/mueller/metaexp-demo-neo4j-2',
             'bolt-url': 'bolt://172.20.14.22:7697',
             'username': 'neo4j',
             'password': 'neo4j'
