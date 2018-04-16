@@ -123,6 +123,18 @@ def read_walks(file_name):
             available_nodes |= set(node_ids)
     return walk_list, available_nodes
 
+# Walks are given like "2314 123123 4324 2344 2344"
+def simple_read_walks(file_name):
+    walk_list = []
+    available_nodes = set()
+    with open(file_name) as file:
+        for line in file:
+            node_ids = [int(id) for id in line.split(" ")]
+
+            walk_list.append(node_ids)
+            available_nodes |= set(node_ids)
+    return walk_list, available_nodes
+
 
 class BatchGeneratorWrapper:
 
