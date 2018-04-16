@@ -12,20 +12,28 @@ class Neo4j:
     def close(self):
         self._driver.close()
 
-    def start_precomputation(self, mode: str, length: int):
+    def start_precomputation(self, mode: str, length: int, ratio: float = 0):
         """
-        Precomputes all meta-paths (or all meta-paths for high degree nodes, depending on 'mode') up to a
-        meta-path-length given by 'length' and saves them in a file named 'Precomputed_MetaPaths.txt'
+        Precomputes all meta-paths (or all meta-paths for high degree nodes (amount of high degree nodes given by
+        'ratio'), depending on 'mode') up to a meta-path-length given by 'length' and saves them in a file named
+        'Precomputed_MetaPaths.txt'
         :param mode:
         :param length:
         :return:
         """
-        # mode = {full, high-degree}
-        with self._driver.session() as session:
-            probably_json = session.run(
-                "Call algo.computeAllMetaPaths($length);",
-                length=str(length))
-            return probably_json.records()
+        if mode == "full":
+            with self._driver.session() as session:
+                probably_json = session.run(
+                    "Call algo.computeAllMetaPaths($length);",
+                    length=str(length))
+                return probably_json.records()
+        else:
+            with self._driver.session() as session:
+                probably_json = session.run(
+                    "Call algo.metaPathPrecomputeHighDegreeNodes($length, $ratio);",
+                    length=str(length), ratio=str(ratio))
+                return probably_json.records()
+
 
     def get_metapaths(self, nodeset_A: List[int], nodeset_B: List[int], length: int):
         """
