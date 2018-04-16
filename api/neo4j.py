@@ -39,7 +39,7 @@ class Neo4j:
     def start_high_degree_computation(self):
         with self._driver.session() as session:
             probably_json = session.run(
-                "Call algo.metaPathsPrecomputeHighDegreeNodes(\"2\", \"0.000001\"):")
+                "Call algo.metaPathsPrecomputeHighDegreeNodes(\"2\", \"0.000001\")")
             return probably_json.records()
 
 
