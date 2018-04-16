@@ -26,23 +26,18 @@ class Neo4j:
         :param length:
         :return:
         """
-        # mode = {full, high-degree}
-        if True:
-            return
-        with self._driver.session() as session:
-            probably_json = session.run(
-                "Call algo.computeAllMetaPaths($length);",
-                length=str(length))
-            return probably_json.records()
-
-
-    def start_high_degree_computation(self):
-        with self._driver.session() as session:
-            probably_json = session.run(
-                "Call algo.metaPathPrecomputeHighDegreeNodes(\"2\", \"0.000001\");")
-            return probably_json.records()
-
-
+        if mode == "full":
+            with self._driver.session() as session:
+                probably_json = session.run(
+                    "Call algo.computeAllMetaPaths($length);",
+                    length=str(length))
+                return probably_json.records()
+        else:
+            with self._driver.session() as session:
+                probably_json = session.run(
+                    "Call algo.metaPathPrecomputeHighDegreeNodes($length, $ratio);",
+                    length=str(length), ratio=str(ratio))
+                return probably_json.records()
 
     def get_metapaths(self, nodeset_A: List[int], nodeset_B: List[int], length: int):
         """
