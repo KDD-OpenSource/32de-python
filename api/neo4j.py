@@ -35,6 +35,15 @@ class Neo4j:
                 length=str(length))
             return probably_json.records()
 
+
+    def start_high_degree_computation(self):
+        with self._driver.session() as session:
+            probably_json = session.run(
+                "Call algo.metaPathsPrecomputeHighDegreeNodes(\"2\", \"0.000001\"):")
+            return probably_json.records()
+
+
+
     def get_metapaths(self, nodeset_A: List[int], nodeset_B: List[int], length: int):
         """
         Computes all meta-paths up to a meta-path-length given by 'length' that start with start-nodes and end with
