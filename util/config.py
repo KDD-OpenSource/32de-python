@@ -24,6 +24,30 @@ REDIS_PASSWORD = None
 
 MAX_META_PATH_LENGTH = 6
 
+AVAILABLE_DATA_SETS = [
+    {
+        'name': 'Freebase',
+        'url': 'https://hpi.de/mueller/metaexp-demo-neo4j',
+        'bolt-url': 'bolt://172.20.14.22:32777',
+        'username': 'neo4j',
+        'password': 'neo4j'
+    },
+    {
+        'name': 'Helmholtz',
+        'url': 'https://hpi.de/mueller/metaexp-demo-neo4j-2',
+        'bolt-url': 'bolt://172.20.14.22:7697',
+        'username': 'neo4j',
+        'password': 'neo4j'
+    },
+    {
+        'name': 'Commerzbank',
+        'url': 'http://172.18.16.106:7494',
+        'bolt-url': 'bolt://172.18.16.106:7707',
+        'username': 'neo4j',
+        'password': 'neo4j'
+    }
+]
+
 def set_up_logger():
     dictConfig({
         'version': 1,

@@ -10,7 +10,6 @@ import logging
 from typing import Dict
 
 from util.config import *
-from util.meta_path_loader_dispatcher import MetaPathLoaderDispatcher
 from util.graph_stats import GraphStats
 from active_learning.active_learner import UncertaintySamplingAlgorithm
 from explanation.explanation import SimilarityScore, Explanation
@@ -75,7 +74,7 @@ def login():
     session['dataset'] = data['dataset']
     session['purpose'] = data['purpose']
     chosen_dataset = None
-    for dataset in available_datasets:
+    for dataset in AVAILABLE_DATA_SETS:
         if dataset['name'] == session['dataset']:
             chosen_dataset = dataset
     if not chosen_dataset:
@@ -243,38 +242,13 @@ def send_next_metapaths_to_rate(batch_size):
     return jsonify(paths)
 
 
-available_datasets = [
-    {
-        'name': 'Freebase',
-        'url': 'https://hpi.de/mueller/metaexp-demo-neo4j',
-        'bolt-url': 'bolt://172.20.14.22:32777',
-        'username': 'neo4j',
-        'password': 'neo4j'
-    },
-    {
-        'name': 'Helmholtz',
-        'url': 'https://hpi.de/mueller/metaexp-demo-neo4j-2',
-        'bolt-url': 'bolt://172.20.14.22:7697',
-        'username': 'neo4j',
-        'password': 'neo4j'
-    },
-    {
-        'name': 'Commerzbank',
-        'url': 'http://172.18.16.106:7494',
-        'bolt-url': 'bolt://172.18.16.106:7707',
-        'username': 'neo4j',
-        'password': 'neo4j'
-    }
-]
-
-
 @app.route("/get-available-datasets", methods=["GET"])
 def get_available_datasets():
     """
     :return:  all data sets registered on the server and a dataset access properties of each
     """
 
-    return jsonify(available_datasets)
+    return jsonify(AVAILABLE_DATA_SETS)
 
 
 def transform_rating(data: Dict) -> Dict:
