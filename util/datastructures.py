@@ -35,7 +35,11 @@ class MetaPath:
             raise ValueError("Keywords not  valid: {}".format(', '.join(kwargs.keys())))
 
     def is_empty(self) -> bool:
-            return len(self) == 0
+        return len(self) == 0
+
+    def transform_representaion(self, node_map, label_map):
+        self._edges = [label_map[edge] for edge in self._edges]
+        self._nodes = [node_map[node] for node in self._nodes]
 
     def as_list(self) -> List[str]:
         representation = [None] * len(self)
