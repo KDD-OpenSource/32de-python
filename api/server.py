@@ -53,7 +53,8 @@ CORS(app, supports_credentials=True, resources={r"/*": {
 # node type and edge type maps
 id_to_node_type = {}
 id_to_edge_type = {}
-
+node_type_to_id = {}
+edge_type_to_id = {}
 
 def run(port, hostname, debug_mode):
     app.run(host=hostname, port=port, debug=debug_mode, threaded=True)
@@ -95,8 +96,15 @@ def login():
     # fill node type maps
     redis = Redis()
     chosen_dataset_name = session['dataset']['name']
+
+    global id_to_edge_type
+    global id_to_node_type
+    global node_type_to_id
+    global edge_type_to_id
     id_to_edge_type = redis.id_to_edge_type_map(chosen_dataset_name)
     id_to_node_type = redis.id_to_node_type_map(chosen_dataset_name)
+    node_type_to_id = redis.node_type_to_id_map(chosen_dataset_name)
+    edge_type_to_id = redis.edge_type_to_id_map(chosen_dataset_name)
 
     # TODO feed this selection to the ALgorithms
     session['selected_node_types'] = build_selection(graph_stats.get_node_types())
@@ -150,10 +158,15 @@ def receive_node_sets():
 
 @app.route("/node-types", methods=["POST"])
 def receive_meta_path_start_and_end_label():
+    global node_type_to_id
     json = request.get_json()
     redis = Redis()
+    start_type = json['start_label']
+    end_type = json['end_label']
+    start_type_id = node_type_to_id[start_type]
+    end_type_id = node_type_to_id[end_type]
     session['active_learning_algorithm'] = UncertaintySamplingAlgorithm(
-        redis.meta_paths(session['dataset']['name'], json['start_label'], json['end_label']),
+        redis.meta_paths(session['dataset']['name'], start_type_id, end_type_id),
         hypothesis='Gaussian Process')
     return jsonify({'status': 200})
 
