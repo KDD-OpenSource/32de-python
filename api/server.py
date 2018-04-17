@@ -149,7 +149,7 @@ def receive_node_sets():
     return jsonify({'status': 200})
 
 @app.route("/node-types", methods=["POST"])
-def receive_node_types():
+def receive_meta_path_start_and_end_label():
     json = request.get_json()
     redis = Redis()
     session['active_learning_algorithm'] = UncertaintySamplingAlgorithm(
