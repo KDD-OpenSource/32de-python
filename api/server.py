@@ -10,6 +10,7 @@ import logging
 from typing import Dict
 
 from util.config import *
+from util.meta_path_loader_dispatcher import MetaPathLoaderDispatcher
 from util.graph_stats import GraphStats
 from active_learning.active_learner import UncertaintySamplingAlgorithm
 from explanation.explanation import SimilarityScore, Explanation
@@ -39,18 +40,20 @@ Session(app)
 
 # TODO: Fix CORS origins specification
 # Configure Cross Site Scripting
-if "METAEXP_DEV" in os.environ.keys() and os.environ["METAEXP_DEV"] == "true":
-    if REACT_PORT == 80:
-        CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://{}".format(SERVER_PATH)}})
-    else:
-        CORS(app, supports_credentials=True,
-             resources={r"/*": {"origins": "http://{}:{}".format(SERVER_PATH, REACT_PORT)}})
-else:
-    CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
+# if "METAEXP_DEV" in os.environ.keys() and os.environ["METAEXP_DEV"] == "true":
+#     if REACT_PORT == 80:
+#         CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://{}".format(SERVER_PATH)}})
+#     else:
+#         CORS(app, supports_credentials=True,
+#              resources={r"/*": {"origins": "http://{}:{}".format(SERVER_PATH, REACT_PORT)}})
+# else:
+CORS(app, supports_credentials=True, resources={r"/*": {
+    "origins": ["https://hpi.de/mueller/metaexp-demo-api/", "http://172.20.14.22:3000", "http://localhost",
+                "http://localhost:3000"]}})
 
 # node type and edge type maps
-id_to_node_type = {}
-id_to_edge_type = {}
+#id_to_node_type = {}
+#id_to_edge_type = {}
 
 
 def run(port, hostname, debug_mode):
@@ -80,7 +83,7 @@ def login():
     session['dataset'] = chosen_dataset
 
     with Neo4j(uri=session['dataset']['bolt-url'], user=session['dataset']['username'],
-                             password=session['dataset']['password']) as neo4j:
+               password=session['dataset']['password']) as neo4j:
         logger.debug("Start Computation of meta paths...")
         neo4j.start_precomputation(mode="", length=METAPATH_LENGTH)
 
@@ -136,7 +139,7 @@ def receive_node_sets():
     json = request.get_json()
     results = None
     with Neo4j(uri=session['dataset']['bolt-url'], user=session['dataset']['username'],
-                             password=session['dataset']['password']) as neo4j:
+               password=session['dataset']['password']) as neo4j:
         logger.debug("Start Computation of meta paths between node sets...")
         results = neo4j.get_metapaths(nodeset_A=json['node_set_A'], nodeset_B=json['node_set_B'],
                                                           length=METAPATH_LENGTH)
@@ -241,28 +244,28 @@ def send_next_metapaths_to_rate(batch_size):
 
 
 available_datasets = [
-        {
-            'name': 'Freebase',
-            'url': 'https://hpi.de/mueller/metaexp-demo-neo4j',
-            'bolt-url': 'bolt://172.20.14.22:32777',
-            'username': 'neo4j',
-            'password': 'neo4j'
-        },
-        {
-            'name': 'Helmholtz',
-            'url': 'https://hpi.de/mueller/metaexp-demo-neo4j-2',
-            'bolt-url': 'bolt://172.20.14.22:7697',
-            'username': 'neo4j',
-            'password': 'neo4j'
-        },
-        {
-            'name': 'Commerzbank',
-            'url': 'http://172.18.16.106:7494',
-            'bolt-url': 'bolt://172.18.16.106:7707',
-            'username': 'neo4j',
-            'password': 'neo4j'
-        }
-    ]
+    {
+        'name': 'Freebase',
+        'url': 'https://hpi.de/mueller/metaexp-demo-neo4j',
+        'bolt-url': 'bolt://172.20.14.22:32777',
+        'username': 'neo4j',
+        'password': 'neo4j'
+    },
+    {
+        'name': 'Helmholtz',
+        'url': 'https://hpi.de/mueller/metaexp-demo-neo4j-2',
+        'bolt-url': 'bolt://172.20.14.22:7697',
+        'username': 'neo4j',
+        'password': 'neo4j'
+    },
+    {
+        'name': 'Commerzbank',
+        'url': 'http://172.18.16.106:7494',
+        'bolt-url': 'bolt://172.18.16.106:7707',
+        'username': 'neo4j',
+        'password': 'neo4j'
+    }
+]
 
 
 @app.route("/get-available-datasets", methods=["GET"])
