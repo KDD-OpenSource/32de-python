@@ -63,26 +63,29 @@ class SimilarityScore:
     meta_paths = None
     similarity_score = None
     algorithm_type = None
+    sum_structural_values = 0
 
     def __init__(self, algorithm_type=BASELINE_MODE):
         self.algorithm_type = algorithm_type
 
     def fetch_meta_paths(self) -> List[MetaPathRating]:
         """
-        :return: List of meta-path objects between both node sets
-        TODO: Fetch meta-paths dynamically. At the moment, we pass meta paths directly from the tests.
+        :return: List of meta-path rating objects between both node sets
+        TODO: Fetch meta-path ratings dynamically. At the moment, we pass meta path ratings directly from the tests.
         """
 
         return self.meta_paths
 
-    def calculate_similarity(self, meta_path_ratings: List[MetaPathRating]) -> float:
+    def calculate_similarity(self, meta_path_ratings: List[MetaPathRating],
+                             low_pass_filter=False, filter_rate=100, use_soft_max=False,
+                             normalize_structural_values=True) -> float:
         """
         Computes a sum of a linear combination of structural and domain value
         over all meta-paths, normalized by each meta-path length. First simplified,
         not experimentally tested baseline.
         :return: similarity score between both node sets as float
         """
-
+        self.sum_structural_values = self.calculate_total_structural_value(meta_path_ratings)
         structural_values = np.array([])
         domain_values = np.array([])
 
@@ -90,8 +93,34 @@ class SimilarityScore:
             structural_values = np.append(structural_values, [meta_path_rating.structural_value])
             domain_values = np.append(domain_values, [meta_path_rating.domain_value])
 
-        self.similarity_score = np.sum(structural_values * domain_values) / len(meta_path_ratings)
+        if use_soft_max:
+            structural_values = self.apply_soft_max(structural_values)
+
+        if low_pass_filter:
+            structural_values = self.apply_low_pass_filtering(structural_values, filter_rate)
+
+        if normalize_structural_values:
+            structural_values = np.vectorize(self.get_normalized_structural_value)
+
+        normalized_structural_values = structural_values(structural_values)
+        self.similarity_score = np.sum(normalized_structural_values * domain_values) / len(meta_path_ratings)
         return self.similarity_score
+
+    @staticmethod
+    def calculate_total_structural_value(meta_path_ratings: List[MetaPathRating]) -> float:
+        structural_values = [meta_path_rating.structural_value for meta_path_rating in meta_path_ratings]
+        return np.sum(structural_values)
+
+    @staticmethod
+    def apply_soft_max(structural_values):
+        return structural_values
+
+    @staticmethod
+    def apply_low_pass_filtering(structural_values, filter_rate):
+        return structural_values[np.argsort(structural_values)[-filter_rate:]]
+
+    def get_normalized_structural_value(self, structural_value) -> float:
+        return structural_value / self.sum_structural_values
 
     @staticmethod
     def get_similarity_score() -> float:
