@@ -1,5 +1,6 @@
 import redis
 import logging
+import pickle
 
 from typing import List
 from util.config import REDIS_HOST, REDIS_PORT, REDIS_PASSWORD
@@ -13,7 +14,8 @@ class Redis:
 
     def meta_paths(self, data_set_name, start_type, end_type) -> List:
         self.logger.debug("Retrieving meta paths...")
-        return self._client.lrange("{}_{}:{}".format(data_set_name, start_type, end_type), 0, -1)
+        pickled_list = self._client.lrange("{}_{}:{}".format(data_set_name, start_type, end_type), 0, -1)
+        return [pickle.loads(pickled_entry) for pickled_entry in pickled_list]
 
     def id_to_edge_type_map(self, data_set_name:str):
         return self._client.hgetall("{}_edge_type".format(data_set_name))
