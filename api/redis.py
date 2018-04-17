@@ -13,7 +13,7 @@ class Redis:
 
     def meta_paths(self, data_set_name, start_type, end_type) -> List:
         self.logger.debug("Retrieving meta paths...")
-        return self._client.get("{}_{}:{}".format(data_set_name, start_type, end_type))
+        return self._client.lrange("{}_{}:{}".format(data_set_name, start_type, end_type), 0, -1)
 
     def id_to_edge_type_map(self, data_set_name:str):
         return self._client.hgetall("{}_edge_type".format(data_set_name))
