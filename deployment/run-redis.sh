@@ -1,2 +1,4 @@
 #!/usr/bin/env bash
-docker run --name redis-meta-paths  -p 8880:6379 -d redis
+docker stop redis-meta-paths
+docker rm redis-meta-paths
+docker run --name redis-meta-paths -p 6379:6379 -v redisData:/data -d redis
