@@ -42,7 +42,7 @@ class Neo4j:
     def sleep(self, time:int):
         with self._driver.session() as session:
             probably_json = session.run(
-                "Call apoc.util.sleep($duration);", length=str(time))
+                "Call apoc.util.sleep($duration);", duration=str(time))
             return probably_json.records()
 
     def get_metapaths(self, nodeset_A: List[int], nodeset_B: List[int], length: int):
