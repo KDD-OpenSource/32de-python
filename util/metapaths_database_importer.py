@@ -21,7 +21,6 @@ class RedisImporter:
     def import_data_set(self, data_set_name: str, bolt_url: str, username: str, password: str):
         with Neo4j(bolt_url, username, password) as neo4j:
             for record in neo4j.get_meta_paths_schema(MAX_META_PATH_LENGTH):
-                self.logger.debug(record)
                 meta_path_list = ast.literal_eval(record['metaPaths'])
                 id_to_edge_type_dict = ast.literal_eval(record['edgesIDTypeDict'])
                 id_to_node_type_dict = ast.literal_eval(record['nodesIDTypeDict'])
@@ -36,7 +35,6 @@ class RedisImporter:
         for path in paths:
             self.write_path(data_set_name, path)
 
-    # Todo take string as index not number
     def write_path(self, data_set_name: str, path: str):
         path_as_list = path.split("|")
         start_node = path_as_list[0]
@@ -52,3 +50,4 @@ class RedisImporter:
     def write_mapping(self, key_name: str, mapping: Dict[int, str]):
         key = "{}_mapping".format(key_name)
         self.redis._client.hmset(key, mapping)
+        self.redis._client.hmset("{}_reverse".format(key), {v: k for k,v in mapping.items()})
