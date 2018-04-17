@@ -11,6 +11,7 @@ from typing import Dict
 
 from util.config import *
 from util.graph_stats import GraphStats
+from util.datastructures import MetaPath
 from active_learning.active_learner import UncertaintySamplingAlgorithm
 from explanation.explanation import SimilarityScore, Explanation
 from api.neo4j import Neo4j
@@ -81,11 +82,6 @@ def login():
     if not chosen_dataset:
         logger.error('Dataset {} not available'.format(data['dataset']))
     session['dataset'] = chosen_dataset
-
-    with Neo4j(uri=session['dataset']['bolt-url'], user=session['dataset']['username'],
-               password=session['dataset']['password']) as neo4j:
-        logger.debug("Start Computation of meta paths...")
-        neo4j.start_precomputation(mode="", length=METAPATH_LENGTH)
 
     # setup data
     # TODO get Graph stats for current dataset
@@ -159,12 +155,14 @@ def receive_node_sets():
 @app.route("/node-types", methods=["POST"])
 def receive_meta_path_start_and_end_label():
     global node_type_to_id
+
+    logger.debug("node type to id map is: {}".format(node_type_to_id))
     json = request.get_json()
     redis = Redis()
     start_type = json['start_label']
     end_type = json['end_label']
-    start_type_id = node_type_to_id[start_type]
-    end_type_id = node_type_to_id[end_type]
+    start_type_id = node_type_to_id[start_type.encode()].decode()
+    end_type_id = node_type_to_id[end_type.encode()].decode()
     session['active_learning_algorithm'] = UncertaintySamplingAlgorithm(
         redis.meta_paths(session['dataset']['name'], start_type_id, end_type_id),
         hypothesis='Gaussian Process')
@@ -221,7 +219,6 @@ def send_node_types():
 def build_selection(types):
     return [(element, True) for element in types]
 
-
 @app.route("/next-meta-paths/<int:batch_size>", methods=["GET"])
 def send_next_metapaths_to_rate(batch_size):
     """
@@ -232,11 +229,16 @@ def send_next_metapaths_to_rate(batch_size):
         'metapath': ['Phenotype', 'HAS', 'Association', 'HAS', 'SNP', 'HAS', 'Phenotype'],
         'rating': 0.5}
     """
+    global id_to_node_type
+    global id_to_edge_type
+
     next_metapaths, is_last_batch, reference_paths = session['active_learning_algorithm'].get_next(
         batch_size=batch_size)
 
     for i in range(len(next_metapaths)):
-        next_metapaths[i]['metapath'] = next_metapaths[i]['metapath'].as_list()
+        tranformed_mp = next_metapaths[i]['metapath'].transform_representation(id_to_node_type, id_to_edge_type)
+        logger.debug(tranformed_mp)
+        next_metapaths[i]['metapath'] = tranformed_mp.as_list()
 
     paths = {'meta_paths': next_metapaths,
              'next_batch_available': not is_last_batch}
@@ -311,6 +313,9 @@ def receive_rated_metapaths():
     'min_path':{}
     'max_path':{}
     """
+    global edge_type_to_id
+    global node_type_to_id
+
     time_results_received = datetime.datetime.now()
     if not request.is_json:
         logger.error("Aborting, because request is not in json format")
@@ -325,6 +330,12 @@ def receive_rated_metapaths():
             logger.error("Aborting, because keys {} are misssing in this part of json: {}".format(
                 [key for key in expected_keys if key not in datapoint], datapoint))
             abort(400)
+
+    data['min_path'] = data['min_path'].transform_representation(node_type_to_id, edge_type_to_id)
+    data['max_path'] = data['max_path'].transform_representation(node_type_to_id, edge_type_to_id)
+    data['meta_paths'] = [datapoint.transform_representaion(node_type_to_id, edge_type_to_id)
+                          for datapoint in data['meta_paths']]
+    logger.debug("Transformed representation: {}".format(data))
 
     if not session['active_learning_algorithm'].is_first_batch():
         data = transform_rating(data)
