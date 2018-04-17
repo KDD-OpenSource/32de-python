@@ -17,6 +17,7 @@ from explanation.explanation import SimilarityScore, Explanation
 from api.neo4j import Neo4j
 from embeddings.input import Input
 from api.redis import Redis
+from util.metapaths_database_importer import RedisImporter
 
 METAPATH_LENGTH = 2
 
@@ -56,6 +57,10 @@ id_to_edge_type = {}
 def run(port, hostname, debug_mode):
     app.run(host=hostname, port=port, debug=debug_mode, threaded=True)
 
+@app.route('/test-import', methods=['GET'])
+def test_import():
+    RedisImporter().import_data_set('Helmholtz', 'bolt://172.20.14.22:7697', 'neo4j', 'neo4j')
+    return jsonify({'status': 200})
 
 @app.route('/login', methods=["POST"])
 def login():
