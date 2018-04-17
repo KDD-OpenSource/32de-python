@@ -9,6 +9,7 @@ pandas
 flask-cors
 scipy
 # TODO: Introduce development (non-deployment) dependencies
+redis
 pytest-cov
 Flask-Session
 cryptography==2.1.4
