@@ -51,8 +51,8 @@ CORS(app, supports_credentials=True, resources={r"/*": {
                 "http://localhost:3000"]}})
 
 # node type and edge type maps
-#id_to_node_type = {}
-#id_to_edge_type = {}
+id_to_node_type = {}
+id_to_edge_type = {}
 
 
 def run(port, hostname, debug_mode):
