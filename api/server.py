@@ -45,7 +45,9 @@ Session(app)
 #         CORS(app, supports_credentials=True,
 #              resources={r"/*": {"origins": "http://{}:{}".format(SERVER_PATH, REACT_PORT)}})
 # else:
-CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
+CORS(app, supports_credentials=True, resources={r"/*": {
+    "origins": ["https://hpi.de/mueller/metaexp-demo-api/", "http://172.20.14.22:3000", "http://localhost",
+                "http://localhost:3000"]}})
 
 
 def run(port, hostname, debug_mode):
@@ -71,7 +73,7 @@ def login():
     session['dataset'] = chosen_dataset
 
     with Neo4j(uri=session['dataset']['bolt-url'], user=session['dataset']['username'],
-                             password=session['dataset']['password']) as neo4j:
+               password=session['dataset']['password']) as neo4j:
         logger.debug("Start Computation of meta paths...")
         neo4j.start_precomputation(mode="", length=METAPATH_LENGTH)
 
@@ -120,10 +122,10 @@ def receive_node_sets():
     json = request.get_json()
 
     with Neo4j(uri=session['dataset']['bolt-url'], user=session['dataset']['username'],
-                             password=session['dataset']['password']) as neo4j:
+               password=session['dataset']['password']) as neo4j:
         logger.debug("Start Computation of meta paths between node sets...")
         neo4j.get_metapaths(nodeset_A=json['node_set_A'], nodeset_B=json['node_set_B'],
-                                                           length=METAPATH_LENGTH)
+                            length=METAPATH_LENGTH)
 
     meta_paths = Input.from_json(session['meta-paths']).paths
     logger.debug(meta_paths)
@@ -217,28 +219,28 @@ def send_next_metapaths_to_rate(batch_size):
 
 
 available_datasets = [
-        {
-            'name': 'Freebase',
-            'url': 'https://hpi.de/mueller/metaexp-demo-neo4j',
-            'bolt-url': 'bolt://172.20.14.22:32777',
-            'username': 'neo4j',
-            'password': 'neo4j'
-        },
-        {
-            'name': 'Helmholtz',
-            'url': 'https://hpi.de/mueller/metaexp-demo-neo4j-2',
-            'bolt-url': 'bolt://172.20.14.22:7697',
-            'username': 'neo4j',
-            'password': 'neo4j'
-        },
-        {
-            'name': 'Commerzbank',
-            'url': 'http://172.18.16.106:7494',
-            'bolt-url': 'bolt://172.18.16.106:7707',
-            'username': 'neo4j',
-            'password': 'neo4j'
-        }
-    ]
+    {
+        'name': 'Freebase',
+        'url': 'https://hpi.de/mueller/metaexp-demo-neo4j',
+        'bolt-url': 'bolt://172.20.14.22:32777',
+        'username': 'neo4j',
+        'password': 'neo4j'
+    },
+    {
+        'name': 'Helmholtz',
+        'url': 'https://hpi.de/mueller/metaexp-demo-neo4j-2',
+        'bolt-url': 'bolt://172.20.14.22:7697',
+        'username': 'neo4j',
+        'password': 'neo4j'
+    },
+    {
+        'name': 'Commerzbank',
+        'url': 'http://172.18.16.106:7494',
+        'bolt-url': 'bolt://172.18.16.106:7707',
+        'username': 'neo4j',
+        'password': 'neo4j'
+    }
+]
 
 
 @app.route("/get-available-datasets", methods=["GET"])
