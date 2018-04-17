@@ -51,12 +51,6 @@ CORS(app, supports_credentials=True, resources={r"/*": {
     "origins": ["https://hpi.de/mueller/metaexp-demo-api/", "http://172.20.14.22:3000", "http://localhost",
                 "http://localhost:3000"]}})
 
-# node type and edge type maps
-id_to_node_type = {}
-id_to_edge_type = {}
-node_type_to_id = {}
-edge_type_to_id = {}
-
 def run(port, hostname, debug_mode):
     app.run(host=hostname, port=port, debug=debug_mode, threaded=True)
 
@@ -88,19 +82,6 @@ def login():
     graph_stats = GraphStats()
     session['meta_path_id'] = 1
     session['rated_meta_paths'] = []
-
-    # fill node type maps
-    redis = Redis()
-    chosen_dataset_name = session['dataset']['name']
-
-    global id_to_edge_type
-    global id_to_node_type
-    global node_type_to_id
-    global edge_type_to_id
-    id_to_edge_type = redis.id_to_edge_type_map(chosen_dataset_name)
-    id_to_node_type = redis.id_to_node_type_map(chosen_dataset_name)
-    node_type_to_id = redis.node_type_to_id_map(chosen_dataset_name)
-    edge_type_to_id = redis.edge_type_to_id_map(chosen_dataset_name)
 
     # TODO feed this selection to the ALgorithms
     session['selected_node_types'] = build_selection(graph_stats.get_node_types())
@@ -154,7 +135,8 @@ def receive_node_sets():
 
 @app.route("/node-types", methods=["POST"])
 def receive_meta_path_start_and_end_label():
-    global node_type_to_id
+    redis = Redis()
+    node_type_to_id = redis.node_type_to_id_map(session['dataset']['name'])
 
     logger.debug("node type to id map is: {}".format(node_type_to_id))
     json = request.get_json()
@@ -229,8 +211,10 @@ def send_next_metapaths_to_rate(batch_size):
         'metapath': ['Phenotype', 'HAS', 'Association', 'HAS', 'SNP', 'HAS', 'Phenotype'],
         'rating': 0.5}
     """
-    global id_to_node_type
-    global id_to_edge_type
+
+    redis = Redis()
+    id_to_node_type = redis.id_to_node_type_map(session['dataset']['name'])
+    id_to_edge_type = redis.id_to_edge_type_map(session['dataset']['name'])
 
     next_metapaths, is_last_batch, reference_paths = session['active_learning_algorithm'].get_next(
         batch_size=batch_size)
@@ -313,9 +297,9 @@ def receive_rated_metapaths():
     'min_path':{}
     'max_path':{}
     """
-    global edge_type_to_id
-    global node_type_to_id
-
+    redis = Redis()
+    edge_type_to_id = redis.edge_type_to_id_map(session['dataset']['name'])
+    node_type_to_id = redis.node_type_to_id_map(session['dataset']['name'])
     time_results_received = datetime.datetime.now()
     if not request.is_json:
         logger.error("Aborting, because request is not in json format")
@@ -331,13 +315,13 @@ def receive_rated_metapaths():
                 [key for key in expected_keys if key not in datapoint], datapoint))
             abort(400)
 
-    data['min_path'] = data['min_path'].transform_representation(node_type_to_id, edge_type_to_id)
-    data['max_path'] = data['max_path'].transform_representation(node_type_to_id, edge_type_to_id)
-    data['meta_paths'] = [datapoint.transform_representaion(node_type_to_id, edge_type_to_id)
-                          for datapoint in data['meta_paths']]
+    for datapoint in data['meta_paths']:
+        datapoint['metapath'] = datapoint['metapath'].transform_representaion(node_type_to_id, edge_type_to_id)
     logger.debug("Transformed representation: {}".format(data))
 
     if not session['active_learning_algorithm'].is_first_batch():
+        data['min_path'] = data['min_path'].transform_representation(node_type_to_id, edge_type_to_id)
+        data['max_path'] = data['max_path'].transform_representation(node_type_to_id, edge_type_to_id)
         data = transform_rating(data)
 
     logger.info("Updating active learning algorithm...")
