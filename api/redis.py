@@ -14,7 +14,7 @@ class Redis:
 
     def meta_paths(self, data_set_name: str, start_type: str, end_type: str) -> List:
         self.logger.debug("Retrieving meta paths...")
-        pickled_list = self._client.lrange("{}_{}:{}".format(data_set_name, start_type, end_type), 0, -1)
+        pickled_list = self._client.lrange("{}_{}_{}".format(data_set_name, start_type, end_type), 0, -1)
         self.logger.debug(pickled_list)
         return [pickle.loads(pickled_entry) for pickled_entry in pickled_list]
 
