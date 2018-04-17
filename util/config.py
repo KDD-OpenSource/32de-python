@@ -17,7 +17,12 @@ MOCK_DATASETS_DIR = path.join('tests', 'data')
 SESSION_CACHE_DIR = path.join('tmp', 'sessions')
 SESSION_THRESHOLD = 500
 SESSION_MODE = '0700'
+# Redis Configuration
+REDIS_PORT = 6379
+REDIS_HOST = 'localhost'
+REDIS_PASSWORD = None
 
+MAX_META_PATH_LENGTH = 6
 
 def set_up_logger():
     dictConfig({

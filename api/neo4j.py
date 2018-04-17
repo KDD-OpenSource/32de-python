@@ -2,12 +2,10 @@ from neo4j.v1 import GraphDatabase, Node
 from typing import List
 import logging
 
-logger = logging.getLogger('MetaExp.Neo4j')
-
-
 class Neo4j:
     def __init__(self, uri, user, password):
         self._driver = GraphDatabase.driver(uri, auth=(user, password))
+        self.logger  = logging.getLogger('MetaExp.{}'.format(__class__.__name__))
 
     def close(self):
         self._driver.close()
@@ -45,6 +43,20 @@ class Neo4j:
             probably_json = session.run(
                 "Call apoc.util.sleep($duration);", duration=time)
             return probably_json.records()
+
+    def get_meta_paths_for_node_types(self, startType: str, endType: str, length:int):
+        with self._driver.session() as session:
+            json = session.run("Call algo.computeMetaPathsBetweenTypes($length, $startType, $endType);",
+                        length=str(length), startType=startType, endType=endType)
+            records = json.records()
+            self.logger.debug(records)
+            return records
+
+    def get_meta_paths_schema(self, length:int):
+        with self._driver.session() as session:
+            statement_result = session.run("Call algo.computeAllMetaPathsSchemaFull($length);",
+                        length=str(length))
+            return statement_result.records()
 
     def get_metapaths(self, nodeset_A: List[int], nodeset_B: List[int], length: int):
         """

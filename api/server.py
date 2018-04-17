@@ -16,6 +16,7 @@ from active_learning.active_learner import UncertaintySamplingAlgorithm
 from explanation.explanation import SimilarityScore, Explanation
 from api.neo4j import Neo4j
 from embeddings.input import Input
+from api.redis import Redis
 
 METAPATH_LENGTH = 2
 
@@ -46,6 +47,10 @@ if "METAEXP_DEV" in os.environ.keys() and os.environ["METAEXP_DEV"] == "true":
              resources={r"/*": {"origins": "http://{}:{}".format(SERVER_PATH, REACT_PORT)}})
 else:
     CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
+
+# node type and edge type maps
+id_to_node_type = {}
+id_to_edge_type = {}
 
 
 def run(port, hostname, debug_mode):
@@ -80,6 +85,13 @@ def login():
     graph_stats = GraphStats()
     session['meta_path_id'] = 1
     session['rated_meta_paths'] = []
+
+    # fill node type maps
+    redis = Redis()
+    chosen_dataset_name = session['dataset']['name']
+    id_to_edge_type = redis.id_to_edge_type_map(chosen_dataset_name)
+    id_to_node_type = redis.id_to_node_type_map(chosen_dataset_name)
+
     # TODO feed this selection to the ALgorithms
     session['selected_node_types'] = build_selection(graph_stats.get_node_types())
     session['selected_edge_types'] = build_selection(graph_stats.get_edge_types())
@@ -118,18 +130,26 @@ def receive_node_sets():
     """
     # TODO: Check if necessary information is in request object
     json = request.get_json()
-
+    results = None
     with Neo4j(uri=session['dataset']['bolt-url'], user=session['dataset']['username'],
                              password=session['dataset']['password']) as neo4j:
         logger.debug("Start Computation of meta paths between node sets...")
-        neo4j.get_metapaths(nodeset_A=json['node_set_A'], nodeset_B=json['node_set_B'],
-                                                           length=METAPATH_LENGTH)
+        results = neo4j.get_metapaths(nodeset_A=json['node_set_A'], nodeset_B=json['node_set_B'],
+                                                          length=METAPATH_LENGTH)
 
-    meta_paths = Input.from_json(session['meta-paths']).paths
+    meta_paths = Input.from_json(results).paths
     logger.debug(meta_paths)
     session['active_learning_algorithm'] = UncertaintySamplingAlgorithm(meta_paths, hypothesis='Gaussian Process')
     return jsonify({'status': 200})
 
+@app.route("/node-types", methods=["POST"])
+def receive_node_types():
+    json = request.get_json()
+    redis = Redis()
+    session['active_learning_algorithm'] = UncertaintySamplingAlgorithm(
+        redis.meta_paths(session['dataset']['name'], json['start_label'], json['end_label']),
+        hypothesis='Gaussian Process')
+    return jsonify({'status': 200})
 
 @app.route("/set-edge-types", methods=["POST"])
 def receive_edge_types():
