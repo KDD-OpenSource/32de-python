@@ -25,7 +25,7 @@ class Redis:
         return self._client.hgetall("{}_node_type_mapping".format(data_set_name))
 
     def node_type_to_id_map(self, data_set_name: str):
-        return self._client.hgetall("{}_node_type_mapping_reverse").format(data_set_name)
+        return self._client.hgetall("{}_node_type_mapping_reverse".format(data_set_name))
 
     def edge_type_to_id_map(self, data_set_name: str):
-        return self._client.hgetall("{}_edge_type_mapping_reverse").format(data_set_name)
+        return self._client.hgetall("{}_edge_type_mapping_reverse".format(data_set_name))
