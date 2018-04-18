@@ -49,7 +49,7 @@ Session(app)
 # else:
 CORS(app, supports_credentials=True, resources={r"/*": {
     "origins": ["https://hpi.de/mueller/metaexp-demo-api/", "http://172.20.14.22:3000", "http://localhost",
-                "http://localhost:3000"]}})
+                "http://localhost:3000", "http://metaexp.herokuapp.com"]}})
 
 def run(port, hostname, debug_mode):
     app.run(host=hostname, port=port, debug=debug_mode, threaded=True)
