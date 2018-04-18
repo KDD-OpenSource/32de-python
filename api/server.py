@@ -10,12 +10,8 @@ import logging
 from typing import Dict
 
 from util.config import *
-from util.graph_stats import GraphStats
-from util.datastructures import MetaPath
 from active_learning.active_learner import UncertaintySamplingAlgorithm
 from explanation.explanation import SimilarityScore, Explanation
-from api.neo4j import Neo4j
-from embeddings.input import Input
 from api.redis import Redis
 from util.metapaths_database_importer import RedisImporter
 
@@ -83,14 +79,14 @@ def login():
     session['dataset'] = chosen_dataset
 
     # setup data
-    # TODO get Graph stats for current dataset
-    graph_stats = GraphStats()
     session['meta_path_id'] = 1
     session['rated_meta_paths'] = []
 
+    redis = Redis(session['dataset']['name'])
+
     # TODO feed this selection to the ALgorithms
-    session['selected_node_types'] = build_selection(graph_stats.get_node_types())
-    session['selected_edge_types'] = build_selection(graph_stats.get_edge_types())
+    session['selected_node_types'] = [(node_type.decode(), True) for node_type in redis.node_type_to_id_map().keys()]
+    session['selected_edge_types'] = [(edge_type.decode(), True) for edge_type in redis.edge_type_to_id_map().keys()]
     logger.debug(session)
     return jsonify({'status': 200})
 
@@ -191,7 +187,8 @@ def send_edge_types():
     """
     :return: Array of available edge types for the Config page
     """
-    return jsonify(session['selected_edge_types'])
+
+    return jsonify(session['selected_node_types'])
 
 
 @app.route("/get-node-types", methods=["GET"])
@@ -200,10 +197,6 @@ def send_node_types():
     :return: Array of available node types for the Config page
     """
     return jsonify(session['selected_node_types'])
-
-
-def build_selection(types):
-    return [(element, True) for element in types]
 
 
 @app.route("/next-meta-paths/<int:batch_size>", methods=["GET"])
