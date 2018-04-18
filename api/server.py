@@ -201,6 +201,7 @@ def send_node_types():
 def build_selection(types):
     return [(element, True) for element in types]
 
+
 @app.route("/next-meta-paths/<int:batch_size>", methods=["GET"])
 def send_next_metapaths_to_rate(batch_size):
     """
@@ -221,7 +222,7 @@ def send_next_metapaths_to_rate(batch_size):
 
     for i in range(len(next_metapaths)):
         tranformed_mp = next_metapaths[i]['metapath'].transform_representation(id_to_node_type, id_to_edge_type)
-        logger.debug(tranformed_mp)
+        logger.debug("Transformed mp to {}".format(tranformed_mp))
         next_metapaths[i]['metapath'] = tranformed_mp.as_list()
 
     paths = {'meta_paths': next_metapaths,
