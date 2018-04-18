@@ -28,7 +28,7 @@ AVAILABLE_DATA_SETS = [
     {
         'name': 'Freebase',
         'url': 'https://hpi.de/mueller/metaexp-demo-neo4j',
-        'bolt-url': 'bolt://172.20.14.22:32777',
+        'bolt-url': 'bolt://172.20.14.22:32780',
         'username': 'neo4j',
         'password': 'neo4j'
     },
