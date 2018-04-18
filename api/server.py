@@ -15,8 +15,6 @@ from explanation.explanation import SimilarityScore, Explanation
 from api.redis import Redis
 from util.metapaths_database_importer import RedisImporter
 
-METAPATH_LENGTH = 2
-
 app = Flask(__name__)
 ask = Ask(app, '/alexa')
 set_up_logger()
@@ -38,18 +36,22 @@ CORS(app, supports_credentials=True, resources={r"/*": {
     "origins": ["https://hpi.de/mueller/metaexp-demo-api/", "http://172.20.14.22:3000", "http://localhost",
                 "http://localhost:3000", "http://metaexp.herokuapp.com"]}})
 
+
 def run(port, hostname, debug_mode):
     app.run(host=hostname, port=port, debug=debug_mode, threaded=True)
+
 
 @app.route('/redis-import', methods=['GET'])
 def redis_import():
     RedisImporter().import_all()
     return jsonify({'status': 200})
 
+
 @app.route('/test-import', methods=['GET'])
 def test_import():
     RedisImporter().import_data_set('Freebase', 'bolt://172.20.14.22:7697', 'neo4j', 'neo4j')
     return jsonify({'status': 200})
+
 
 @app.route('/login', methods=["POST"])
 def login():
@@ -100,46 +102,22 @@ def logout():
     return jsonify({'status': 200})
 
 
-@app.route("/node-sets", methods=["POST"])
-def receive_node_sets():
-    """
-    Receives the node sets from the "Setup" page which the user selects.
-    This endpoint is called for each new added node.
-
-    The repeated calling enables us to start the following computations as early as possible
-    so that we can return information on the next pages faster.
-    For example on the first call we already know the type of the whole node set and
-    therefore can begin to retrieve the corresponding node sets.
-    """
-    # TODO: Check if necessary information is in request object
-    json = request.get_json()
-    results = None
-    with Neo4j(uri=session['dataset']['bolt-url'], user=session['dataset']['username'],
-               password=session['dataset']['password']) as neo4j:
-        logger.debug("Start Computation of meta paths between node sets...")
-        results = neo4j.get_metapaths(nodeset_A=json['node_set_A'], nodeset_B=json['node_set_B'],
-                                                          length=METAPATH_LENGTH)
-
-    meta_paths = Input.from_json(results).paths
-    logger.debug(meta_paths)
-    session['active_learning_algorithm'] = UncertaintySamplingAlgorithm(meta_paths, hypothesis='Gaussian Process')
-    return jsonify({'status': 200})
-
 @app.route("/node-types", methods=["POST"])
 def receive_meta_path_start_and_end_label():
     redis = Redis(session['dataset']['name'])
     node_type_to_id = redis.node_type_to_id_map()
 
     logger.debug("node type to id map is: {}".format(node_type_to_id))
-    json = request.get_json()
-    start_type = json['start_label']
-    end_type = json['end_label']
+    json_response = request.get_json()
+    start_type = json_response['start_label']
+    end_type = json_response['end_label']
     start_type_id = node_type_to_id[start_type.encode()].decode()
     end_type_id = node_type_to_id[end_type.encode()].decode()
     session['active_learning_algorithm'] = UncertaintySamplingAlgorithm(
         redis.meta_paths(start_type_id, end_type_id),
         hypothesis='Gaussian Process')
     return jsonify({'status': 200})
+
 
 @app.route("/set-edge-types", methods=["POST"])
 def receive_edge_types():
@@ -220,8 +198,10 @@ def send_next_metapaths_to_rate(batch_size):
              'next_batch_available': not is_last_batch}
     if reference_paths:
         logger.info("Appending reference paths to response...")
-        reference_paths['min_path']['metapath'] = reference_paths['min_path']['metapath'].transform_representation(id_to_node_type, id_to_edge_type).as_list()
-        reference_paths['max_path']['metapath'] = reference_paths['max_path']['metapath'].transform_representation(id_to_node_type, id_to_edge_type).as_list()
+        reference_paths['min_path']['metapath'] = reference_paths['min_path']['metapath'].transform_representation(
+            id_to_node_type, id_to_edge_type).as_list()
+        reference_paths['max_path']['metapath'] = reference_paths['max_path']['metapath'].transform_representation(
+            id_to_node_type, id_to_edge_type).as_list()
         logger.debug("Transformed path: {}".format(reference_paths['min_path']))
         logger.debug("Transformed path: {}".format(reference_paths['max_path']))
         paths['min_path'] = reference_paths['min_path']
