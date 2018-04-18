@@ -38,13 +38,6 @@ AVAILABLE_DATA_SETS = [
         'bolt-url': 'bolt://172.20.14.22:7697',
         'username': 'neo4j',
         'password': 'neo4j'
-    },
-    {
-        'name': 'Commerzbank',
-        'url': 'http://172.18.16.106:7494',
-        'bolt-url': 'bolt://172.18.16.106:7707',
-        'username': 'neo4j',
-        'password': 'neo4j'
     }
 ]
 
