@@ -53,6 +53,8 @@ class RedisImporter:
     def write_mappings(self, node_type_mapping: Dict[int, str], edge_type_mapping: Dict[int, str]):
         self.redis._client.hmset("{}_node_type".format(self.redis.data_set), node_type_mapping)
         self.redis._client.hmset("{}_edge_type".format(self.redis.data_set), edge_type_mapping)
-        self.redis._client.hmset("{}_node_type_reverse".format(self.redis.data_set), {v: k for k,v in node_type_mapping.items()})
-        self.redis._client.hmset("{}_edge_type_reverse".format(self.redis.data_set), {v: k for k,v in edge_type_mapping.items()})
+        self.redis._client.hmset("{}_node_type_reverse".format(self.redis.data_set),
+                                 {v: k for k,v in node_type_mapping.items()})
+        self.redis._client.hmset("{}_edge_type_reverse".format(self.redis.data_set),
+                                 {v: k for k,v in edge_type_mapping.items()})
 
