@@ -1,8 +1,9 @@
 from typing import List
 from util.datastructures import MetaPathRating
 from util.config import BASELINE_MODE
-
 import numpy as np
+from api.neo4j import Neo4j
+import logging
 
 
 class Explanation:
@@ -61,20 +62,38 @@ class SimilarityScore:
     """
 
     meta_paths = None
+    meta_paths_top_k = None
     similarity_score = None
     algorithm_type = None
     sum_structural_values = 0
+    get_complete_rating = None
+    dataset = None
+    start_node_ids = []
+    end_node_ids = []
 
-    def __init__(self, algorithm_type=BASELINE_MODE):
+    def __init__(self, get_complete_rating, dataset, start_node_ids, end_node_ids, algorithm_type=BASELINE_MODE):
         self.algorithm_type = algorithm_type
+        self.get_complete_rating = get_complete_rating
+        self.dataset = dataset
+        self.start_node_ids = start_node_ids
+        self.end_node_ids = end_node_ids
+        self.logger = logging.getLogger('MetaExp.{}'.format(self.__class__.__name__))
 
-    def fetch_meta_paths(self) -> List[MetaPathRating]:
-        """
-        :return: List of meta-path rating objects between both node sets
-        TODO: Fetch meta-path ratings dynamically. At the moment, we pass meta path ratings directly from the tests.
-        """
+    def refresh(self):
+        self.meta_paths_top_k = []
+        self.meta_paths = self.get_complete_rating()
+        domain_values = np.array([mp.domain_value for mp in self.meta_paths])
+        top_k_domain_idx = self.apply_low_pass_filtering(domain_values, 20)
 
-        return self.meta_paths
+        for i in top_k_domain_idx:
+            self.meta_paths_top_k.append(self.meta_paths[i])
+
+        with Neo4j(uri=self.dataset['bolt-url'], user=self.dataset['username'],
+                   password=self.dataset['password']) as neo4j:
+            for mp in self.meta_paths_top_k:
+                self.logger.debug(neo4j.get_structural_value(mp.meta_path, self.start_node_ids, self.end_node_ids))
+
+        return True
 
     def calculate_similarity(self, meta_path_ratings: List[MetaPathRating],
                              low_pass_filter=False, filter_rate=100, use_soft_max=False,
@@ -108,7 +127,7 @@ class SimilarityScore:
 
     @staticmethod
     def apply_low_pass_filtering(input_array: List[float], filter_rate: int) -> List[float]:
-        return input_array[np.argsort(input_array)[-filter_rate:]]
+        return np.argsort(input_array)[-filter_rate:]
 
     def get_normalized_structural_value(self, structural_value: float) -> float:
         return structural_value / self.sum_structural_values

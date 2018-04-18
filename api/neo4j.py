@@ -55,7 +55,6 @@ class Neo4j:
 
     def get_structural_value(self, meta_path: MetaPath, start_nodes: List, end_nodes: List):
         mp = meta_path.as_list()
-        print(mp)
         nodes = ['(n{}:{})'.format(i, n) for i, n in enumerate(mp[::2])]
         n = len(nodes)
         edges = ['[e{}:{}]'.format(i, e) for i, e in enumerate(mp[1::2])]
