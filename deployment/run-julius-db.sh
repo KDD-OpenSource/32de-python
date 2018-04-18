@@ -11,4 +11,3 @@ docker run \
     -d \
     --name neo4j-graph-algo-container-helmholtz \
     neo4j-graph-algorithms
-
