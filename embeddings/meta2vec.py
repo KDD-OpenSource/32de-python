@@ -5,8 +5,8 @@ from typing import List, Tuple
 from embeddings.input import Input, NodeEdgeTypeInput, NodeInput
 
 
-def calculate_embeddings(meta_paths: List[List[str]]) -> List[Tuple(List[str], List[float])]:
-    pass
+#def calculate_embeddings(meta_paths: List[List[str]]) -> List[Tuple(List[str], List[float])]:
+#    pass
 
 def model_word2vec(features, labels, mode, params):
     """
