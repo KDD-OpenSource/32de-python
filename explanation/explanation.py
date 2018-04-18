@@ -84,13 +84,10 @@ class SimilarityScore:
         over all meta-paths. First simplified, not experimentally tested baseline.
         :return: similarity score between both node sets as float
         """
-        self.sum_structural_values = self.calculate_total_structural_value(meta_path_ratings)
-        structural_values = np.array([])
-        domain_values = np.array([])
+        structural_values = np.array([meta_path_rating.structural_value for meta_path_rating in meta_path_ratings])
+        domain_values = np.array([meta_path_rating.domain_value for meta_path_rating in meta_path_ratings])
 
-        for meta_path_rating in meta_path_ratings:
-            structural_values = np.append(structural_values, [meta_path_rating.structural_value])
-            domain_values = np.append(domain_values, [meta_path_rating.domain_value])
+        self.sum_structural_values = np.sum(structural_values)
 
         if use_soft_max:
             structural_values = self.apply_soft_max(structural_values)
@@ -106,19 +103,14 @@ class SimilarityScore:
         return self.similarity_score
 
     @staticmethod
-    def calculate_total_structural_value(meta_path_ratings: List[MetaPathRating]) -> float:
-        structural_values = [meta_path_rating.structural_value for meta_path_rating in meta_path_ratings]
-        return np.sum(structural_values)
+    def apply_soft_max(input_array: List[float]) -> List[float]:
+        return np.exp(input_array) / np.sum(np.exp(input_array))
 
     @staticmethod
-    def apply_soft_max(structural_values):
-        return structural_values
+    def apply_low_pass_filtering(input_array: List[float], filter_rate: int) -> List[float]:
+        return input_array[np.argsort(input_array)[-filter_rate:]]
 
-    @staticmethod
-    def apply_low_pass_filtering(structural_values, filter_rate):
-        return structural_values[np.argsort(structural_values)[-filter_rate:]]
-
-    def get_normalized_structural_value(self, structural_value) -> float:
+    def get_normalized_structural_value(self, structural_value: float) -> float:
         return structural_value / self.sum_structural_values
 
     @staticmethod
