@@ -2,7 +2,7 @@ from numbers import Number
 from typing import List
 
 import numpy as np
-import tensorflow as tf
+#import tensorflow as tf
 
 from embeddings.sampling_strategy import CBOWSampling, SkipGramSampling, SamplingStrategy
 
@@ -14,7 +14,8 @@ class Input:
                  vocabulary: List[Number],
                  windows_size: Number = 2,
                  padding_value: Number = -1,
-                 random_seed: Number = 42):
+                 random_seed: Number = 42,
+                 normalize_node_ids=True):
         self.vocabulary = list(vocabulary)
         self.padding_index = 0
         self.padding_mapping = 0
@@ -26,7 +27,10 @@ class Input:
             'skip-gram': SkipGramSampling(self.padding_index, self.random_seed)
         }
 
-        self.paths = self._normalize_node_ids(paths)
+        if (normalize_node_ids):
+            self.paths = self._normalize_node_ids(paths)
+        else:
+            self.paths = paths
 
     def _normalize_node_ids(self, meta_paths):
         normalized_paths = []
@@ -52,7 +56,6 @@ class Input:
 
         return cls(converted_paths, vocabulary)
 
-
     def set_window_size(self, window_size: Number) -> 'NodeEdgeTypeInput':
         """
         Set the window size. This number of nodes are each taken from the left and right of the feature node
@@ -73,7 +76,7 @@ class Input:
         self.padding_value = padding_value
         return self
 
-    def skip_gram_input(self) -> tf.data.Dataset:
+    def skip_gram_input(self): #-> tf.data.Dataset:
         """
         Get the dataset to train on in skip-gram format.
         :return: the dataset with node types as features and context as labels.
@@ -81,7 +84,7 @@ class Input:
         node, context = self._apply_transformation(self.paths, self.samplingStrategies['skip-gram'])
         return self._create_dataset(np.reshape(node, (-1, 1)), context)
 
-    def bag_of_words_input(self) -> tf.data.Dataset:
+    def bag_of_words_input(self): #-> tf.data.Dataset:
         """
         Get the dataset to train on in continuous bag of words format.
         :return: the dataset with context as features and node types as labels.
@@ -90,7 +93,7 @@ class Input:
         return self._create_dataset(context, node)
 
     def _create_dataset(self, features, labels):
-        return tf.data.Dataset().from_tensor_slices(({'features': features}, labels))
+        return None #tf.data.Dataset().from_tensor_slices(({'features': features}, labels))
 
     def get_vocab_size(self) -> Number:
         return len(self.vocabulary)
@@ -170,7 +173,7 @@ class MetaPathsInput(Input):
         contexts = np.array(contexts, np.int32)
         return sampling_strategy.paragraph_postprocess(paths, indices, contexts)
 
-    def skip_gram_input(self) -> tf.data.Dataset:
+    def skip_gram_input(self): #-> tf.data.Dataset:
         """
         Get the dataset to train on in skip-gram format.
         :return: the dataset with node types as features and context as labels.
@@ -178,7 +181,7 @@ class MetaPathsInput(Input):
         paragraphs, context, _ = self._apply_transformation(self.paths, self.samplingStrategies['skip-gram'])
         return self._create_dataset(np.reshape(paragraphs, (-1, 1)), context)
 
-    def bag_of_words_input(self) -> tf.data.Dataset:
+    def bag_of_words_input(self): #-> tf.data.Dataset:
         """
         Get the dataset to train on in continuous bag of words format.
         :return: the dataset with context as features and node types as labels.
@@ -187,11 +190,11 @@ class MetaPathsInput(Input):
         return self._create_dataset(paragraphs, context, node)
 
     def _create_dataset(self, paragraphs, features, labels):
-        return tf.data.Dataset().from_tensor_slices(({
-                                                         'features': features,
-                                                         'paragraphs': paragraphs
-                                                     },
-                                                     labels))
+        return None #tf.data.Dataset().from_tensor_slices(({
+                    #                                     'features': features,
+                    #                                     'paragraphs': paragraphs
+                    #                                 },
+                    #                                 labels))
 
 
 class NodeInput(Input):
