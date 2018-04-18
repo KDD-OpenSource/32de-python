@@ -81,8 +81,7 @@ class SimilarityScore:
                              normalize_structural_values=True) -> float:
         """
         Computes a sum of a linear combination of structural and domain value
-        over all meta-paths, normalized by each meta-path length. First simplified,
-        not experimentally tested baseline.
+        over all meta-paths. First simplified, not experimentally tested baseline.
         :return: similarity score between both node sets as float
         """
         self.sum_structural_values = self.calculate_total_structural_value(meta_path_ratings)
@@ -103,7 +102,7 @@ class SimilarityScore:
             structural_values = np.vectorize(self.get_normalized_structural_value)
 
         normalized_structural_values = structural_values(structural_values)
-        self.similarity_score = np.sum(normalized_structural_values * domain_values) / len(meta_path_ratings)
+        self.similarity_score = np.sum(normalized_structural_values * domain_values)
         return self.similarity_score
 
     @staticmethod
