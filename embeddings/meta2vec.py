@@ -5,7 +5,7 @@ from typing import List, Tuple
 from embeddings.input import Input, NodeEdgeTypeInput, NodeInput
 
 
-#def calculate_embeddings(meta_paths: List[List[str]]) -> List[Tuple(List[str], List[float])]:
+# def calculate_embeddings(meta_paths: List[List[str]]) -> List[Tuple(List[str], List[float])]:
 #    pass
 
 def model_word2vec(features, labels, mode, params):
@@ -14,6 +14,8 @@ def model_word2vec(features, labels, mode, params):
     TODO: Add documentation
     :return:
     """
+    assert features is not None, 'features is {}'.format(features)
+    assert labels is not None, 'labels is {}'.format(labels)
     input = tf.feature_column.input_layer(features, params['feature_columns'])
     size_of_vocabulary = input.shape[1].value
 
@@ -27,10 +29,10 @@ def model_word2vec(features, labels, mode, params):
         input.shape[0].value, params['embedding_size']), 'Shape expected ({}, {}), but was {}'.format(
         input.shape[0].value, params['embedding_size'], embedded_words.shape)
 
-    return _model_word2vec(mode, size_of_vocabulary, params['loss'], labels, embedded_words)
+    return _model_word2vec(mode, size_of_vocabulary, params['loss'], labels, embedded_words, params['optimizer'])
 
 
-def _model_word2vec(mode, size_of_vocabulary, loss: str, labels, embedded_words):
+def _model_word2vec(mode, size_of_vocabulary, loss: str, labels, embedded_words, optimizer: str):
     # Concatenate vectors
     concatenated_embeddings = tf.reshape(tf.concat(tf.unstack(embedded_words, axis=0), axis=0), shape=[1, -1])
     assert concatenated_embeddings.shape == (
@@ -58,20 +60,30 @@ def _model_word2vec(mode, size_of_vocabulary, loss: str, labels, embedded_words)
     else:
         raise NotImplementedError("This loss isn't implemented yet. Implement it!")
 
-    optimizer = tf.train.AdamOptimizer()
-    total_train_op = optimizer.minimize(loss, global_step=tf.train.get_global_step())
+    total_train_op = __build_train_op(loss, optimizer)
 
-    metrics = {'loss': loss}
     # Loss for tensorboard
     tf.summary.scalar('Loss', loss)
 
+    metrics = {'loss': loss}
     if mode == tf.estimator.ModeKeys.TRAIN:
         return tf.estimator.EstimatorSpec(mode, loss=loss, train_op=total_train_op)
     else:
         raise NotImplementedError("This mode isn't implemented yet")
 
 
-def model_paragraph_vectors_skipgram():
+def __build_train_op(loss, optimizer):
+    if optimizer == 'adam':
+        optimizer = tf.train.AdamOptimizer()
+    elif optimizer == 'sgd':
+        optimizer = tf.train.GradientDescentOptimizer()
+    else:
+        raise NotImplementedError("This optimizer isn't implemented yet. Implement it!")
+    total_train_op = optimizer.minimize(loss, global_step=tf.train.get_global_step())
+    return total_train_op
+
+
+def model_paragraph_vectors_skipgram(features, labels, mode, params):
     """
     Distributed Memory Model of Paragraph Vectors (PV-DM) from "Distributed Representations of Sentences and Documents" (Mikolov et al.)
     :return:
@@ -79,7 +91,7 @@ def model_paragraph_vectors_skipgram():
     pass
 
 
-def model_paragraph_vectors_dbow():
+def model_paragraph_vectors_dbow(features, labels, mode, params):
     """
     Distributed Bag of Words version of Paragraph Vector (PV-DBOW) from "Distributed Representations of Sentences and Documents" (Mikolov et al.)
     :return:
@@ -153,6 +165,11 @@ def parse_arguments():
                         help='Choose which loss should be used',
                         type=str,
                         required=True)
+    parser.add_argument('--optimizer',
+                        choices=['adam', 'sgd'],
+                        help='Choose which optimizer should be used',
+                        type=str,
+                        default='adam')
     return parser.parse_args()
 
 
