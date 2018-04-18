@@ -157,7 +157,7 @@ def send_edge_types():
     :return: Array of available edge types for the Config page
     """
 
-    return jsonify(session['selected_node_types'])
+    return jsonify(session['selected_edge_types'])
 
 
 @app.route("/get-node-types", methods=["GET"])
