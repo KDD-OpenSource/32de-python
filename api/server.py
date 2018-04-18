@@ -27,12 +27,12 @@ set_up_logger()
 logger = logging.getLogger('MetaExp.Server')
 
 # TODO: Change if we have a database in the background
-SESSION_TYPE = 'filesystem'
+SESSION_TYPE = 'redis'
 SESSION_FILE_DIR = SESSION_CACHE_DIR
 SESSION_FILE_THRESHOLD = SESSION_THRESHOLD
 # We need leading zeros on the modifier
 SESSION_FILE_MODE = int(SESSION_MODE, 8)
-SESSION_PERMANENT = True
+
 app.config.from_object(__name__)
 # TODO: Change for deployment, e.g. use environment variable
 app.config["SECRET_KEY"] = "37Y,=i9.,U3RxTx92@9j9Z[}"
