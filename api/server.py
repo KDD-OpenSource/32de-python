@@ -54,7 +54,7 @@ CORS(app, supports_credentials=True, resources={r"/*": {
 def run(port, hostname, debug_mode):
     app.run(host=hostname, port=port, debug=debug_mode, threaded=True)
 
-@app.route('redis-import', methods=['GET'])
+@app.route('/redis-import', methods=['GET'])
 def redis_import():
     RedisImporter().import_all()
     return jsonify({'status': 200})
