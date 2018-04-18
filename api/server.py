@@ -11,7 +11,6 @@ from typing import Dict
 
 from util.config import *
 from util.graph_stats import GraphStats
-from util.datastructures import MetaPath
 from active_learning.active_learner import UncertaintySamplingAlgorithm
 from explanation.explanation import SimilarityScore, Explanation
 from api.neo4j_own import Neo4j
