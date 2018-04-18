@@ -36,7 +36,7 @@ If you start the additional neo4j containers with `run-neo4j-helmholtz.sh` and `
 they are listening on the ports +10 for Helmholtz and +20 for the Commerzbank data.
 All the neo4j containers are based on the `neo4j-graph-algorithms` image.
 To change the default port simply specify the `PORT` parameter when running `deployment/run-*.sh [PORT]`.
-
+We use redis for our meta paths. Start the container by executing deployment/run-redis.sh.
 
 ### Updating files in containers
 If you want to update any files in your container you can use the
