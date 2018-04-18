@@ -79,10 +79,23 @@ class SimilarityScore:
         self.end_node_ids = end_node_ids
         self.logger = logging.getLogger('MetaExp.{}'.format(self.__class__.__name__))
 
+    def __getstate__(self):
+        # Copy the object's state from self.__dict__ which contains
+        # all our instance attributes.
+        d = dict(self.__dict__)
+        # Remove the unpicklable entries.
+        del d['logger']
+        return d
+
+    def __setstate__(self, d):
+        self.__dict__.update(d)
+        self.logger = logging.getLogger('MetaExp.{}'.format(__class__.__name__))
+
     def refresh(self):
         self.meta_paths_top_k = []
         self.meta_paths = self.get_complete_rating()
-        domain_values = np.array([mp.domain_value for mp in self.meta_paths])
+        self.logger.debug(self.meta_paths)
+        domain_values = np.array([mp['domain_value'] for mp in self.meta_paths])
         top_k_domain_idx = self.apply_low_pass_filtering(domain_values, 20)
 
         for i in top_k_domain_idx:
@@ -91,7 +104,8 @@ class SimilarityScore:
         with Neo4j(uri=self.dataset['bolt-url'], user=self.dataset['username'],
                    password=self.dataset['password']) as neo4j:
             for mp in self.meta_paths_top_k:
-                self.logger.debug(neo4j.get_structural_value(mp.meta_path, self.start_node_ids, self.end_node_ids))
+                self.logger.debug(type(neo4j.get_structural_value(mp.meta_path, self.start_node_ids, self.end_node_ids)))
+                # self.logger.debug(neo4j.get_structural_value(mp.meta_path, self.start_node_ids, self.end_node_ids))
 
         return True
 
