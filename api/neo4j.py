@@ -72,6 +72,17 @@ class Neo4j:
             statement_result = session.run(query)
             return list(statement_result.records())[0]['count']
 
+    def test_whether_meta_path_exists(self, meta_path_query_string):
+        self.logger.debug("Received match query string {}".format(meta_path_query_string))
+        query = "MATCH p = {} " \
+                "RETURN p limit 1".format(meta_path_query_string)
+        self.logger.debug("Querying for '{}'".format(query))
+        with self._driver.session() as session:
+            statement_result = session.run(query)
+            record = list(statement_result.records())
+            self.logger.debug(record)
+            return True if record else False
+
     def get_meta_paths_schema(self, length:int):
         with self._driver.session() as session:
             statement_result = session.run("Call algo.computeAllMetaPathsSchemaFull($length);",
