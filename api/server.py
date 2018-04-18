@@ -135,18 +135,17 @@ def receive_node_sets():
 
 @app.route("/node-types", methods=["POST"])
 def receive_meta_path_start_and_end_label():
-    redis = Redis()
-    node_type_to_id = redis.node_type_to_id_map(session['dataset']['name'])
+    redis = Redis(session['dataset']['name'])
+    node_type_to_id = redis.node_type_to_id_map()
 
     logger.debug("node type to id map is: {}".format(node_type_to_id))
     json = request.get_json()
-    redis = Redis()
     start_type = json['start_label']
     end_type = json['end_label']
     start_type_id = node_type_to_id[start_type.encode()].decode()
     end_type_id = node_type_to_id[end_type.encode()].decode()
     session['active_learning_algorithm'] = UncertaintySamplingAlgorithm(
-        redis.meta_paths(session['dataset']['name'], start_type_id, end_type_id),
+        redis.meta_paths(start_type_id, end_type_id),
         hypothesis='Gaussian Process')
     return jsonify({'status': 200})
 
@@ -213,26 +212,31 @@ def send_next_metapaths_to_rate(batch_size):
         'rating': 0.5}
     """
 
-    redis = Redis()
-    id_to_node_type = redis.id_to_node_type_map(session['dataset']['name'])
-    id_to_edge_type = redis.id_to_edge_type_map(session['dataset']['name'])
+    redis = Redis(session['dataset']['name'])
+    id_to_node_type = redis.id_to_node_type_map()
+    id_to_edge_type = redis.id_to_edge_type_map()
 
     next_metapaths, is_last_batch, reference_paths = session['active_learning_algorithm'].get_next(
         batch_size=batch_size)
 
+    string = [next_metapaths[i]['metapath'].as_list() for i in range(len(next_metapaths))]
+    logger.debug("Received meta paths from active learner {}".format(string))
+
     for i in range(len(next_metapaths)):
-        tranformed_mp = next_metapaths[i]['metapath'].transform_representation(id_to_node_type, id_to_edge_type)
-        logger.debug("Transformed mp to {}".format(tranformed_mp))
-        next_metapaths[i]['metapath'] = tranformed_mp.as_list()
+        transformed_mp = next_metapaths[i]['metapath'].transform_representation(id_to_node_type, id_to_edge_type)
+        logger.debug("Transformed {} to {}".format(next_metapaths[i]['metapath'], transformed_mp))
+        next_metapaths[i]['metapath'] = transformed_mp.as_list()
 
     paths = {'meta_paths': next_metapaths,
              'next_batch_available': not is_last_batch}
     if reference_paths:
         logger.info("Appending reference paths to response...")
-        min_path = reference_paths['min_path']
-        max_path = reference_paths['max_path']
-        paths['min_path'] = min_path
-        paths['max_path'] = max_path
+        reference_paths['min_path']['metapath'] = reference_paths['min_path']['metapath'].transform_representation(id_to_node_type, id_to_edge_type).as_list()
+        reference_paths['max_path']['metapath'] = reference_paths['max_path']['metapath'].transform_representation(id_to_node_type, id_to_edge_type).as_list()
+        logger.debug("Transformed path: {}".format(reference_paths['min_path']))
+        logger.debug("Transformed path: {}".format(reference_paths['max_path']))
+        paths['min_path'] = reference_paths['min_path']
+        paths['max_path'] = reference_paths['max_path']
 
     logger.debug("Responding to server: {}".format(paths))
     if "time" in session.keys():
@@ -298,9 +302,6 @@ def receive_rated_metapaths():
     'min_path':{}
     'max_path':{}
     """
-    redis = Redis()
-    edge_type_to_id = redis.edge_type_to_id_map(session['dataset']['name'])
-    node_type_to_id = redis.node_type_to_id_map(session['dataset']['name'])
     time_results_received = datetime.datetime.now()
     if not request.is_json:
         logger.error("Aborting, because request is not in json format")
@@ -316,13 +317,7 @@ def receive_rated_metapaths():
                 [key for key in expected_keys if key not in datapoint], datapoint))
             abort(400)
 
-    for datapoint in data['meta_paths']:
-        datapoint['metapath'] = datapoint['metapath'].transform_representaion(node_type_to_id, edge_type_to_id)
-    logger.debug("Transformed representation: {}".format(data))
-
     if not session['active_learning_algorithm'].is_first_batch():
-        data['min_path'] = data['min_path'].transform_representation(node_type_to_id, edge_type_to_id)
-        data['max_path'] = data['max_path'].transform_representation(node_type_to_id, edge_type_to_id)
         data = transform_rating(data)
 
     logger.info("Updating active learning algorithm...")
