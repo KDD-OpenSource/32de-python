@@ -54,9 +54,14 @@ CORS(app, supports_credentials=True, resources={r"/*": {
 def run(port, hostname, debug_mode):
     app.run(host=hostname, port=port, debug=debug_mode, threaded=True)
 
+@app.route('redis-import', methods=['GET'])
+def redis_import():
+    RedisImporter().import_all()
+    return jsonify({'status': 200})
+
 @app.route('/test-import', methods=['GET'])
 def test_import():
-    RedisImporter().import_data_set('Helmholtz', 'bolt://172.20.14.22:7697', 'neo4j', 'neo4j')
+    RedisImporter().import_data_set('Freebase', 'bolt://172.20.14.22:7697', 'neo4j', 'neo4j')
     return jsonify({'status': 200})
 
 @app.route('/login', methods=["POST"])
