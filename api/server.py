@@ -10,10 +10,16 @@ import logging
 from typing import Dict
 
 from util.config import *
-from util.meta_path_loader_dispatcher import MetaPathLoaderDispatcher
 from util.graph_stats import GraphStats
+from util.datastructures import MetaPath
 from active_learning.active_learner import UncertaintySamplingAlgorithm
 from explanation.explanation import SimilarityScore, Explanation
+from api.neo4j import Neo4j
+from embeddings.input import Input
+from api.redis import Redis
+from util.metapaths_database_importer import RedisImporter
+
+METAPATH_LENGTH = 2
 
 app = Flask(__name__)
 ask = Ask(app, '/alexa')
@@ -34,19 +40,29 @@ Session(app)
 
 # TODO: Fix CORS origins specification
 # Configure Cross Site Scripting
-if "METAEXP_DEV" in os.environ.keys() and os.environ["METAEXP_DEV"] == "true":
-    if REACT_PORT == 80:
-        CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://{}".format(SERVER_PATH)}})
-    else:
-        CORS(app, supports_credentials=True,
-             resources={r"/*": {"origins": "http://{}:{}".format(SERVER_PATH, REACT_PORT)}})
-else:
-    CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
-
+# if "METAEXP_DEV" in os.environ.keys() and os.environ["METAEXP_DEV"] == "true":
+#     if REACT_PORT == 80:
+#         CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://{}".format(SERVER_PATH)}})
+#     else:
+#         CORS(app, supports_credentials=True,
+#              resources={r"/*": {"origins": "http://{}:{}".format(SERVER_PATH, REACT_PORT)}})
+# else:
+CORS(app, supports_credentials=True, resources={r"/*": {
+    "origins": ["https://hpi.de/mueller/metaexp-demo-api/", "http://172.20.14.22:3000", "http://localhost",
+                "http://localhost:3000", "http://metaexp.herokuapp.com"]}})
 
 def run(port, hostname, debug_mode):
     app.run(host=hostname, port=port, debug=debug_mode, threaded=True)
 
+@app.route('redis-import', methods=['GET'])
+def redis_import():
+    RedisImporter().import_all()
+    return jsonify({'status': 200})
+
+@app.route('/test-import', methods=['GET'])
+def test_import():
+    RedisImporter().import_data_set('Freebase', 'bolt://172.20.14.22:7697', 'neo4j', 'neo4j')
+    return jsonify({'status': 200})
 
 @app.route('/login', methods=["POST"])
 def login():
@@ -58,20 +74,24 @@ def login():
     session['username'] = data['username']
     session['dataset'] = data['dataset']
     session['purpose'] = data['purpose']
+    chosen_dataset = None
+    for dataset in AVAILABLE_DATA_SETS:
+        if dataset['name'] == session['dataset']:
+            chosen_dataset = dataset
+    if not chosen_dataset:
+        logger.error('Dataset {} not available'.format(data['dataset']))
+    session['dataset'] = chosen_dataset
 
     # setup data
-    # TODO use key from dataset to select data
-    meta_path_loader = MetaPathLoaderDispatcher().get_loader('Rotten Tomato')
-    meta_paths = meta_path_loader.load_meta_paths()
     # TODO get Graph stats for current dataset
     graph_stats = GraphStats()
-    session['active_learning_algorithm'] = UncertaintySamplingAlgorithm(meta_paths, hypothesis='Gaussian Process')
     session['meta_path_id'] = 1
     session['rated_meta_paths'] = []
+
     # TODO feed this selection to the ALgorithms
     session['selected_node_types'] = build_selection(graph_stats.get_node_types())
     session['selected_edge_types'] = build_selection(graph_stats.get_edge_types())
-
+    logger.debug(session)
     return jsonify({'status': 200})
 
 
@@ -79,21 +99,20 @@ def login():
 def logout():
     rated_meta_paths = {
         'meta_paths': session['active_learning_algorithm'].create_output(),
-        'dataset': session['dataset'],
+        'dataset': session['dataset']['name'],
         'node_type_selection': session['selected_node_types'],
         'edge_type_selection': session['selected_edge_types'],
         'username': session['username'],
         'purpose': session['purpose']
     }
-    filename = '{}_{}_{}.json'.format(session['dataset'], session['username'], time.time())
+    filename = '{}_{}_{}.json'.format(session['dataset']['name'], session['username'], time.time())
     logger.info("Writing results to file {}...".format(filename))
     path = os.path.join(RATED_DATASETS_PATH, filename)
     json.dump(rated_meta_paths, open(path, "w", encoding="utf8"))
     session.clear()
-    return 'OK'
+    return jsonify({'status': 200})
 
 
-# TODO: If functionality "meta-paths for node set A and B" will be written in Java, team alpha will need this information in Java
 @app.route("/node-sets", methods=["POST"])
 def receive_node_sets():
     """
@@ -106,28 +125,34 @@ def receive_node_sets():
     therefore can begin to retrieve the corresponding node sets.
     """
     # TODO: Check if necessary information is in request object
-    if not request.json:
-        abort(400)
-    raise NotImplementedError("This API endpoint isn't implemented in the moment")
+    json = request.get_json()
+    results = None
+    with Neo4j(uri=session['dataset']['bolt-url'], user=session['dataset']['username'],
+               password=session['dataset']['password']) as neo4j:
+        logger.debug("Start Computation of meta paths between node sets...")
+        results = neo4j.get_metapaths(nodeset_A=json['node_set_A'], nodeset_B=json['node_set_B'],
+                                                          length=METAPATH_LENGTH)
 
+    meta_paths = Input.from_json(results).paths
+    logger.debug(meta_paths)
+    session['active_learning_algorithm'] = UncertaintySamplingAlgorithm(meta_paths, hypothesis='Gaussian Process')
+    return jsonify({'status': 200})
 
-@app.route("/first-node -set-query", methods=["GET"])
-def send_first_node_set():
-    """
-    :return: first node set as a cypher query as input for the neo4jGraphRenderer
-    TODO: Build query dynamically depending on selected node-IDs
-    """
-    return jsonify({'node_set_query': 'MATCH (n)-[r]->(m) RETURN n,r,m'})
+@app.route("/node-types", methods=["POST"])
+def receive_meta_path_start_and_end_label():
+    redis = Redis(session['dataset']['name'])
+    node_type_to_id = redis.node_type_to_id_map()
 
-
-@app.route("/second-node-set-query", methods=["GET"])
-def send_second_node_set():
-    """
-    :return: second node set as a cypher query as input for the neo4jGraphRenderer
-    TODO: Build query dynamically depending on selected node-IDs
-    """
-    return jsonify({'node_set_query': 'MATCH (n)-[r]->(m) RETURN n,r,m'})
-
+    logger.debug("node type to id map is: {}".format(node_type_to_id))
+    json = request.get_json()
+    start_type = json['start_label']
+    end_type = json['end_label']
+    start_type_id = node_type_to_id[start_type.encode()].decode()
+    end_type_id = node_type_to_id[end_type.encode()].decode()
+    session['active_learning_algorithm'] = UncertaintySamplingAlgorithm(
+        redis.meta_paths(start_type_id, end_type_id),
+        hypothesis='Gaussian Process')
+    return jsonify({'status': 200})
 
 @app.route("/set-edge-types", methods=["POST"])
 def receive_edge_types():
@@ -191,19 +216,32 @@ def send_next_metapaths_to_rate(batch_size):
         'metapath': ['Phenotype', 'HAS', 'Association', 'HAS', 'SNP', 'HAS', 'Phenotype'],
         'rating': 0.5}
     """
-    next_metapaths, is_last_batch, reference_paths = session['active_learning_algorithm'].get_next(batch_size=batch_size)
+
+    redis = Redis(session['dataset']['name'])
+    id_to_node_type = redis.id_to_node_type_map()
+    id_to_edge_type = redis.id_to_edge_type_map()
+
+    next_metapaths, is_last_batch, reference_paths = session['active_learning_algorithm'].get_next(
+        batch_size=batch_size)
+
+    string = [next_metapaths[i]['metapath'].as_list() for i in range(len(next_metapaths))]
+    logger.debug("Received meta paths from active learner {}".format(string))
 
     for i in range(len(next_metapaths)):
-        next_metapaths[i]['metapath'] = next_metapaths[i]['metapath'].as_list()
+        transformed_mp = next_metapaths[i]['metapath'].transform_representation(id_to_node_type, id_to_edge_type)
+        logger.debug("Transformed {} to {}".format(next_metapaths[i]['metapath'], transformed_mp))
+        next_metapaths[i]['metapath'] = transformed_mp.as_list()
 
     paths = {'meta_paths': next_metapaths,
              'next_batch_available': not is_last_batch}
     if reference_paths:
         logger.info("Appending reference paths to response...")
-        min_path = reference_paths['min_path']
-        max_path = reference_paths['max_path']
-        paths['min_path']= min_path
-        paths['max_path']= max_path
+        reference_paths['min_path']['metapath'] = reference_paths['min_path']['metapath'].transform_representation(id_to_node_type, id_to_edge_type).as_list()
+        reference_paths['max_path']['metapath'] = reference_paths['max_path']['metapath'].transform_representation(id_to_node_type, id_to_edge_type).as_list()
+        logger.debug("Transformed path: {}".format(reference_paths['min_path']))
+        logger.debug("Transformed path: {}".format(reference_paths['max_path']))
+        paths['min_path'] = reference_paths['min_path']
+        paths['max_path'] = reference_paths['max_path']
 
     logger.debug("Responding to server: {}".format(paths))
     if "time" in session.keys():
@@ -218,25 +256,11 @@ def get_available_datasets():
     """
     :return:  all data sets registered on the server and a dataset access properties of each
     """
-    available_datasets = [
-        {
-            'name': 'Freebase',
-            'url': 'http://172.20.14.22:7504',
-            'username': 'neo4j',
-            'password': 'neo4j'
-        },
-        {
-            'name': 'Helmholtz',
-            'url': 'http://172.20.14.22:7584',
-            'username': 'neo4j',
-            'password': 'neo4j'
-        }
-    ]
 
-    return jsonify(available_datasets)
+    return jsonify(AVAILABLE_DATA_SETS)
 
 
-def transform_rating(data:Dict) -> Dict:
+def transform_rating(data: Dict) -> Dict:
     logger.info("Transforming ratings")
 
     new_min_path_rating = data['min_path']['rating']
@@ -269,6 +293,7 @@ def transform_rating(data:Dict) -> Dict:
     logger.debug("Rating was transformed: {}".format(data['meta_paths']))
     return data
 
+
 # TODO: Maybe post each rated meta-path
 @app.route("/rate-meta-paths", methods=["POST"])
 def receive_rated_metapaths():
@@ -298,7 +323,7 @@ def receive_rated_metapaths():
             abort(400)
 
     if not session['active_learning_algorithm'].is_first_batch():
-       data = transform_rating(data)
+        data = transform_rating(data)
 
     logger.info("Updating active learning algorithm...")
     session['active_learning_algorithm'].update(data['meta_paths'])
@@ -308,7 +333,7 @@ def receive_rated_metapaths():
         if "time" in session.keys():
             data['time_to_rate'] = (time_results_received - session['time']).total_seconds()
 
-    return 'OK'
+    return jsonify({'status': 200})
 
 
 @app.route("/get-similarity-score", methods=["GET"])
