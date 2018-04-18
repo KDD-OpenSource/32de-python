@@ -94,13 +94,13 @@ def login():
 def logout():
     rated_meta_paths = {
         'meta_paths': session['active_learning_algorithm'].create_output(),
-        'dataset': session['dataset'],
+        'dataset': session['dataset']['name'],
         'node_type_selection': session['selected_node_types'],
         'edge_type_selection': session['selected_edge_types'],
         'username': session['username'],
         'purpose': session['purpose']
     }
-    filename = '{}_{}_{}.json'.format(session['dataset'], session['username'], time.time())
+    filename = '{}_{}_{}.json'.format(session['dataset']['name'], session['username'], time.time())
     logger.info("Writing results to file {}...".format(filename))
     path = os.path.join(RATED_DATASETS_PATH, filename)
     json.dump(rated_meta_paths, open(path, "w", encoding="utf8"))
