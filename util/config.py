@@ -19,7 +19,10 @@ SESSION_THRESHOLD = 500
 SESSION_MODE = '0700'
 # Redis Configuration
 REDIS_PORT = 6379
-REDIS_HOST = '172.16.19.193'
+REDIS_HOST = '172.20.14.22'
+#!!!!!!!!!!!!!!!!!!!!!!!!PLEASE LEAVE THERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#REDIS_HOST = '172.16.19.193'
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 REDIS_PASSWORD = None
 
 MAX_META_PATH_LENGTH = 6
