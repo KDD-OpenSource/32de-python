@@ -34,7 +34,8 @@ class RedisImporter:
                 self.write_paths(meta_path_embedded_original)
                 self.write_mappings(id_to_node_type_dict, id_to_edge_type_dict)
 
-    def write_paths(self, paths_original_embedded: List[Tuple(List[str], List[float])]):
+    #TODO: def write_paths(self, paths_original_embedded: List[Tuple(List[str], List[float])]):
+    def write_paths(self, paths_original_embedded):
         for path_original, path_embedded in paths_original_embedded:
             self.write_path(path_original, path_embedded)
 
