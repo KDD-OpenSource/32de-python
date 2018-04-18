@@ -24,14 +24,15 @@ REDIS_PASSWORD = None
 
 MAX_META_PATH_LENGTH = 6
 
+"""{
+    'name': 'Freebase',
+    'url': 'https://hpi.de/mueller/metaexp-demo-neo4j',
+    'bolt-url': 'bolt://172.20.14.22:7717',
+    'username': 'neo4j',
+    'password': 'neo4j'
+},"""
+
 AVAILABLE_DATA_SETS = [
-    {
-        'name': 'Freebase',
-        'url': 'https://hpi.de/mueller/metaexp-demo-neo4j',
-        'bolt-url': 'bolt://172.20.14.22:7717',
-        'username': 'neo4j',
-        'password': 'neo4j'
-    },
     {
         'name': 'Helmholtz',
         'url': 'https://hpi.de/mueller/metaexp-demo-neo4j-2',
