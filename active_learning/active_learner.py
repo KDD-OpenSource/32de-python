@@ -3,6 +3,7 @@ from enum import Enum
 from typing import List, Dict
 import numpy as np
 import logging
+from copy import copy
 
 from util.datastructures import MetaPath
 from .hypothesis import GaussianProcessHypothesis, MPLengthHypothesis
@@ -51,7 +52,7 @@ class AbstractActiveLearningAlgorithm(ABC):
         self.logger.debug(
             "Max ref path is {} with rating {}".format(max_ref_path_id, self.meta_paths_rating[max_ref_path_id]))
         return {'id': int(max_ref_path_id),
-                'metapath': self.meta_paths[max_ref_path_id].as_list(),
+                'metapath': copy(self.meta_paths[max_ref_path_id]),
                 'rating': self.UI_MAX_VALUE}
 
     def get_min_ref_path(self) -> Dict:
@@ -61,7 +62,7 @@ class AbstractActiveLearningAlgorithm(ABC):
         self.logger.debug(
             "Max ref path is {} with rating {}".format(min_ref_path_id, self.meta_paths_rating[min_ref_path_id]))
         return {'id': int(min_ref_path_id),
-                'metapath': self.meta_paths[min_ref_path_id].as_list(),
+                'metapath': copy(self.meta_paths[min_ref_path_id]),
                 'rating': self.UI_MIN_VALUE}
 
     def has_one_batch_left(self, batch_size):
@@ -93,7 +94,7 @@ class AbstractActiveLearningAlgorithm(ABC):
         ids = self._select(batch_size)
 
         mps = [{'id': int(meta_id),
-                'metapath': meta_path,
+                'metapath': copy(meta_path),
                 'rating': self.STANDARD_RATING} for meta_id, meta_path in
                zip(ids, self.meta_paths[ids])]
 
