@@ -34,15 +34,6 @@ app.config.from_object(__name__)
 app.config["SECRET_KEY"] = "37Y,=i9.,U3RxTx92@9j9Z[}"
 Session(app)
 
-# TODO: Fix CORS origins specification
-# Configure Cross Site Scripting
-# if "METAEXP_DEV" in os.environ.keys() and os.environ["METAEXP_DEV"] == "true":
-#     if REACT_PORT == 80:
-#         CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://{}".format(SERVER_PATH)}})
-#     else:
-#         CORS(app, supports_credentials=True,
-#              resources={r"/*": {"origins": "http://{}:{}".format(SERVER_PATH, REACT_PORT)}})
-# else:
 CORS(app, supports_credentials=True, resources={r"/*": {
     "origins": ["https://hpi.de/mueller/metaexp-demo-api/", "http://172.20.14.22:3000", "http://localhost",
                 "http://localhost:3000", "http://metaexp.herokuapp.com"]}})
