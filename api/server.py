@@ -61,7 +61,7 @@ def redis_import():
 
 @app.route('/test-import', methods=['GET'])
 def test_import():
-    RedisImporter().import_data_set('Freebase', 'bolt://172.20.14.22:32780', 'neo4j', 'neo4j')
+    RedisImporter().import_data_set('Freebase', 'bolt://172.20.14.22:7717', 'neo4j', 'neo4j')
     return jsonify({'status': 200})
 
 @app.route('/login', methods=["POST"])

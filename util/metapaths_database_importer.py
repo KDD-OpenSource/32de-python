@@ -1,4 +1,3 @@
-from tokenize import String, Number
 from util.datastructures import MetaPath
 from util.config import MAX_META_PATH_LENGTH, AVAILABLE_DATA_SETS
 from api.neo4j import Neo4j
@@ -20,6 +19,7 @@ class RedisImporter:
 
     def import_data_set(self, data_set_name: str, bolt_url: str, username: str, password: str):
         self.redis = Redis(data_set_name)
+        self.logger.debug("Start computation for {}...".format(data_set_name))
         with Neo4j(bolt_url, username, password) as neo4j:
             for record in neo4j.get_meta_paths_schema(MAX_META_PATH_LENGTH):
                 meta_path_list = ast.literal_eval(record['metaPaths'])
