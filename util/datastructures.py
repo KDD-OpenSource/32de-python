@@ -34,6 +34,9 @@ class MetaPath:
         else:
             raise ValueError("Keywords not  valid: {}".format(', '.join(kwargs.keys())))
 
+    def __copy__(self):
+        return type(self)(nodes=self._nodes, edges=self._edges)
+
     def is_empty(self) -> bool:
         return len(self) == 0
 
