@@ -14,9 +14,9 @@ from util.graph_stats import GraphStats
 from util.datastructures import MetaPath
 from active_learning.active_learner import UncertaintySamplingAlgorithm
 from explanation.explanation import SimilarityScore, Explanation
-from api.neo4j import Neo4j
+from api.neo4j_own import Neo4j
 from embeddings.input import Input
-from api.redis import Redis
+from api.redis_own import Redis
 from util.metapaths_database_importer import RedisImporter
 
 METAPATH_LENGTH = 2
