@@ -104,7 +104,7 @@ class Input:
         return tf.data.Dataset().from_tensor_slices(({'features': features}, labels))
 
     def get_vocab_size(self) -> Number:
-        return len(self.inverse_mapping.keys())
+        return len(self.get_vocab())
 
     def get_vocab(self) -> List[Number]:
         return list(self.inverse_mapping.keys())
@@ -161,7 +161,7 @@ class MetaPathsInput(Input):
         self.samples = samples
 
     @classmethod
-    def from_json(cls, json, seperator=" | "):
+    def from_json(cls, json, seperator="|"):
         paths = [path.split(seperator) for path in json]
         return cls.from_paths_list(paths)
 

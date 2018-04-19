@@ -154,12 +154,13 @@ def create_estimator(model_dir, model_fn, input: Input, embedding_size: int, los
 
 
 def create_paragraph_estimator(model_dir, model_fn, input: Input, embedding_size: int, loss: str, gpu_memory: float):
+    print(input.get_vocab_size())
     context = tf.feature_column.categorical_column_with_hash_bucket('features',
                                                                      input.get_vocab_size(),
                                                                      dtype=tf.int32)
 
     paragraph = tf.feature_column.categorical_column_with_hash_bucket('paragraphs',
-                                                                     input.get_paths_count(),
+                                                                     input.paths_count(),
                                                                      dtype=tf.int32)
 
     context_indicator = tf.feature_column.indicator_column(context)
@@ -284,7 +285,7 @@ if __name__ == "__main__":
     print("Created estimator")
     if args.mode == 'train':
         print("Training")
-        classifier.train(input_fn=input_fn)
+        # classifier.train(input_fn=input_fn)
     elif args.mode == 'predict':
         raise NotImplementedError()
     elif args.mode == 'eval':
