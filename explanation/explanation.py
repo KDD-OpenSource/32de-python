@@ -123,12 +123,21 @@ class SimilarityScore:
 		"""
 		structural_values = np.array([mp['structural_value'] for mp in self.meta_paths_top_k])
 		domain_values = np.array([mp['domain_value'] for mp in self.meta_paths_top_k])
+		domain_values = self.apply_rescaling(domain_values)
 		self.sum_structural_values = np.sum(structural_values)
 
 		self.similarity_scores = structural_values * domain_values
 
 		self.similarity_score = np.sum(self.similarity_scores) / len(self.similarity_scores)
-		self.logger.debug("SIMILARITY SCORE!!!!!!!!!: {}".format(self.similarity_score))
+
+	@staticmethod
+	def apply_rescaling(input_array):
+		min_value = np.amin(input_array)
+		max_value = np.amax(input_array)
+		range_of_values = max_value - min_value
+		input_array = input_array + range_of_values
+
+		return input_array
 
 	@staticmethod
 	def apply_soft_max(input_array: List[float]) -> List[float]:
