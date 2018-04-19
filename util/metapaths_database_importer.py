@@ -40,7 +40,6 @@ class RedisImporter:
         path_as_list = path.split("|")
         start_node = path_as_list[0]
         end_node = path_as_list[-1]
-        self.logger.debug("Adding metapath {} to record {}".format(path, "{}_{}_{}".format(self.redis.data_set, start_node, end_node)))
         self.redis._client.lpush("{}_{}_{}".format(self.redis.data_set, start_node, end_node),
                                   pickle.dumps(MetaPath(edge_node_list=path_as_list)))
 
