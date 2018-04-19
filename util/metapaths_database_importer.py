@@ -1,8 +1,8 @@
 import multiprocessing
 from util.datastructures import MetaPath
-from util.config import MAX_META_PATH_LENGTH, AVAILABLE_DATA_SETS, PARALLEL_EXISTANCE_PROCESSES
-from api.neo4j import Neo4j
-from api.redis import Redis
+from util.config import MAX_META_PATH_LENGTH, AVAILABLE_DATA_SETS
+from api.neo4j_own import Neo4j
+from api.redis_own import Redis
 from typing import Dict, List
 import logging
 import ast

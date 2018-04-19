@@ -12,7 +12,9 @@ from typing import Dict
 from util.config import *
 from active_learning.active_learner import UncertaintySamplingAlgorithm
 from explanation.explanation import SimilarityScore, Explanation
-from api.redis import Redis
+from api.neo4j_own import Neo4j
+from embeddings.input import Input
+from api.redis_own import Redis
 from util.metapaths_database_importer import RedisImporter
 
 app = Flask(__name__)
