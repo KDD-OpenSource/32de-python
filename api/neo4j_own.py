@@ -1,4 +1,4 @@
-from neo4j.v1 import GraphDatabase, Node
+from neo4j.v1 import GraphDatabase
 from typing import List
 from util.datastructures import MetaPath
 import logging

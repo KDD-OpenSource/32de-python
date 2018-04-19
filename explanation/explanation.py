@@ -2,7 +2,7 @@ from typing import List
 from util.datastructures import MetaPathRating
 from util.config import BASELINE_MODE
 import numpy as np
-from api.neo4j import Neo4j
+from api.neo4j_own import Neo4j
 import logging
 
 
