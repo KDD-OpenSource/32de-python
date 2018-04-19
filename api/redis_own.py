@@ -11,7 +11,6 @@ class Redis:
         self._client = redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT, password=REDIS_PASSWORD)
         self.data_set = data_set_name
         self.logger = logging.getLogger('MetaExp.{}'.format(__class__.__name__))
-        self.logger.debug("current keys are: {}", self._client.keys())
 
     def meta_paths(self, start_type: str, end_type: str) -> List:
         self.logger.debug("Retrieving meta paths...")

@@ -91,10 +91,9 @@ class Neo4j:
                 "RETURN p limit 1".format(meta_path_query_string)
         self.logger.debug("Querying for '{}'".format(query))
         with self._driver.session() as session:
-            statement_result = session.run(query)
-            record = list(statement_result.records())
+            record = session.run(query).single()
             self.logger.debug(record)
-            return True if record else False
+            return bool(record)
 
 
     def get_meta_paths_schema(self, length: int):
