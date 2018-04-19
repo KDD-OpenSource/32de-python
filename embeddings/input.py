@@ -49,13 +49,18 @@ class Input:
         return normalized_paths
 
     @classmethod
-    def from_json(cls, json, seperator=" | ") -> 'Input':
+    def extract_paths_vocab_json(cls, json, seperator):
         converted_paths = []
         vocabulary = set()
         for paths in json.keys():
             node_ids = [int(id) for id in paths.split(seperator)]
             converted_paths.append(node_ids)
             vocabulary |= set(node_ids)
+        return converted_paths, vocabulary
+
+    @classmethod
+    def from_json(cls, json, seperator=" | ") -> 'Input':
+        converted_paths, vocabulary = cls.extract_paths_vocab_json(json, seperator)
 
         return cls(converted_paths, vocabulary)
 
@@ -110,6 +115,9 @@ class Input:
     def get_mapped_id(self, node_id):
         return self.mapping[node_id]
 
+    def paths_count(self):
+        return len(self.paths)
+
     def _apply_transformation(self, meta_paths: List[List[Number]], sampling_strategy: SamplingStrategy):
         raise NotImplementedError()
 
@@ -153,13 +161,18 @@ class MetaPathsInput(Input):
         self.samples = samples
 
     @classmethod
+    def from_json(cls, json, seperator=" | "):
+        paths = [path.split(seperator) for path in json]
+        return cls.from_paths_list(paths)
+
+    @classmethod
     def from_paths_list(cls, paths: List[List[int]]):
         # The ordering of the paths and converted_paths has to be identical to allow remapping of the embedding to the
         # original path.
         converted_paths = []
 
-        mapping = []
-        inverse_mapping = []
+        mapping = {}
+        inverse_mapping = {}
 
         padding_value = 0
         highest_key = 1
