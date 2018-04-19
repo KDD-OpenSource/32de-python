@@ -1,10 +1,11 @@
-from neo4j.v1 import GraphDatabase, Node
+from neo4j.v1 import GraphDatabase
 from typing import List
 from util.datastructures import MetaPath
 from api.redis import Redis
 import logging
 
 class Neo4j:
+
 	def __init__(self, uri, user, password):
 		self._driver = GraphDatabase.driver(uri, auth=(user, password))
 		self.logger = logging.getLogger('MetaExp.{}'.format(__class__.__name__))
@@ -22,6 +23,7 @@ class Neo4j:
 		"""
 		Precomputes all meta-paths (or all meta-paths for high degree nodes, depending on 'mode') up to a
 		meta-path-length given by 'length' and saves them in a file named 'Precomputed_MetaPaths.txt'
+		:param ratio:
 		:param mode:
 		:param length:
 		:return:
@@ -39,17 +41,29 @@ class Neo4j:
 					length=str(length), ratio=str(ratio))
 				return probably_json.records()
 
-	def sleep(self, time:int):
+	def sleep(self, time: int):
+		"""
+
+		:param time:
+		:return:
+		"""
 		with self._driver.session() as session:
 			# apoc procedure expects int as argument.
 			probably_json = session.run(
 				"Call apoc.util.sleep($duration);", duration=time)
 			return probably_json.records()
 
-	def get_meta_paths_for_node_types(self, startType: str, endType: str, length:int):
+	def get_meta_paths_for_node_types(self, startType: str, endType: str, length: int):
+		"""
+
+		:param startType:
+		:param endType:
+		:param length:
+		:return:
+		"""
 		with self._driver.session() as session:
 			json = session.run("Call algo.computeMetaPathsBetweenTypes($length, $startType, $endType);",
-						length=str(length), startType=startType, endType=endType)
+							   length=str(length), startType=startType, endType=endType)
 			records = json.records()
 			self.logger.debug(records)
 			return records
@@ -76,10 +90,25 @@ class Neo4j:
 			statement_result = session.run(query)
 			return list(statement_result.records())[0]['count']
 
-	def get_meta_paths_schema(self, length:int):
+	def test_whether_meta_path_exists(self, meta_path_query_string):
+		self.logger.debug("Received match query string {}".format(meta_path_query_string))
+		query = "MATCH p = {} " \
+				"RETURN p limit 1".format(meta_path_query_string)
+		self.logger.debug("Querying for '{}'".format(query))
+		with self._driver.session() as session:
+			record = session.run(query).single()
+			self.logger.debug(record)
+			return bool(record)
+
+	def get_meta_paths_schema(self, length: int):
+		"""
+
+		:param length:
+		:return:
+		"""
 		with self._driver.session() as session:
 			statement_result = session.run("Call algo.computeAllMetaPathsSchemaFull($length);",
-						length=str(length))
+										   length=str(length))
 			return statement_result.records()
 
 	def get_metapaths(self, nodeset_A: List[int], nodeset_B: List[int], length: int):
@@ -125,6 +154,13 @@ class Neo4j:
 	# TODO: Implement different return types (node instances, node types)
 	# TODO: What are the parameters of the neo4j procedure?
 	def random_walk(self, maybe_start_id: int, maybe_number_of_random_walks: int, maybe_walk_length: int):
+		"""
+
+		:param maybe_start_id:
+		:param maybe_number_of_random_walks:
+		:param maybe_walk_length:
+		:return:
+		"""
 		with self._driver.session() as session:
 			# TODO: Is the result returned as paths?
 			maybe_paths = session.run(
