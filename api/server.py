@@ -43,13 +43,14 @@ def run(port, hostname, debug_mode):
 
 @app.route('/redis-import', methods=['GET'])
 def redis_import():
-    RedisImporter().import_all()
+    RedisImporter(enable_existence_check=False).import_all()
     return jsonify({'status': 200})
 
 
 @app.route('/test-import', methods=['GET'])
 def test_import():
-    RedisImporter().import_data_set('Helmholtz', 'bolt://172.16.79.24:7697', 'neo4j', '')
+    RedisImporter().import_data_set({'name': 'Helmholtz', 'bolt-url': 'bolt://172.16.79.24:7697', 'username': 'neo4j',
+                                     'password': ''})
     return jsonify({'status': 200})
 
 
