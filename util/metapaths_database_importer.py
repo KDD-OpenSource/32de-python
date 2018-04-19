@@ -1,6 +1,6 @@
 import multiprocessing
 from util.datastructures import MetaPath
-from util.config import MAX_META_PATH_LENGTH, AVAILABLE_DATA_SETS
+from util.config import MAX_META_PATH_LENGTH, AVAILABLE_DATA_SETS, PARALLEL_EXISTENCE_TEST_PROCESSES
 from api.neo4j_own import Neo4j
 from api.redis_own import Redis
 from typing import Dict, List
@@ -68,7 +68,7 @@ class RedisImporter:
 
     # Executed if existence check is enabled
     def start_parallel_existence_checks(self, meta_paths: List[str], data_set: Dict) -> List[List[str]]:
-        with multiprocessing.Pool(processes=PARALLEL_EXISTANCE_PROCESSES) as pool:
+        with multiprocessing.Pool(processes=PARALLEL_EXISTENCE_TEST_PROCESSES) as pool:
             args = [(mp, data_set, self.id_to_edge_type_map, self.id_to_node_type_map) for mp in meta_paths]
             return pool.map(self.check_existence, args)
 
