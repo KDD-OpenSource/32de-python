@@ -19,7 +19,7 @@ SESSION_THRESHOLD = 500
 SESSION_MODE = '0700'
 # Redis Configuration
 REDIS_PORT = 6379
-REDIS_HOST = '172.16.79.24'
+REDIS_HOST = '172.18.5.67'
 REDIS_PASSWORD = None
 
 MAX_META_PATH_LENGTH = 6
@@ -34,8 +34,8 @@ AVAILABLE_DATA_SETS = [
     },
     {
         'name': 'Helmholtz',
-        'url': 'http://172.16.79.24:7484',
-        'bolt-url': 'bolt://172.16.79.24:7697',
+        'url': 'http://172.18.5.67:7484',
+        'bolt-url': 'bolt://172.18.5.67:7697',
         'username': 'neo4j',
         'password': ''
     }
