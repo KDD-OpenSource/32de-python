@@ -30,6 +30,7 @@ class RedisImporter:
                 self.logger.debug("Number of meta paths is: {}".format(len(meta_path_list)))
                 self.id_to_edge_type_map = ast.literal_eval(record['edgesIDTypeDict'])
                 self.id_to_node_type_map = ast.literal_eval(record['nodesIDTypeDict'])
+                self.write_mappings(self.id_to_node_type_map, self.id_to_edge_type_map)
                 if self.enable_existence_check:
                     existing_meta_paths = self.start_parallel_existence_checks(meta_path_list, data_set)
                     self.logger.debug("From {} mps {} do not exist in graph {}".format(len(meta_path_list),
@@ -38,7 +39,6 @@ class RedisImporter:
                 else:
                     self.write_paths(meta_path_list)
 
-                self.write_mappings(self.id_to_node_type_map, self.id_to_edge_type_map)
 
     # Executed if existence check is enabled
     @staticmethod
