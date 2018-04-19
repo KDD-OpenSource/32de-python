@@ -16,7 +16,8 @@ class Input:
                  padding_value: Number = -1,
                  random_seed: Number = 42,
                  normalize_node_ids=True):
-        self.vocabulary = list(vocabulary)
+        self.mapping = {}
+        self.inverse_mapping = {}
         self.padding_index = 0
         self.padding_mapping = 0
         self.padding_value = padding_value
@@ -28,19 +29,21 @@ class Input:
         }
 
         if (normalize_node_ids):
-            self.paths = self._normalize_node_ids(paths)
+            self.paths = self._normalize_node_ids(paths, list(vocabulary))
         else:
             self.paths = paths
 
-    def _normalize_node_ids(self, meta_paths):
+    def _normalize_node_ids(self, meta_paths, vocabulary):
         normalized_paths = []
-        id_mapping = dict(zip(self.vocabulary, self.get_vocab()))
+        mapped_values = range(1, len(vocabulary) + 1)
+        self.mapping = dict(zip(vocabulary, mapped_values))
+        self.inverse_mapping = dict(zip(mapped_values, vocabulary))
 
         for mp in meta_paths:
             path = []
             path.append(self.padding_mapping)
             for n in mp:
-                path.append(id_mapping[n])
+                path.append(self.mapping[n])
                 normalized_paths.append(path)
 
         return normalized_paths
@@ -96,13 +99,16 @@ class Input:
         return tf.data.Dataset().from_tensor_slices(({'features': features}, labels))
 
     def get_vocab_size(self) -> Number:
-        return len(self.vocabulary)
+        return len(self.inverse_mapping.keys())
 
     def get_vocab(self) -> List[Number]:
-        return list(range(1, self.get_vocab_size() + 1))
+        return list(self.inverse_mapping.keys())
 
     def get_node_id(self, mapped_id):
-        return self.vocabulary[mapped_id - 1]
+        return self.inverse_mapping[mapped_id]
+
+    def get_mapped_id(self, node_id):
+        return self.mapping[node_id]
 
     def _apply_transformation(self, meta_paths: List[List[Number]], sampling_strategy: SamplingStrategy):
         raise NotImplementedError()
@@ -133,13 +139,56 @@ class MetaPathsInput(Input):
 
     def __init__(self,
                  paths: List[List[Number]],
-                 vocabulary: List[Number],
+                 vocabulary: List[Number] = [],
                  windows_size: Number = 2,
                  padding_value: Number = 0,
                  samples: Number = 5,
-                 random_seed: Number = 42):
-        super().__init__(paths, vocabulary, windows_size, padding_value, random_seed)
+                 random_seed: Number = 42,
+                 normalize_node_ids=False):
+        """
+        Wraps in the input function to embed meta-paths. It is a convention that the id of the meta-paths is given
+        by it's location in the paths list. Therefore the order of the paths is important.
+        """
+        super().__init__(paths, vocabulary, windows_size, padding_value, random_seed, normalize_node_ids)
         self.samples = samples
+
+    @classmethod
+    def from_paths_list(cls, paths: List[List[int]]):
+        # The ordering of the paths and converted_paths has to be identical to allow remapping of the embedding to the
+        # original path.
+        converted_paths = []
+
+        mapping = []
+        inverse_mapping = []
+
+        padding_value = 0
+        highest_key = 1
+
+        for path in paths:
+            assert len(path) % 2 == 1, "Invalid path shape."
+            new_path = []
+            if len(path) == 1:
+                new_path.append(path[0])
+                converted_paths.append(new_path)
+                continue
+            for i in range(0, len(path) - 2, 2):
+                node_edge_node = (path[i], path[i + 1], path[i + 2])
+                key = highest_key
+                if node_edge_node in mapping.keys():
+                    key = mapping[node_edge_node]
+                else:
+                    mapping[node_edge_node] = key
+                    inverse_mapping[key] = node_edge_node
+                    highest_key += 1
+                new_path.append(key)
+            converted_paths.append(new_path)
+
+        input_cls = cls(converted_paths, padding_value=padding_value, normalize_node_ids=False)
+
+        input_cls.mapping = mapping
+        input_cls.inverse_mapping = inverse_mapping
+
+        return input_cls
 
     def set_samples(self, samples: Number) -> 'MetaPathsInput':
         # TODO: Max this value for each mp to (len(mp) over window_size)
