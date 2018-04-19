@@ -20,13 +20,13 @@ class Redis:
         return [pickle.loads(pickled_entry) for pickled_entry in pickled_list]
 
     def id_to_edge_type_map(self):
-        return self._client.hgetall("{}_edge_type_mapping".format(self.data_set))
+        return self._client.hgetall("{}_edge_type_map".format(self.data_set))
 
     def id_to_node_type_map(self):
-        return self._client.hgetall("{}_node_type_mapping".format(self.data_set))
+        return self._client.hgetall("{}_node_type_map".format(self.data_set))
 
     def node_type_to_id_map(self):
-        return self._client.hgetall("{}_node_type_mapping_reverse".format(self.data_set))
+        return self._client.hgetall("{}_node_type_map_reverse".format(self.data_set))
 
     def edge_type_to_id_map(self):
-        return self._client.hgetall("{}_edge_type_mapping_reverse".format(self.data_set))
+        return self._client.hgetall("{}_edge_type_map_reverse".format(self.data_set))
