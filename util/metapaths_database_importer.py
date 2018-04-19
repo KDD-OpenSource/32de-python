@@ -21,9 +21,9 @@ class RedisImporter:
             self.import_data_set(data_set)
 
     @staticmethod
-    def check_existence(*args):
+    def check_existence(args):
         logger = logging.getLogger('MetaExp.ExistenceCheck')
-
+        logger.debug(args)
         (meta_path, data_set, edge_map, node_map) = args
 
         logger.debug(meta_path, data_set)
@@ -52,7 +52,7 @@ class RedisImporter:
 
     def start_parallel_existence_checks(self, meta_paths: List[str], data_set: Dict) -> List[List[str]]:
         with multiprocessing.Pool(processes=PARALLEL_EXISTANCE_PROCESSES) as pool:
-            args = (meta_paths, data_set, self.id_to_edge_type_map, self.id_to_node_type_map)
+            args = [(mp, data_set, self.id_to_edge_type_map, self.id_to_node_type_map) for mp in meta_paths]
             return pool.map(self.check_existence, args)
 
     def import_data_set(self, data_set: Dict):
