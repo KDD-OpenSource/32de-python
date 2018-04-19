@@ -116,6 +116,12 @@ class AbstractActiveLearningAlgorithm(ABC):
                self.visited[meta_id] == State.VISITED]
         return mps
 
+    def get_complete_rating(self):
+        mps = [{'id': int(meta_id[0]),
+                'metapath': meta_path,
+                'domain_value': self.meta_paths_rating[meta_id]} for meta_id, meta_path in np.ndenumerate(self.meta_paths)]
+        return mps
+
 
 class RandomSelectionAlgorithm(AbstractActiveLearningAlgorithm):
     """

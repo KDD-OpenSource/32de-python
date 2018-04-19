@@ -1,7 +1,7 @@
-from neo4j.v1 import GraphDatabase, Node
+from neo4j.v1 import GraphDatabase
 from typing import List
+from util.datastructures import MetaPath
 import logging
-
 
 class Neo4j:
     def __init__(self, uri, user, password):
@@ -65,6 +65,37 @@ class Neo4j:
             records = json.records()
             self.logger.debug(records)
             return records
+
+    def get_structural_value(self, meta_path: MetaPath, start_nodes: List, end_nodes: List):
+        mp = meta_path.as_list()
+        nodes = ['(n{}:{})'.format(i, n) for i, n in enumerate(mp[::2])]
+        n = len(nodes)
+        edges = ['[e{}:{}]'.format(i, e) for i, e in enumerate(mp[1::2])]
+        all = nodes + edges
+        all[::2] = nodes
+        all[1::2] = edges
+        path = '-'.join(all)
+        start_ids = '[' + ','.join(map(str, start_nodes)) + ']'
+        end_ids = '[' + ','.join(map(str, end_nodes)) + ']'
+        query = "MATCH p = {} " \
+                "WHERE ID(n0) in {} and ID(n{}) in {} " \
+                "RETURN count(*) as count;".format(path, start_ids, n - 1, end_ids)
+        self.logger.debug("Querying for '{}'".format(query))
+        with self._driver.session() as session:
+            statement_result = session.run(query)
+            return list(statement_result.records())[0]['count']
+
+    def test_whether_meta_path_exists(self, meta_path_query_string):
+        self.logger.debug("Received match query string {}".format(meta_path_query_string))
+        query = "MATCH p = {} " \
+                "RETURN p limit 1".format(meta_path_query_string)
+        self.logger.debug("Querying for '{}'".format(query))
+        with self._driver.session() as session:
+            statement_result = session.run(query)
+            record = list(statement_result.records())
+            self.logger.debug(record)
+            return True if record else False
+
 
     def get_meta_paths_schema(self, length: int):
         """
