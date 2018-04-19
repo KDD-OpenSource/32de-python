@@ -274,11 +274,10 @@ if __name__ == "__main__":
                                                 input_type=args.input_type,
                                                 json_path=args.json_path)
     print("chose function")
-    classifier = None
     if args.model == "word2vec":
         classifier = create_estimator(model_dir=args.model_dir, model_fn=model_fn, input=input,
                                   embedding_size=args.embedding_size, loss=args.loss, gpu_memory=args.gpu_memory)
-    elif args.model == "paragraph_vector":
+    elif args.model == "paragraph_vectors":
         classifier = create_paragraph_estimator(model_dir=args.model_dir, model_fn=model_fn, input=input,
                                       embedding_size=args.embedding_size, loss=args.loss, gpu_memory=args.gpu_memory)
 
