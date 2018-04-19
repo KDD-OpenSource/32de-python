@@ -10,16 +10,37 @@ import pickle
 
 
 class RedisImporter:
-    def __init__(self):
-        self.redis = None
+    def __init__(self, enable_existence_check=True):
+        self.enable_existence_check = enable_existence_check
         self.logger = self.logger = logging.getLogger('MetaExp.{}'.format(__class__.__name__))
         self.id_to_edge_type_map = None
         self.id_to_node_type_map = None
+        self.redis = None
 
     def import_all(self):
         for data_set in AVAILABLE_DATA_SETS:
             self.import_data_set(data_set)
 
+    def import_data_set(self, data_set: Dict):
+        self.redis = Redis(data_set['name'])
+        with Neo4j(data_set['bolt-url'], data_set['username'], data_set['password']) as neo4j:
+            for record in neo4j.get_meta_paths_schema(MAX_META_PATH_LENGTH):
+                meta_path_list = ast.literal_eval(record['metaPaths'])
+                self.logger.debug("Received meta paths from neo4j: {}".format(meta_path_list))
+                self.logger.debug("Number of meta paths is: {}".format(len(meta_path_list)))
+                self.id_to_edge_type_map = ast.literal_eval(record['edgesIDTypeDict'])
+                self.id_to_node_type_map = ast.literal_eval(record['nodesIDTypeDict'])
+                if self.enable_existence_check:
+                    existing_meta_paths = self.start_parallel_existence_checks(meta_path_list, data_set)
+                    self.logger.debug("From {} mps {} do not exist in graph {}".format(len(meta_path_list),
+                                                                                       len(existing_meta_paths),
+                                                                                       data_set['name']))
+                else:
+                    self.write_paths(meta_path_list)
+
+                self.write_mappings(self.id_to_node_type_map, self.id_to_edge_type_map)
+
+    # Executed if existence check is enabled
     @staticmethod
     def check_existence(args):
         logger = logging.getLogger('MetaExp.ExistenceCheck')
@@ -45,28 +66,27 @@ class RedisImporter:
                                                       pickle.dumps(MetaPath(edge_node_list=mp_as_list)))
                 return mp_as_list
 
+    # Executed if existence check is enabled
     def start_parallel_existence_checks(self, meta_paths: List[str], data_set: Dict) -> List[List[str]]:
         with multiprocessing.Pool(processes=PARALLEL_EXISTANCE_PROCESSES) as pool:
             args = [(mp, data_set, self.id_to_edge_type_map, self.id_to_node_type_map) for mp in meta_paths]
             return pool.map(self.check_existence, args)
 
-    def import_data_set(self, data_set: Dict):
-        self.redis = Redis(data_set['name'])
-        with Neo4j(data_set['bolt-url'], data_set['username'], data_set['password']) as neo4j:
-            for record in neo4j.get_meta_paths_schema(MAX_META_PATH_LENGTH):
-                meta_path_list = ast.literal_eval(record['metaPaths'])
-                self.logger.debug("Received list of strings {}".format(meta_path_list))
-                self.logger.debug("Number of meta paths is: {}".format(len(meta_path_list)))
-                self.id_to_edge_type_map = ast.literal_eval(record['edgesIDTypeDict'])
-                self.id_to_node_type_map = ast.literal_eval(record['nodesIDTypeDict'])
-                existing_meta_paths = self.start_parallel_existence_checks(meta_path_list, data_set)
-                self.logger.debug("From {} mps {} do not exist in graph {}".format(len(meta_path_list),
-                                                                                   len(existing_meta_paths),
-                                                                                   data_set['name']))
-                self.logger.debug(type(meta_path_list))
-                self.logger.debug(type(self.id_to_edge_type_map))
-                self.write_mappings(self.id_to_node_type_map, self.id_to_edge_type_map)
+    # Executed if existence check is disabled
+    def write_paths(self, paths: List[str]):
+        for path in paths:
+            self.write_path(path)
 
+    # Executed if existence check is disabled
+    def write_path(self, path: str):
+        mp_as_list = path.split("|")
+        start_node = mp_as_list[0]
+        end_node = mp_as_list[-1]
+        self.logger.debug("Adding metapath {} to record {}".format(mp_as_list, "{}_{}_{}".format(self.redis.data_set,
+                                                                                                 start_node,
+                                                                                                 end_node)))
+        self.redis._client.lpush("{}_{}_{}".format(self.redis.data_set, start_node, end_node),
+                                 pickle.dumps(MetaPath(edge_node_list=mp_as_list)))
 
     def write_mappings(self, node_type_mapping: Dict[int, str], edge_type_mapping: Dict[int, str]):
         self.redis._client.hmset("{}_node_type".format(self.redis.data_set), node_type_mapping)
