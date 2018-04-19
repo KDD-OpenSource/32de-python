@@ -23,15 +23,10 @@ class RedisImporter:
     @staticmethod
     def check_existence(args):
         logger = logging.getLogger('MetaExp.ExistenceCheck')
-        logger.debug(args)
         (meta_path, data_set, edge_map, node_map) = args
-
-        logger.debug(meta_path, data_set)
         labels = []
         mp_as_list = meta_path.split("|")
-        logger.debug(mp_as_list)
-        logger.debug(edge_map)
-        logger.debug(node_map)
+        logger.debug("Checking existance of {}".format(mp_as_list))
         for i, type in enumerate(mp_as_list):
             if i % 2:
                 labels.append("[n{}:{}]".format(i, edge_map[type]))
@@ -70,21 +65,8 @@ class RedisImporter:
                                                                                    data_set['name']))
                 self.logger.debug(type(meta_path_list))
                 self.logger.debug(type(self.id_to_edge_type_map))
-                self.write_paths(meta_path_list)
                 self.write_mappings(self.id_to_node_type_map, self.id_to_edge_type_map)
 
-    def write_paths(self, paths: List[List[str]]):
-        for path in paths:
-            self.write_path(path)
-
-    def write_path(self, path: List[str]):
-        start_node = path[0]
-        end_node = path[-1]
-        self.logger.debug("Adding metapath {} to record {}".format(path, "{}_{}_{}".format(self.redis.data_set,
-                                                                                           start_node,
-                                                                                           end_node)))
-        self.redis._client.lpush("{}_{}_{}".format(self.redis.data_set, start_node, end_node),
-                                 pickle.dumps(MetaPath(edge_node_list=path)))
 
     def write_mappings(self, node_type_mapping: Dict[int, str], edge_type_mapping: Dict[int, str]):
         self.redis._client.hmset("{}_node_type".format(self.redis.data_set), node_type_mapping)
