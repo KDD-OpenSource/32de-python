@@ -285,7 +285,7 @@ if __name__ == "__main__":
     print("Created estimator")
     if args.mode == 'train':
         print("Training")
-        # classifier.train(input_fn=input_fn)
+        classifier.train(input_fn=input_fn)
     elif args.mode == 'predict':
         raise NotImplementedError()
     elif args.mode == 'eval':
