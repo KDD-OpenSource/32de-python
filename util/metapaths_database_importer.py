@@ -41,6 +41,13 @@ class RedisImporter:
         with Neo4j(data_set['bolt-url'], data_set['username'], data_set['password']) as neo4j:
             if neo4j.test_whether_meta_path_exists("-".join(labels)):
                 logger.debug("Mp {} exists!".format("-".join(labels)))
+                start_node = mp_as_list[0]
+                end_node = mp_as_list[-1]
+                logger.debug("Adding metapath {} to record {}".format(mp_as_list, "{}_{}_{}".format(data_set['name'],
+                                                                                                    start_node,
+                                                                                                    end_node)))
+                Redis(data_set['name'])._client.lpush("{}_{}_{}".format(data_set['name'], start_node, end_node),
+                                                      pickle.dumps(MetaPath(edge_node_list=mp_as_list)))
                 return mp_as_list
 
     def start_parallel_existence_checks(self, meta_paths: List[str], data_set: Dict) -> List[List[str]]:
