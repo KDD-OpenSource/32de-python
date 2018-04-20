@@ -1,9 +1,11 @@
 import multiprocessing
+
+import embeddings
 from util.datastructures import MetaPath
 from util.config import MAX_META_PATH_LENGTH, AVAILABLE_DATA_SETS, PARALLEL_EXISTENCE_TEST_PROCESSES
 from api.neo4j_own import Neo4j
 from api.redis_own import Redis
-from typing import Dict, List
+from typing import Dict, List, Tuple
 import logging
 import ast
 import pickle
@@ -28,6 +30,8 @@ class RedisImporter:
                 meta_path_list = ast.literal_eval(record['metaPaths'])
                 self.logger.debug("Received meta paths from neo4j: {}".format(meta_path_list))
                 self.logger.debug("Number of meta paths is: {}".format(len(meta_path_list)))
+                meta_path_list = embeddings.meta2vec.calculate_embeddings(
+                    [mp.split("|") for mp in meta_path_list])
                 self.id_to_edge_type_map = ast.literal_eval(record['edgesIDTypeDict'])
                 self.id_to_node_type_map = ast.literal_eval(record['nodesIDTypeDict'])
                 self.write_mappings(self.id_to_node_type_map, self.id_to_edge_type_map)
@@ -73,20 +77,21 @@ class RedisImporter:
             return pool.map(self.check_existence, args)
 
     # Executed if existence check is disabled
-    def write_paths(self, paths: List[str]):
-        for path in paths:
-            self.write_path(path)
+    def write_paths(self, paths: List[Tuple[List[str], List[int]]]):
+        for path, embedding in paths:
+            self.write_path(path, embedding)
 
     # Executed if existence check is disabled
-    def write_path(self, path: str):
-        mp_as_list = path.split("|")
-        start_node = mp_as_list[0]
-        end_node = mp_as_list[-1]
+    def write_path(self, path: List[str], embedding: List[int]):
+        start_node = path[0]
+        end_node = path[-1]
         self.logger.debug("Adding metapath {} to record {}".format(mp_as_list, "{}_{}_{}".format(self.redis.data_set,
                                                                                                  start_node,
                                                                                                  end_node)))
         self.redis._client.lpush("{}_{}_{}".format(self.redis.data_set, start_node, end_node),
-                                 pickle.dumps(MetaPath(edge_node_list=mp_as_list)))
+                                 pickle.dumps(MetaPath(edge_node_list=path)))
+        self.redis._client.lpush("{}_{}_{}_embedded".format(self.redis.data_set, start_node, end_node),
+                                 pickle.dumps(MetaPath(edge_node_list=embedding)))
 
     def write_mappings(self, node_type_mapping: Dict[int, str], edge_type_mapping: Dict[int, str]):
         self.redis._client.hmset("{}_node_type_map".format(self.redis.data_set), node_type_mapping)

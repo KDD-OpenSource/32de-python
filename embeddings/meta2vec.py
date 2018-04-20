@@ -197,7 +197,8 @@ def create_paragraph_estimator(model_dir, model_fn, input: Input, embedding_size
         config=run_config)
     return classifier
 
-def calculate_embeddings(metapaths: List[List[int]]) -> List[List[int]]:
+
+def calculate_embeddings(metapaths: List[List[str]]) -> List[Tuple[List[str], List[int]]]:
     """
 
     :param metapaths: The meta-paths to be embedded.
@@ -218,7 +219,7 @@ def calculate_embeddings(metapaths: List[List[int]]) -> List[List[int]]:
     print("Training")
     classifier.train(input_fn=input.skip_gram_input)
 
-    # TODO: Output needs to have same ordering as input (id's are indices of the list so it can be sorted by these).
+    # TODO: Output is a tuple of the actual mp and it's embedding (paragraph id's are indices of the list so they can be used).
     return # TODO: Extract embedding as list?
 
 
