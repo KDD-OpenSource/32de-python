@@ -241,7 +241,7 @@ class MetaPathsInput(Input):
         :return: the dataset with node types as features and context as labels.
         """
         paragraphs, context, _ = self._apply_transformation(self.paths, self.samplingStrategies['skip-gram'])
-        return self._create_dataset(np.reshape(paragraphs, (-1, 1)), context)
+        return self._create_dataset(paragraphs, context)
 
     def bag_of_words_input(self) -> tf.data.Dataset:
         """
@@ -255,7 +255,7 @@ class MetaPathsInput(Input):
         print(paragraphs)
         return tf.data.Dataset().from_tensor_slices(({
                                                          'features': features,
-                                                         'paragraphs': paragraphs
+                                                         'paragraphs': np.reshape(paragraphs, (-1, 1))
                                                      },
                                                      labels))
 

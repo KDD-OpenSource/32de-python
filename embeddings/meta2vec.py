@@ -92,6 +92,7 @@ def model_paragraph_vectors_skipgram(features, labels, mode, params):
     assert labels is not None, 'labels is {}'.format(labels)
     context = tf.feature_column.input_layer(features, params['feature_columns'])
     print(params['paragraph_columns'])
+    print(features.values)
     paragraph = tf.feature_column.input_layer(features, params['paragraph_columns'])
     size_of_node_vocabulary = context.shape[1].value
     size_of_paragraph_vocabulary = paragraph.shape[1].value
@@ -114,12 +115,21 @@ def model_paragraph_vectors_skipgram(features, labels, mode, params):
         paragraph.shape[0].value, params['embedding_size'][1], embedded_paragraph.shape)
 
     # Concatenate vectors
-    concatenated_embeddings = tf.reshape(tf.concat([embedded_paragraph, tf.unstack(embedded_words, axis=0)], axis=0), shape=[1, -1])
+    concatenated_embeddings = tf.reshape(
+                                tf.concat(
+                                    [embedded_paragraph,
+                                     [tf.concat(
+                                         tf.unstack(embedded_words, axis=0),
+                                         axis=0,
+                                         name="concat_words")]],
+                                    axis=1,
+                                    name="concat_all"),
+                                shape=[1, -1])
     assert concatenated_embeddings.shape == (
-        1, embedded_words.shape[0].value * embedded_words.shape[1].value + embedded_paragraph.shape[0].value), 'Shape expected ({}), but was {}'.format(
-        1, embedded_words.shape[0].value * embedded_words.shape[1].value + embedded_paragraph.shape[0].value, concatenated_embeddings.shape)
+        1, embedded_words.shape[0].value * embedded_words.shape[1].value + embedded_paragraph.shape[1].value), 'Shape expected ({}), but was {}'.format(
+        (1, embedded_words.shape[0].value * embedded_words.shape[1].value + embedded_paragraph.shape[1].value), concatenated_embeddings.shape)
 
-    return _model_word2vec(mode, size_of_node_vocabulary, params['loss'], labels, embedded_words, params['optimizer'])
+    return _model_word2vec(mode, size_of_node_vocabulary, params['loss'], labels, concatenated_embeddings, params['optimizer'])
 
 
 def model_paragraph_vectors_dbow(features, labels, mode, params):
@@ -154,7 +164,7 @@ def create_estimator(model_dir, model_fn, input: Input, embedding_size: int, los
     return classifier
 
 
-def create_paragraph_estimator(model_dir, model_fn, input: Input, embedding_size: int, loss: str, gpu_memory: float):
+def create_paragraph_estimator(model_dir, model_fn, input: Input, embedding_size: int, optimizer: str, loss: str, gpu_memory: float):
     print(input.get_vocab_size())
     context = tf.feature_column.categorical_column_with_hash_bucket('features',
                                                                      input.get_vocab_size(),
@@ -182,6 +192,7 @@ def create_paragraph_estimator(model_dir, model_fn, input: Input, embedding_size
         params={'feature_columns': [context_indicator],
                 'paragraph_columns': [paragraph_indicator],
                 'embedding_size': embedding_size,
+                'optimizer': optimizer,
                 'loss': loss},
         config=run_config)
     return classifier
@@ -282,7 +293,7 @@ if __name__ == "__main__":
                                   embedding_size=args.embedding_size, loss=args.loss, gpu_memory=args.gpu_memory)
     elif args.model == "paragraph_vectors":
         classifier = create_paragraph_estimator(model_dir=args.model_dir, model_fn=model_fn, input=input,
-                                      embedding_size=args.embedding_size, loss=args.loss, gpu_memory=args.gpu_memory)
+                                      embedding_size=args.embedding_size, optimizer=args.optimizer, loss=args.loss, gpu_memory=args.gpu_memory)
 
     print("Created estimator")
     if args.mode == 'train':
