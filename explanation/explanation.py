@@ -62,7 +62,7 @@ class SimilarityScore:
 
 	meta_paths = None
 	meta_paths_top_k = None
-	similarity_score = None
+	similarity_score = 0
 	algorithm_type = None
 	get_complete_rating = None
 	dataset = None
