@@ -19,7 +19,7 @@ SESSION_THRESHOLD = 500
 SESSION_MODE = '0700'
 # Redis Configuration
 REDIS_PORT = 6379
-REDIS_HOST = '172.20.14.22'
+REDIS_HOST = '172.18.5.67'
 #!!!!!!!!!!!!!!!!!!!!!!!!PLEASE LEAVE THERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #REDIS_HOST = '172.16.19.193'
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -30,7 +30,7 @@ MAX_META_PATH_LENGTH = 6
 
 """{
     'name': 'Freebase',
-    'url': 'https://hpi.de/mueller/metaexp-demo-neo4j',
+    'url': 'https://hpi.de/mueller/metaexp-demo-neo4j-2',
     'bolt-url': 'bolt://172.20.14.22:7717',
     'username': 'neo4j',
     'password': 'neo4j'
@@ -39,8 +39,8 @@ MAX_META_PATH_LENGTH = 6
 AVAILABLE_DATA_SETS = [
     {
         'name': 'Helmholtz',
-        'url': 'https://hpi.de/mueller/metaexp-demo-neo4j-2',
-        'bolt-url': 'bolt://172.20.14.22:7697',
+        'url': 'http://172.18.5.67:7484',
+        'bolt-url': 'bolt://172.18.5.67:7697',
         'username': 'neo4j',
         'password': ''
     }

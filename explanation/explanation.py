@@ -170,7 +170,7 @@ class SimilarityScore:
 				'similarity_score': mp['similarity_score'],
 				'structural_value': int(mp['structural_value']),
 				'metapath': mp['metapath'].id_path_to_type_path(self.dataset['name']),
-				'instance_query': mp['metapath'].get_meta_path_instances_query(self.start_node_ids, self.end_node_ids, self.dataset['name'], 3)
+				'instance_query': mp['metapath'].get_meta_path_instances_query(self.start_node_ids, self.end_node_ids, self.dataset['name'], 5)
 			}
 			self.contributing_meta_paths.append(mp_info)
 

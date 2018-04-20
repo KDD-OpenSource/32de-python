@@ -2,6 +2,8 @@ from neo4j.v1 import GraphDatabase
 from typing import List
 from util.datastructures import MetaPath
 import logging
+from api.redis_own import Redis
+
 
 class Neo4j:
     def __init__(self, uri, user, password):
@@ -66,11 +68,14 @@ class Neo4j:
             self.logger.debug(records)
             return records
 
-    def get_structural_value(self, meta_path: MetaPath, start_nodes: List, end_nodes: List):
+    def get_structural_value(self, meta_path: MetaPath, start_nodes: List, end_nodes: List, dataset_name: str):
+        redis = Redis(dataset_name)
+        id_to_node_type_map = redis.id_to_node_type_map()
+        id_to_edge_type_map = redis.id_to_edge_type_map()
         mp = meta_path.as_list()
-        nodes = ['(n{}:{})'.format(i, n) for i, n in enumerate(mp[::2])]
+        nodes = ['(n{}:{})'.format(i, id_to_node_type_map[n.encode()].decode()) for i, n in enumerate(mp[::2])]
         n = len(nodes)
-        edges = ['[e{}:{}]'.format(i, e) for i, e in enumerate(mp[1::2])]
+        edges = ['[e{}:{}]'.format(i, id_to_edge_type_map[e.encode()].decode()) for i, e in enumerate(mp[1::2])]
         all = nodes + edges
         all[::2] = nodes
         all[1::2] = edges
@@ -94,7 +99,6 @@ class Neo4j:
             record = session.run(query).single()
             self.logger.debug(record)
             return bool(record)
-
 
     def get_meta_paths_schema(self, length: int):
         """
