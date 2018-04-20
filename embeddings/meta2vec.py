@@ -197,6 +197,31 @@ def create_paragraph_estimator(model_dir, model_fn, input: Input, embedding_size
         config=run_config)
     return classifier
 
+def calculate_embeddings(metapaths: List[List[int]]) -> List[List[int]]:
+    """
+
+    :param metapaths: The meta-paths to be embedded.
+    :return: The embedding of the meta-paths in the same order as the given meta-paths.
+             Every list represents a vector.
+    """
+    input = MetaPathsInput.from_paths_list(metapaths)
+    model_dir = './model_dir'
+    embedding_size = len(metapaths) / 100 # TODO: there's some formula in the literatur
+    gpu_memory = 0.3
+    loss = "cross_entropy"
+    optimizer = "ada"
+
+    classifier = create_paragraph_estimator(model_dir=model_dir, model_fn=model_paragraph_vectors_dbow, input=input,
+                                            embedding_size=embedding_size, optimizer=optimizer,
+                                            loss=loss, gpu_memory=gpu_memory)
+
+    print("Training")
+    classifier.train(input_fn=input.skip_gram_input)
+
+    # TODO: Output needs to have same ordering as input (id's are indices of the list so it can be sorted by these).
+    return # TODO: Extract embedding as list?
+
+
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='')
