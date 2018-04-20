@@ -27,9 +27,8 @@ def create_word2vec_estimator(vocab_size: int, model_fn, model_dir, embedding_si
     return classifier
 
 
-def create_paragraph_estimator(model_dir, model_fn, node_count: int, paths_count: int, embedding_size: int,
-                               optimizer: str, loss: str,
-                               gpu_memory: float):
+def create_paragraph_estimator(model_dir, model_fn, node_count: int, paths_count: int, sentence_embedding_size: int,
+                               word_embedding_size: int, optimizer: str, loss: str, gpu_memory: float):
     print(node_count)
     context = tf.feature_column.categorical_column_with_hash_bucket('features',
                                                                     node_count,
@@ -56,7 +55,7 @@ def create_paragraph_estimator(model_dir, model_fn, node_count: int, paths_count
         model_dir=model_dir,
         params={'feature_columns': [context_indicator],
                 'paragraph_columns': [paragraph_indicator],
-                'embedding_size': embedding_size,
+                'embedding_size': [word_embedding_size, sentence_embedding_size],
                 'optimizer': optimizer,
                 'loss': loss},
         config=run_config)

@@ -7,30 +7,39 @@ from embeddings.input import *
 from embeddings.models import model_word2vec, model_paragraph_vectors_skipgram, model_paragraph_vectors_dbow
 
 
-def calculate_embeddings(metapaths: List[List[str]]) -> List[Tuple[List[str], List[float]]]:
+def calculate_metapath_embeddings(metapaths: List[List[str]], model_dir: str = './model_dir', gpu_memory: float = 0.3,
+                                  loss: str = "cross_entropy", optimizer: str = "adam",
+                                  metapath_embedding_size: int = None,
+                                  node_embedding_size=4, model_type='skip-gram') -> List[Tuple[List[str], List[float]]]:
     """
 
+    :param metapath_embedding_size:
     :param metapaths: The meta-paths to be embedded.
     :return: The embedding of the meta-paths in the same order as the given meta-paths.
              Every list represents a vector.
     """
     input = MetaPathsInput.from_paths_list(metapaths)
-    model_dir = './model_dir'
-    embedding_size = len(metapaths) / 100  # TODO: there's some formula in the literatur
-    gpu_memory = 0.3
-    loss = "cross_entropy"
-    optimizer = "ada"
+
+    if metapath_embedding_size == None:
+        metapath_embedding_size = int(len(metapaths) / 100)  # TODO: there's some formula in the literatur
 
     classifier = create_paragraph_estimator(model_dir=model_dir, model_fn=model_paragraph_vectors_dbow,
                                             node_count=input.get_vocab_size(), paths_count=input.paths_count(),
-                                            embedding_size=embedding_size, optimizer=optimizer,
+                                            sentence_embedding_size=metapath_embedding_size,
+                                            word_embedding_size=node_embedding_size, optimizer=optimizer,
                                             loss=loss, gpu_memory=gpu_memory)
 
     print("Training")
-    classifier.train(input_fn=input.skip_gram_input)
+    classifier.train(input_fn=choose_input_function(input=input, model_type=model_type))
 
-    # TODO: Output is a tuple of the actual mp and it's embedding (paragraph id's are indices of the list so they can be used).
-    return  # TODO: Extract embedding as list?
+    # Get trained embeddings
+    trained_embeddings = classifier.get_variable_value(name='paragraph_embeddings')
+
+    embedded_metapaths = []
+    for id, metapath in enumerate(trained_embeddings):
+        embedded_metapaths.append((metapaths[id], metapath.tolist()))
+
+    return embedded_metapaths
 
 
 def parse_arguments():
@@ -98,11 +107,21 @@ def choose_function(model: str, model_type: str, input_type: str, json_path: str
     else:
         input = Input(paths=[], vocabulary=[])
 
+    input_fn = choose_input_function(input, model_type)
+
+    model_fn = choose_model_function(model, model_type)
+    return input, model_fn, input_fn
+
+
+def choose_input_function(input, model_type):
     if model_type == "bag-of-words":
         input_fn = input.bag_of_words_input
     elif model_type == "skip-gram":
         input_fn = input.skip_gram_input
+    return input_fn
 
+
+def choose_model_function(model, model_type):
     if model == "word2vec":
         model_fn = model_word2vec
     elif model == "paragraph_vectors":
@@ -110,7 +129,7 @@ def choose_function(model: str, model_type: str, input_type: str, json_path: str
             model_fn = model_paragraph_vectors_dbow
         elif model_type == "skip-gram":
             model_fn = model_paragraph_vectors_skipgram
-    return input, model_fn, input_fn
+    return model_fn
 
 
 if __name__ == "__main__":
@@ -127,7 +146,8 @@ if __name__ == "__main__":
     elif args.model == "paragraph_vectors":
         classifier = create_paragraph_estimator(model_dir=args.model_dir, model_fn=model_fn,
                                                 node_count=input.get_vocab_size(), paths_count=input.paths_count(),
-                                                embedding_size=args.embedding_size, optimizer=args.optimizer,
+                                                sentence_embedding_size=args.embedding_size[1],
+                                                word_embedding_size=args.embedding_size[0], optimizer=args.optimizer,
                                                 loss=args.loss, gpu_memory=args.gpu_memory)
 
     print("Created estimator")
