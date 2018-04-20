@@ -6,8 +6,8 @@ from embeddings.estimators import create_word2vec_estimator, create_paragraph_es
 
 class CreateEstimatorTest(unittest.TestCase):
     model_dir = 'test-model'
-    # json_path_edges = '../data/mock_metapaths_edges.json'
-    json_path = '../data/mock_metapaths.txt'
+    # json_path_edges = 'tests/data/mock_metapaths_edges.json'
+    json_path = 'tests/data/mock_metapaths.txt'
 
     def test_estimator_word2vec_bag_of_words(self):
         embedding_size = 5
