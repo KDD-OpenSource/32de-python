@@ -252,6 +252,7 @@ class MetaPathsInput(Input):
         return self._create_dataset(paragraphs, context, node)
 
     def _create_dataset(self, paragraphs, features, labels):
+        print(paragraphs)
         return tf.data.Dataset().from_tensor_slices(({
                                                          'features': features,
                                                          'paragraphs': paragraphs

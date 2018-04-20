@@ -91,6 +91,7 @@ def model_paragraph_vectors_skipgram(features, labels, mode, params):
     assert features is not None, 'features is {}'.format(features)
     assert labels is not None, 'labels is {}'.format(labels)
     context = tf.feature_column.input_layer(features, params['feature_columns'])
+    print(params['paragraph_columns'])
     paragraph = tf.feature_column.input_layer(features, params['paragraph_columns'])
     size_of_node_vocabulary = context.shape[1].value
     size_of_paragraph_vocabulary = paragraph.shape[1].value
@@ -159,6 +160,7 @@ def create_paragraph_estimator(model_dir, model_fn, input: Input, embedding_size
                                                                      input.get_vocab_size(),
                                                                      dtype=tf.int32)
 
+    print(input.paths_count())
     paragraph = tf.feature_column.categorical_column_with_hash_bucket('paragraphs',
                                                                      input.paths_count(),
                                                                      dtype=tf.int32)
