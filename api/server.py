@@ -10,15 +10,10 @@ import logging
 from typing import Dict
 
 from util.config import *
-from util.graph_stats import GraphStats
 from active_learning.active_learner import UncertaintySamplingAlgorithm
 from explanation.explanation import SimilarityScore, Explanation
-from api.neo4j_own import Neo4j
-from embeddings.input import Input
 from api.redis_own import Redis
 from util.metapaths_database_importer import RedisImporter
-
-METAPATH_LENGTH = 2
 
 app = Flask(__name__)
 ask = Ask(app, '/alexa')
@@ -37,31 +32,28 @@ app.config.from_object(__name__)
 app.config["SECRET_KEY"] = "37Y,=i9.,U3RxTx92@9j9Z[}"
 Session(app)
 
-# TODO: Fix CORS origins specification
-# Configure Cross Site Scripting
-# if "METAEXP_DEV" in os.environ.keys() and os.environ["METAEXP_DEV"] == "true":
-#     if REACT_PORT == 80:
-#         CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://{}".format(SERVER_PATH)}})
-#     else:
-#         CORS(app, supports_credentials=True,
-#              resources={r"/*": {"origins": "http://{}:{}".format(SERVER_PATH, REACT_PORT)}})
-# else:
 CORS(app, supports_credentials=True, resources={r"/*": {
     "origins": ["https://hpi.de/mueller/metaexp-demo-api/", "http://172.20.14.22:3000", "http://localhost",
                 "http://localhost:3000", "http://metaexp.herokuapp.com"]}})
 
+
 def run(port, hostname, debug_mode):
     app.run(host=hostname, port=port, debug=debug_mode, threaded=True)
 
+
 @app.route('/redis-import', methods=['GET'])
 def redis_import():
-    RedisImporter().import_all()
+    RedisImporter(enable_existence_check=False).import_all()
     return jsonify({'status': 200})
+
 
 @app.route('/test-import', methods=['GET'])
 def test_import():
-    RedisImporter().import_data_set('Freebase', 'bolt://172.20.14.22:7697', 'neo4j', 'neo4j')
+    RedisImporter(enable_existence_check=False).import_data_set(
+        {'name': 'Helmholtz', 'bolt-url': 'bolt://172.16.79.24:7697', 'username': 'neo4j',
+         'password': ''})
     return jsonify({'status': 200})
+
 
 @app.route('/login', methods=["POST"])
 def login():
@@ -82,14 +74,14 @@ def login():
     session['dataset'] = chosen_dataset
 
     # setup data
-    # TODO get Graph stats for current dataset
-    graph_stats = GraphStats()
     session['meta_path_id'] = 1
     session['rated_meta_paths'] = []
 
+    redis = Redis(session['dataset']['name'])
+
     # TODO feed this selection to the ALgorithms
-    session['selected_node_types'] = build_selection(graph_stats.get_node_types())
-    session['selected_edge_types'] = build_selection(graph_stats.get_edge_types())
+    session['selected_node_types'] = [(node_type.decode(), True) for node_type in redis.node_type_to_id_map().keys()]
+    session['selected_edge_types'] = [(edge_type.decode(), True) for edge_type in redis.edge_type_to_id_map().keys()]
     logger.debug(session)
     return jsonify({'status': 200})
 
@@ -112,30 +104,12 @@ def logout():
     return jsonify({'status': 200})
 
 
-@app.route("/node-sets", methods=["POST"])
-def receive_node_sets():
-    """
-    Receives the node sets from the "Setup" page which the user selects.
-    This endpoint is called for each new added node.
+@app.route("/stop-rating", methods=["GET"])
+def stop_meta_path_rating():
+    session['similarity_score'].refresh()
 
-    The repeated calling enables us to start the following computations as early as possible
-    so that we can return information on the next pages faster.
-    For example on the first call we already know the type of the whole node set and
-    therefore can begin to retrieve the corresponding node sets.
-    """
-    # TODO: Check if necessary information is in request object
-    json = request.get_json()
-    results = None
-    with Neo4j(uri=session['dataset']['bolt-url'], user=session['dataset']['username'],
-               password=session['dataset']['password']) as neo4j:
-        logger.debug("Start Computation of meta paths between node sets...")
-        results = neo4j.get_metapaths(nodeset_A=json['node_set_A'], nodeset_B=json['node_set_B'],
-                                                          length=METAPATH_LENGTH)
-
-    meta_paths = Input.from_json(results).paths
-    logger.debug(meta_paths)
-    session['active_learning_algorithm'] = UncertaintySamplingAlgorithm(meta_paths, hypothesis='Gaussian Process')
     return jsonify({'status': 200})
+
 
 @app.route("/node-types", methods=["POST"])
 def receive_meta_path_start_and_end_label():
@@ -143,15 +117,25 @@ def receive_meta_path_start_and_end_label():
     node_type_to_id = redis.node_type_to_id_map()
 
     logger.debug("node type to id map is: {}".format(node_type_to_id))
-    json = request.get_json()
-    start_type = json['start_label']
-    end_type = json['end_label']
+
+    json_response = request.get_json()
+    start_type = json_response['start_label']
+    end_type = json_response['end_label']
+    start_node_ids = json_response['start_node_ids']
+    end_node_ids = json_response['end_node_ids']
+
     start_type_id = node_type_to_id[start_type.encode()].decode()
     end_type_id = node_type_to_id[end_type.encode()].decode()
     session['active_learning_algorithm'] = UncertaintySamplingAlgorithm(
         redis.meta_paths(start_type_id, end_type_id),
         hypothesis='Gaussian Process')
+    session['similarity_score'] = SimilarityScore(session['active_learning_algorithm'].get_complete_rating,
+                                                  session['dataset'],
+                                                  start_node_ids,
+                                                  end_node_ids)
+
     return jsonify({'status': 200})
+
 
 @app.route("/set-edge-types", methods=["POST"])
 def receive_edge_types():
@@ -190,6 +174,7 @@ def send_edge_types():
     """
     :return: Array of available edge types for the Config page
     """
+
     return jsonify(session['selected_edge_types'])
 
 
@@ -199,10 +184,6 @@ def send_node_types():
     :return: Array of available node types for the Config page
     """
     return jsonify(session['selected_node_types'])
-
-
-def build_selection(types):
-    return [(element, True) for element in types]
 
 
 @app.route("/next-meta-paths/<int:batch_size>", methods=["GET"])
@@ -235,8 +216,10 @@ def send_next_metapaths_to_rate(batch_size):
              'next_batch_available': not is_last_batch}
     if reference_paths:
         logger.info("Appending reference paths to response...")
-        reference_paths['min_path']['metapath'] = reference_paths['min_path']['metapath'].transform_representation(id_to_node_type, id_to_edge_type).as_list()
-        reference_paths['max_path']['metapath'] = reference_paths['max_path']['metapath'].transform_representation(id_to_node_type, id_to_edge_type).as_list()
+        reference_paths['min_path']['metapath'] = reference_paths['min_path']['metapath'].transform_representation(
+            id_to_node_type, id_to_edge_type).as_list()
+        reference_paths['max_path']['metapath'] = reference_paths['max_path']['metapath'].transform_representation(
+            id_to_node_type, id_to_edge_type).as_list()
         logger.debug("Transformed path: {}".format(reference_paths['min_path']))
         logger.debug("Transformed path: {}".format(reference_paths['max_path']))
         paths['min_path'] = reference_paths['min_path']

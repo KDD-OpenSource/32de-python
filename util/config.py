@@ -24,6 +24,7 @@ REDIS_HOST = '172.20.14.22'
 #REDIS_HOST = '172.16.19.193'
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 REDIS_PASSWORD = None
+PARALLEL_EXISTENCE_TEST_PROCESSES = 10
 
 MAX_META_PATH_LENGTH = 6
 
@@ -41,7 +42,7 @@ AVAILABLE_DATA_SETS = [
         'url': 'https://hpi.de/mueller/metaexp-demo-neo4j-2',
         'bolt-url': 'bolt://172.20.14.22:7697',
         'username': 'neo4j',
-        'password': 'neo4j'
+        'password': ''
     }
 ]
 
