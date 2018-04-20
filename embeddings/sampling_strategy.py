@@ -48,7 +48,7 @@ class CBOWSampling(SamplingStrategy):
         return paragraph_id, context, node_predict
 
     def iterator(self, path_length, samples):
-        return range(1, len(path_length))
+        return range(1, path_length)
 
     def index(self, path, index):
         return path[index]
