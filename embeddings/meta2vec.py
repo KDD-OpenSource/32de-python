@@ -5,9 +5,6 @@ from typing import List, Tuple
 from embeddings.input import *
 
 
-# def calculate_embeddings(meta_paths: List[List[str]]) -> List[Tuple(List[str], List[float])]:
-#    pass
-
 def model_word2vec(features, labels, mode, params):
     """
     Word2vec model from "Efficient Estimation of Word Representations in Vector Space" (Mikolov et al.)
@@ -35,7 +32,8 @@ def model_word2vec(features, labels, mode, params):
         1, embedded_words.shape[0].value * embedded_words.shape[1].value), 'Shape expected ({}), but was {}'.format(
         1, embedded_words.shape[0].value * embedded_words.shape[1].value, concatenated_embeddings.shape)
 
-    return _model_word2vec(mode, size_of_vocabulary, params['loss'], labels, concatenated_embeddings, params['optimizer'])
+    return _model_word2vec(mode, size_of_vocabulary, params['loss'], labels, concatenated_embeddings,
+                           params['optimizer'])
 
 
 def _model_word2vec(mode, size_of_vocabulary, loss: str, labels, concatenated_embeddings, optimizer: str):
@@ -98,10 +96,12 @@ def model_paragraph_vectors_skipgram(features, labels, mode, params):
     size_of_paragraph_vocabulary = paragraph.shape[1].value
 
     node_embeddings = tf.Variable(
-        initial_value=tf.random_uniform(shape=[size_of_node_vocabulary, params['embedding_size'][0]], minval=-1, maxval=1),
+        initial_value=tf.random_uniform(shape=[size_of_node_vocabulary, params['embedding_size'][0]], minval=-1,
+                                        maxval=1),
         name='word_embeddings')
     paragraph_embedding = tf.Variable(
-        initial_value=tf.random_uniform(shape=[size_of_paragraph_vocabulary, params['embedding_size'][1]], minval=-1, maxval=1),
+        initial_value=tf.random_uniform(shape=[size_of_paragraph_vocabulary, params['embedding_size'][1]], minval=-1,
+                                        maxval=1),
         name='paragraph_embeddings')
 
     # Look up embedding for all words
@@ -116,20 +116,23 @@ def model_paragraph_vectors_skipgram(features, labels, mode, params):
 
     # Concatenate vectors
     concatenated_embeddings = tf.reshape(
-                                tf.concat(
-                                    [embedded_paragraph,
-                                     [tf.concat(
-                                         tf.unstack(embedded_words, axis=0),
-                                         axis=0,
-                                         name="concat_words")]],
-                                    axis=1,
-                                    name="concat_all"),
-                                shape=[1, -1])
+        tf.concat(
+            [embedded_paragraph,
+             [tf.concat(
+                 tf.unstack(embedded_words, axis=0),
+                 axis=0,
+                 name="concat_words")]],
+            axis=1,
+            name="concat_all"),
+        shape=[1, -1])
     assert concatenated_embeddings.shape == (
-        1, embedded_words.shape[0].value * embedded_words.shape[1].value + embedded_paragraph.shape[1].value), 'Shape expected ({}), but was {}'.format(
-        (1, embedded_words.shape[0].value * embedded_words.shape[1].value + embedded_paragraph.shape[1].value), concatenated_embeddings.shape)
+        1, embedded_words.shape[0].value * embedded_words.shape[1].value + embedded_paragraph.shape[
+            1].value), 'Shape expected ({}), but was {}'.format(
+        (1, embedded_words.shape[0].value * embedded_words.shape[1].value + embedded_paragraph.shape[1].value),
+        concatenated_embeddings.shape)
 
-    return _model_word2vec(mode, size_of_node_vocabulary, params['loss'], labels, concatenated_embeddings, params['optimizer'])
+    return _model_word2vec(mode, size_of_node_vocabulary, params['loss'], labels, concatenated_embeddings,
+                           params['optimizer'])
 
 
 def model_paragraph_vectors_dbow(features, labels, mode, params):
@@ -140,9 +143,9 @@ def model_paragraph_vectors_dbow(features, labels, mode, params):
     pass
 
 
-def create_estimator(model_dir, model_fn, input: Input, embedding_size: int, loss: str, gpu_memory: float):
+def create_word2vec_estimator(vocab_size: int, model_fn, model_dir, embedding_size: int, optimizer: str, loss: str, gpu_memory: float):
     features = tf.feature_column.categorical_column_with_hash_bucket('features',
-                                                                     input.get_vocab_size(),
+                                                                     vocab_size,
                                                                      dtype=tf.int32)
     indicator_column = tf.feature_column.indicator_column(features)
     session_config = tf.ConfigProto()
@@ -159,21 +162,24 @@ def create_estimator(model_dir, model_fn, input: Input, embedding_size: int, los
         model_dir=model_dir,
         params={'feature_columns': [indicator_column],
                 'embedding_size': embedding_size,
+                'optimizer': optimizer,
                 'loss': loss},
         config=run_config)
     return classifier
 
 
-def create_paragraph_estimator(model_dir, model_fn, input: Input, embedding_size: int, optimizer: str, loss: str, gpu_memory: float):
-    print(input.get_vocab_size())
+def create_paragraph_estimator(model_dir, model_fn, node_count: int, paths_count: int, embedding_size: int,
+                               optimizer: str, loss: str,
+                               gpu_memory: float):
+    print(node_count)
     context = tf.feature_column.categorical_column_with_hash_bucket('features',
-                                                                     input.get_vocab_size(),
-                                                                     dtype=tf.int32)
+                                                                    node_count,
+                                                                    dtype=tf.int32)
 
-    print(input.paths_count())
+    print(paths_count)
     paragraph = tf.feature_column.categorical_column_with_hash_bucket('paragraphs',
-                                                                     input.paths_count(),
-                                                                     dtype=tf.int32)
+                                                                      paths_count,
+                                                                      dtype=tf.int32)
 
     context_indicator = tf.feature_column.indicator_column(context)
     paragraph_indicator = tf.feature_column.indicator_column(paragraph)
@@ -198,7 +204,7 @@ def create_paragraph_estimator(model_dir, model_fn, input: Input, embedding_size
     return classifier
 
 
-def calculate_embeddings(metapaths: List[List[str]]) -> List[Tuple[List[str], List[int]]]:
+def calculate_embeddings(metapaths: List[List[str]]) -> List[Tuple[List[str], List[float]]]:
     """
 
     :param metapaths: The meta-paths to be embedded.
@@ -207,12 +213,13 @@ def calculate_embeddings(metapaths: List[List[str]]) -> List[Tuple[List[str], Li
     """
     input = MetaPathsInput.from_paths_list(metapaths)
     model_dir = './model_dir'
-    embedding_size = len(metapaths) / 100 # TODO: there's some formula in the literatur
+    embedding_size = len(metapaths) / 100  # TODO: there's some formula in the literatur
     gpu_memory = 0.3
     loss = "cross_entropy"
     optimizer = "ada"
 
-    classifier = create_paragraph_estimator(model_dir=model_dir, model_fn=model_paragraph_vectors_dbow, input=input,
+    classifier = create_paragraph_estimator(model_dir=model_dir, model_fn=model_paragraph_vectors_dbow,
+                                            node_count=input.get_vocab_size(), paths_count=input.paths_count(),
                                             embedding_size=embedding_size, optimizer=optimizer,
                                             loss=loss, gpu_memory=gpu_memory)
 
@@ -220,8 +227,7 @@ def calculate_embeddings(metapaths: List[List[str]]) -> List[Tuple[List[str], Li
     classifier.train(input_fn=input.skip_gram_input)
 
     # TODO: Output is a tuple of the actual mp and it's embedding (paragraph id's are indices of the list so they can be used).
-    return # TODO: Extract embedding as list?
-
+    return  # TODO: Extract embedding as list?
 
 
 def parse_arguments():
@@ -279,24 +285,20 @@ def parse_arguments():
 def choose_function(model: str, model_type: str, input_type: str, json_path: str):
     json_file = open(json_path, mode='r')
     json_data = json.load(json_file)
+    json_file.close()
     if input_type == "node-types":
         input = NodeEdgeTypeInput.from_json(json_data)
-        if model_type == "bag-of-words":
-            input_fn = input.bag_of_words_input
-        elif model_type == "skip-gram":
-            input_fn = input.skip_gram_input
     elif input_type == "nodes":
         input = NodeInput.from_json(json_data)
-        if model_type == "bag-of-words":
-            input_fn = input.bag_of_words_input
-        elif model_type == "skip-gram":
-            input_fn = input.skip_gram_input
     elif input_type == "meta-paths":
         input = MetaPathsInput.from_json(json_data)
-        if model_type == "bag-of-words":
-            input_fn = input.skip_gram_input
-        elif model_type == "skip-gram":
-            input_fn = input.bag_of_words_input
+    else:
+        input = Input(paths=[], vocabulary=[])
+
+    if model_type == "bag-of-words":
+        input_fn = input.bag_of_words_input
+    elif model_type == "skip-gram":
+        input_fn = input.skip_gram_input
 
     if model == "word2vec":
         model_fn = model_word2vec
@@ -315,11 +317,14 @@ if __name__ == "__main__":
                                                 json_path=args.json_path)
     print("chose function")
     if args.model == "word2vec":
-        classifier = create_estimator(model_dir=args.model_dir, model_fn=model_fn, input=input,
-                                  embedding_size=args.embedding_size, loss=args.loss, gpu_memory=args.gpu_memory)
+        classifier = create_word2vec_estimator(vocab_size=input.get_vocab_size(), model_fn=model_fn, model_dir=args.model_dir,
+                                               embedding_size=args.embedding_size, loss=args.loss,
+                                               gpu_memory=args.gpu_memory)
     elif args.model == "paragraph_vectors":
-        classifier = create_paragraph_estimator(model_dir=args.model_dir, model_fn=model_fn, input=input,
-                                      embedding_size=args.embedding_size, optimizer=args.optimizer, loss=args.loss, gpu_memory=args.gpu_memory)
+        classifier = create_paragraph_estimator(model_dir=args.model_dir, model_fn=model_fn,
+                                                node_count=input.get_vocab_size(), paths_count=input.paths_count(),
+                                                embedding_size=args.embedding_size, optimizer=args.optimizer,
+                                                loss=args.loss, gpu_memory=args.gpu_memory)
 
     print("Created estimator")
     if args.mode == 'train':

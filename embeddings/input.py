@@ -103,7 +103,7 @@ class Input:
     def _create_dataset(self, features, labels):
         return tf.data.Dataset().from_tensor_slices(({'features': features}, labels))
 
-    def get_vocab_size(self) -> Number:
+    def get_vocab_size(self) -> int:
         return len(self.get_vocab())
 
     def get_vocab(self) -> List[Number]:
