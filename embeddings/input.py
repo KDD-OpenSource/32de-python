@@ -226,7 +226,9 @@ class MetaPathsInput(Input):
                                                                                             self.window_size)]
 
                 paths.append(path_id)
-                indices.append(sampling_strategy.index(path, iteration))
+                index = sampling_strategy.index(path, iteration)
+                if index is not None:
+                    indices.append(index)
                 contexts.append(context)
             path_id += 1
 
