@@ -136,4 +136,4 @@ def model_paragraph_vectors_dbow(features, labels, mode, params):
     Distributed Bag of Words version of Paragraph Vector (PV-DBOW) from "Distributed Representations of Sentences and Documents" (Mikolov et al.)
     :return:
     """
-    pass
+    raise NotImplementedError("This model isn't implemented yet")

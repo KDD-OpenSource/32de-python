@@ -71,4 +71,4 @@ class SkipGramSampling(SamplingStrategy):
         return range(samples)
 
     def index(self, path, index):
-        return None
+        return 0

@@ -7,7 +7,7 @@ from embeddings.input import *
 from embeddings.models import model_word2vec, model_paragraph_vectors_skipgram, model_paragraph_vectors_dbow
 
 
-def calculate_metapath_embeddings(metapaths: List[List[str]], model_dir: str = './model_dir', gpu_memory: float = 0.3,
+def calculate_metapath_embeddings(metapaths: List[List[int]], model_dir: str = './model_dir', gpu_memory: float = 0.3,
                                   loss: str = "cross_entropy", optimizer: str = "adam",
                                   metapath_embedding_size: int = None,
                                   node_embedding_size=4, model_type='skip-gram') -> List[Tuple[List[str], List[float]]]:
@@ -23,7 +23,8 @@ def calculate_metapath_embeddings(metapaths: List[List[str]], model_dir: str = '
     if metapath_embedding_size == None:
         metapath_embedding_size = int(len(metapaths) / 100)  # TODO: there's some formula in the literatur
 
-    classifier = create_paragraph_estimator(model_dir=model_dir, model_fn=model_paragraph_vectors_dbow,
+    model_fn = choose_model_function(model='paragraph_vectors', model_type=model_type)
+    classifier = create_paragraph_estimator(model_dir=model_dir, model_fn=model_fn,
                                             node_count=input.get_vocab_size(), paths_count=input.paths_count(),
                                             sentence_embedding_size=metapath_embedding_size,
                                             word_embedding_size=node_embedding_size, optimizer=optimizer,

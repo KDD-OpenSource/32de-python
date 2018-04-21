@@ -241,7 +241,7 @@ class MetaPathsInput(Input):
         :return: the dataset with node types as features and context as labels.
         """
         paragraphs, context, _ = self._apply_transformation(self.paths, self.samplingStrategies['skip-gram'])
-        return self._create_dataset(paragraphs, context)
+        return super()._create_dataset(paragraphs, context)
 
     def bag_of_words_input(self) -> tf.data.Dataset:
         """
