@@ -25,11 +25,7 @@ def calculate_metapath_embeddings(metapaths: List[List[int]], model_dir: str = '
     if metapath_embedding_size is None:
         metapath_embedding_size = int(len(metapaths) / 100)  # TODO: there's some formula in the literatur
 
-    # TODO: Clean up the naming mess
-    if model_type == 'skip-gram':
-        model_fn = input.bag_of_words_input
-    elif model_type == 'bag-of-words':
-        model_fn = input.skip_gram_input
+    model_fn = choose_model_function(model='paragraph_vectors', model_type=model_type)
     classifier = create_paragraph_estimator(model_dir=model_dir, model_fn=model_fn,
                                             node_count=input.get_vocab_size(), paths_count=input.paths_count(),
                                             sentence_embedding_size=metapath_embedding_size,
@@ -37,7 +33,12 @@ def calculate_metapath_embeddings(metapaths: List[List[int]], model_dir: str = '
                                             loss=loss, gpu_memory=gpu_memory)
 
     logging.info("Beginning training...")
-    classifier.train(input_fn=choose_input_function(input=input, model_type=model_type))
+    # TODO: Clean up the naming mess
+    if model_type == 'skip-gram':
+        input_fn = input.bag_of_words_input
+    elif model_type == 'bag-of-words':
+        input_fn = input.skip_gram_input
+    classifier.train(input_fn=input_fn)
     logging.info("Finished training.")
 
     # Get trained embeddings
