@@ -30,18 +30,20 @@ class RedisImporter:
                 meta_path_list = ast.literal_eval(record['metaPaths'])
                 self.logger.debug("Received meta paths from neo4j: {}".format(meta_path_list))
                 self.logger.debug("Number of meta paths is: {}".format(len(meta_path_list)))
+                meta_paths_without_duplicates = list(set(meta_path_list))
+                self.logger.debug("After removal of duplicates: {}".format(len(meta_paths_without_duplicates)))
                 meta_path_list = embeddings.meta2vec.calculate_embeddings(
                     [mp.split("|") for mp in meta_path_list])
                 self.id_to_edge_type_map = ast.literal_eval(record['edgesIDTypeDict'])
                 self.id_to_node_type_map = ast.literal_eval(record['nodesIDTypeDict'])
                 self.write_mappings(self.id_to_node_type_map, self.id_to_edge_type_map)
                 if self.enable_existence_check:
-                    existing_meta_paths = self.start_parallel_existence_checks(meta_path_list, data_set)
-                    self.logger.debug("From {} mps {} do not exist in graph {}".format(len(meta_path_list),
+                    existing_meta_paths = self.start_sequential_existence_checks(meta_paths_without_duplicates, data_set)
+                    self.logger.debug("From {} mps {} do not exist in graph {}".format(len(meta_paths_without_duplicates),
                                                                                        len(existing_meta_paths),
                                                                                        data_set['name']))
                 else:
-                    self.write_paths(meta_path_list)
+                    self.write_paths(meta_paths_without_duplicates)
 
 
     # Executed if existence check is enabled
@@ -75,6 +77,31 @@ class RedisImporter:
         with multiprocessing.Pool(processes=PARALLEL_EXISTENCE_TEST_PROCESSES) as pool:
             args = [(mp, data_set, self.id_to_edge_type_map, self.id_to_node_type_map) for mp in meta_paths]
             return pool.map(self.check_existence, args)
+
+    def start_sequential_existence_checks(self, meta_paths: List[str], data_set:Dict) -> List[List[str]]:
+        existing_mps = []
+        for meta_path in meta_paths:
+            labels = []
+            mp_as_list = meta_path.split("|")
+            self.logger.debug("Checking existance of {}".format(mp_as_list))
+            for i, type in enumerate(mp_as_list):
+                if i % 2:
+                    labels.append("[n{}:{}]".format(i, self.id_to_edge_type_map[type]))
+                else:
+                    labels.append("(e{}: {})".format(i, self.id_to_node_type_map[type]))
+            self.logger.debug("Querying for mp {}".format(mp_as_list))
+            with Neo4j(data_set['bolt-url'], data_set['username'], data_set['password']) as neo4j:
+                if neo4j.test_whether_meta_path_exists("-".join(labels)):
+                    self.logger.debug("Mp {} exists!".format("-".join(labels)))
+                    existing_mps.append(mp_as_list)
+                    start_node = mp_as_list[0]
+                    end_node = mp_as_list[-1]
+                    self.logger.debug("Adding metapath {} to record {}".format(mp_as_list, "{}_{}_{}".format(data_set['name'],
+                                                                                                    start_node,
+                                                                                                    end_node)))
+                    Redis(data_set['name'])._client.lpush("{}_{}_{}".format(data_set['name'], start_node, end_node),
+                                                      pickle.dumps(MetaPath(edge_node_list=mp_as_list)))
+        return existing_mps
 
     # Executed if existence check is disabled
     def write_paths(self, paths: List[Tuple[List[str], List[int]]]):
