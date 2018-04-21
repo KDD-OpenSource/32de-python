@@ -28,16 +28,18 @@ class RedisImporter:
                 meta_path_list = ast.literal_eval(record['metaPaths'])
                 self.logger.debug("Received meta paths from neo4j: {}".format(meta_path_list))
                 self.logger.debug("Number of meta paths is: {}".format(len(meta_path_list)))
+                meta_paths_without_duplicates = list(set(meta_path_list))
+                self.logger.debug("After removal of duplicates: {}".format(len(meta_paths_without_duplicates)))
                 self.id_to_edge_type_map = ast.literal_eval(record['edgesIDTypeDict'])
                 self.id_to_node_type_map = ast.literal_eval(record['nodesIDTypeDict'])
                 self.write_mappings(self.id_to_node_type_map, self.id_to_edge_type_map)
                 if self.enable_existence_check:
-                    existing_meta_paths = self.start_parallel_existence_checks(meta_path_list, data_set)
-                    self.logger.debug("From {} mps {} do not exist in graph {}".format(len(meta_path_list),
+                    existing_meta_paths = self.start_parallel_existence_checks(meta_paths_without_duplicates, data_set)
+                    self.logger.debug("From {} mps {} do not exist in graph {}".format(len(meta_paths_without_duplicates),
                                                                                        len(existing_meta_paths),
                                                                                        data_set['name']))
                 else:
-                    self.write_paths(meta_path_list)
+                    self.write_paths(meta_paths_without_duplicates)
 
 
     # Executed if existence check is enabled
