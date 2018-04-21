@@ -116,12 +116,6 @@ class AbstractActiveLearningAlgorithm(ABC):
                self.visited[meta_id] == State.VISITED]
         return mps
 
-    def get_complete_rating(self):
-        mps = [{'id': int(meta_id[0]),
-                'metapath': meta_path,
-                'domain_value': self.meta_paths_rating[meta_id]} for meta_id, meta_path in np.ndenumerate(self.meta_paths)]
-        return mps
-
 
 class RandomSelectionAlgorithm(AbstractActiveLearningAlgorithm):
     """
@@ -266,6 +260,14 @@ class UncertaintySamplingAlgorithm(HypothesisBasedAlgorithm):
     @staticmethod
     def options():
         return {}
+
+    def get_complete_rating(self):
+        idx = range(len(self.meta_paths))
+        mps = [{'id': int(meta_id[0]),
+                'metapath': self.meta_paths[int(meta_id[0])],
+                'domain_value': rating}
+               for meta_id, rating in np.ndenumerate(self.hypothesis.predict_rating(idx))]
+        return mps
 
     def compute_selection_criterion(self):
         """

@@ -30,7 +30,7 @@ MAX_META_PATH_LENGTH = 6
 
 """{
     'name': 'Freebase',
-    'url': 'https://hpi.de/mueller/metaexp-demo-neo4j',
+    'url': 'https://hpi.de/mueller/metaexp-demo-neo4j-2',
     'bolt-url': 'bolt://172.20.14.22:7717',
     'username': 'neo4j',
     'password': 'neo4j'
@@ -39,12 +39,13 @@ MAX_META_PATH_LENGTH = 6
 AVAILABLE_DATA_SETS = [
     {
         'name': 'Helmholtz',
-        'url': 'https://hpi.de/mueller/metaexp-demo-neo4j-2',
+        'url': 'https://hpi.de/mueller/metaexp-demo-neo4j',
         'bolt-url': 'bolt://172.20.14.22:7697',
         'username': 'neo4j',
         'password': ''
     }
 ]
+
 
 def set_up_logger():
     dictConfig({

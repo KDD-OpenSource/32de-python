@@ -50,7 +50,7 @@ def redis_import():
 @app.route('/test-import', methods=['GET'])
 def test_import():
     RedisImporter(enable_existence_check=False).import_data_set(
-        {'name': 'Helmholtz', 'bolt-url': 'bolt://172.16.79.24:7697', 'username': 'neo4j',
+        {'name': 'Helmholtz', 'bolt-url': 'bolt://172.20.14.22:7697', 'username': 'neo4j',
          'password': ''})
     return jsonify({'status': 200})
 
@@ -323,8 +323,7 @@ def send_similarity_score():
     """
     :return: float, that is a similarity score between both node sets
     """
-    similarity_score = SimilarityScore()
-    return jsonify({'similarity_score': similarity_score.get_similarity_score()})
+    return jsonify({'similarity_score': session['similarity_score'].get_similarity_score()})
 
 
 @app.route("/contributing-meta-paths", methods=["GET"])
@@ -333,8 +332,7 @@ def send_contributing_meta_paths():
     :return: Array of dictionaries, that hold necessary information for a pie chart visualization
             about k-most contributing meta-paths to overall similarity score
     """
-    similarity_score = SimilarityScore()
-    return jsonify({'contributing_meta_paths': similarity_score.get_contributing_meta_paths()})
+    return jsonify({'contributing_meta_paths': session['similarity_score'].get_contributing_meta_paths()})
 
 
 @app.route("/contributing-meta-path/<int:meta_path_id>", methods=["GET"])
@@ -343,9 +341,7 @@ def send_contributing_meta_path(meta_path_id):
     :param meta_path_id: Integer, that is a unique identifier for a meta-path
     :return: Dictionary, that holds detailed information about the belonging meta-path
     """
-
-    similarity_score = SimilarityScore()
-    return jsonify({'meta_path': similarity_score.get_contributing_meta_path(meta_path_id)})
+    return jsonify({'meta_path': session['similarity_score'].get_contributing_meta_path(meta_path_id)})
 
 
 @app.route("/similar-nodes", methods=["GET"])
