@@ -2,6 +2,7 @@ from numbers import Number
 from typing import List
 
 import numpy as np
+import random
 import tensorflow as tf
 
 from embeddings.sampling_strategy import CBOWSampling, SkipGramSampling, SamplingStrategy
@@ -260,5 +261,98 @@ class MetaPathsInput(Input):
                                                      labels))
 
 
+UNDEFINED_SYMBOL = -1
+
 class NodeInput(Input):
+
+    def __init__(self,
+                 dataset: tf.data.Dataset,
+                 num_skips: Number,
+                 skip_window: Number,
+                 vocabulary: List[Number] = [],
+                 normalize_node_ids=False):
+        self.dataset = dataset
+        self.num_skips = num_skips
+        self.skip_window = skip_window
+        self.vocabulary = vocabulary
+
+    @classmethod
+    def from_raw_file(cls, file_names: List[str], num_skips: Number, skip_window: Number):
+        dataset = tf.data.TextLineDataset(file_names)
+
+        dataset = dataset.map(lambda line: tf.string_split([line]).values)
+
+        # default_value = str(UNDEFINED_SYMBOL)
+        # dataset = dataset.map(lambda sparse_tensor:
+        #                       (tf.sparse_tensor_to_dense(sparse_tensor, default_value=default_value)))
+
+        # dataset = dataset.map(lambda tensor: (tensor.set_shape([tf.size(tensor).value])))
+
+        # iterator = dataset.make_one_shot_iterator()
+        # print(tf.get_shape(iterator.get_next()))
+
+        dataset = dataset.map(lambda string_tensor: (tf.string_to_number(string_tensor, out_type=tf.int32)))
+
+        return cls(dataset, num_skips, skip_window)
+
+    @staticmethod
+    def convert_line(line):
+        string_list = tf.string_split([line])
+        print(string_list.eval())
+        return string_list
+
+    def skip_gram_input(self) -> tf.data.Dataset:
+        """
+        Get the dataset to train on in skip-gram format.
+        :return: the dataset with node types as features and context as labels.
+        """
+        # output_labels = tf.reshape(self.dataset, [-1])
+        output_labels = self.dataset.map(lambda labels:tf.reshape(labels, [-1, 1]))
+
+        output_context = self.dataset.map(lambda walk: (self.create_context(walk, self.skip_window, self.num_skips)))
+        output_together = tf.data.Dataset.zip((output_labels, output_context))
+        return output_together
+
+    def create_context(self, tensor, skip_window, num_skips):
+        with_padding = self.add_padding_for_tensor(tensor, skip_window)
+        context_shape = [1, tensor.shape[1].value, num_skips]
+        context_tensor = tf.zeros(context_shape, dtype=tf.int32)
+        for i in range(0, tensor.shape[1].value):
+            with_padding_index = i + skip_window
+            context = self.create_context_for_index(with_padding_index, skip_window, num_skips, with_padding)
+            context_tensor = tf.scatter_update(context_tensor, [i], context)
+        return context_tensor
+
+    @staticmethod
+    def add_padding_for_tensor(tensor, padding_size):
+        paddings = tf.constant([[1, padding_size]])
+        constant_values = tf.constant([UNDEFINED_SYMBOL])
+        # print(tensor.eval())
+        return tf.pad(tensor, paddings, "CONSTANT", constant_values=constant_values)
+        # padding = tf.tile(PADDING_SYMBOL, padding_size)
+        # return tf.concat([padding, tensor, padding], 0)
+
+    def create_context_for_index(self, index, skip_window, num_skips, tensor):
+        front_context = tensor[index - skip_window:index]
+        back_context = tensor[index:index + skip_window]
+        full_context = tf.concat([front_context, back_context], 0)
+
+        window_size = full_context.shape[1].value
+        # TODO only use unique indices, e.g. instead of [1, 1, 6, 1] use [2, 5, 1, 6]
+        selected_indices = tf.random_uniform([1, num_skips], maxval=window_size, dtype=tf.int32)
+        selected_context = tf.gather(tensor, selected_indices)
+        return selected_context
+
+    def bag_of_words_input(self) -> tf.data.Dataset:
+        raise NotImplementedError()
+
+    def get_vocab_size(self) -> int:
+        return len(self.get_vocab())
+
     pass
+
+print("hello")
+sess = tf.InteractiveSession()
+node_input = NodeInput.from_raw_file(["mock_input.txt"], 2, 2)
+skip_gram_dataset = node_input.skip_gram_input()
+sess.close()
