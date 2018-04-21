@@ -1,107 +1,140 @@
 from typing import List
 #from graph_tool.all import *
 import numpy
+from api.redis_own import Redis
 
 
 class MetaPath:
-    _edges = None
-    _nodes = None
+	_edges = None
+	_nodes = None
 
-    def __init__(self, **kwargs):
-        """
-        Create a Metapaths either from 
-        - a list of 'nodes' and 'edges' (ordered)
-        - an 'edge_node_list'
-        If no argument is given, an empty Metapath is created.
-        """
+	def __init__(self, **kwargs):
+		"""
+		Create a Metapaths either from
+		- a list of 'nodes' and 'edges' (ordered)
+		- an 'edge_node_list'
+		If no argument is given, an empty Metapath is created.
+		"""
 
-        if 'nodes'  in kwargs.keys() and 'edges'  in kwargs.keys():
-            nodes = kwargs['nodes']
-            edges = kwargs['edges']
-            assert (len(nodes) - 1 == len(edges)) or (
-                len(nodes) == 0 and len(edges) == 0), "Invalid path: number of edges and nodes do not match."
-            self._edges = edges
-            self._nodes = nodes
+		if 'nodes' in kwargs.keys() and 'edges'  in kwargs.keys():
+			nodes = kwargs['nodes']
+			edges = kwargs['edges']
+			assert (len(nodes) - 1 == len(edges)) or (
+				len(nodes) == 0 and len(edges) == 0), "Invalid path: number of edges and nodes do not match."
+			self._edges = edges
+			self._nodes = nodes
 
-        elif 'edge_node_list' in kwargs.keys():
-            edge_node_list = kwargs['edge_node_list']
-            self._nodes = edge_node_list[::2]
-            self._edges = edge_node_list[1::2]
+		elif 'edge_node_list' in kwargs.keys():
+			edge_node_list = kwargs['edge_node_list']
+			self._nodes = edge_node_list[::2]
+			self._edges = edge_node_list[1::2]
 
-        elif len(kwargs) == 0:
-            self._nodes = []
-            self._edges = []
-        else:
-            raise ValueError("Keywords not  valid: {}".format(', '.join(kwargs.keys())))
+		elif len(kwargs) == 0:
+			self._nodes = []
+			self._edges = []
+		else:
+			raise ValueError("Keywords not  valid: {}".format(', '.join(kwargs.keys())))
 
-    def __copy__(self):
-        return type(self)(nodes=self._nodes, edges=self._edges)
+	def __copy__(self):
+		return type(self)(nodes=self._nodes, edges=self._edges)
 
-    def is_empty(self) -> bool:
-        return len(self) == 0
+	def is_empty(self) -> bool:
+		return len(self) == 0
 
-    def transform_representation(self, node_map, label_map):
-        self._edges = [label_map[edge.encode()].decode() for edge in self._edges]
-        self._nodes = [node_map[node.encode()].decode() for node in self._nodes]
-        return self
+	def transform_representation(self, node_map, label_map):
+		self._edges = [label_map[edge.encode()].decode() for edge in self._edges]
+		self._nodes = [node_map[node.encode()].decode() for node in self._nodes]
+		return self
 
-    def as_list(self) -> List[str]:
-        representation = [None] * len(self)
-        representation[::2] = self._nodes
-        representation[1::2] = self._edges
-        return representation
+	def as_list(self) -> List[str]:
+		representation = [None] * len(self)
+		representation[::2] = self._nodes
+		representation[1::2] = self._edges
+		return representation
 
 
-    @staticmethod
-    def from_list(meta_path: List):
-        assert len(meta_path) % 2 != 0 or len(meta_path) == 0
-        return MetaPath(nodes=meta_path[::2], edges=meta_path[1::2])
+	@staticmethod
+	def from_list(meta_path: List):
+		assert len(meta_path) % 2 != 0 or len(meta_path) == 0
+		return MetaPath(nodes=meta_path[::2], edges=meta_path[1::2])
 
-    @staticmethod
-    def from_string(meta_path: str, sep=' '):
-        return MetaPath.from_list(meta_path.split(sep))
+	@staticmethod
+	def from_string(meta_path: str, sep=' '):
+		return MetaPath.from_list(meta_path.split(sep))
 
-    def __len__(self) -> int:
-        return len(self._edges) + len(self._nodes)
+	def __len__(self) -> int:
+		return len(self._edges) + len(self._nodes)
 
-    def __str__(self) -> str:
-        return ' '.join(map(str, self.as_list()))
+	def __str__(self) -> str:
+		return ' '.join(map(str, self.as_list()))
+
+	def id_path_to_type_path(self, dataset_name: str) -> str:
+		redis = Redis(dataset_name)
+		id_to_node_type_map = redis.id_to_node_type_map()
+		id_to_edge_type_map = redis.id_to_edge_type_map()
+		mp = self.as_list()
+		nodes = ['{}'.format(id_to_node_type_map[n.encode()].decode()) for n in mp[::2]]
+		edges = ['{}'.format(id_to_edge_type_map[e.encode()].decode()) for e in mp[1::2]]
+		all = nodes + edges
+		all[::2] = nodes
+		all[1::2] = edges
+		return '-'.join(all)
+
+	def get_meta_path_instances_query(self, start_nodes: List, end_nodes: List, dataset_name: str, limit: int) -> str:
+		redis = Redis(dataset_name)
+		id_to_node_type_map = redis.id_to_node_type_map()
+		id_to_edge_type_map = redis.id_to_edge_type_map()
+		mp = self.as_list()
+		nodes = ['(n{}:{})'.format(i, id_to_node_type_map[n.encode()].decode()) for i, n in enumerate(mp[::2])]
+		n = len(nodes)
+		edges = ['[e{}:{}]'.format(i, id_to_edge_type_map[e.encode()].decode()) for i, e in enumerate(mp[1::2])]
+		all = nodes + edges
+		all[::2] = nodes
+		all[1::2] = edges
+		path = '-'.join(all)
+		start_ids = '[' + ','.join(map(str, start_nodes)) + ']'
+		end_ids = '[' + ','.join(map(str, end_nodes)) + ']'
+		query = "MATCH p = {} " \
+				"WHERE ID(n0) in {} and ID(n{}) in {} " \
+				"RETURN p LIMIT {}".format(path, start_ids, n - 1, end_ids, limit)
+
+		return query
 
 
 class MetaPathRating:
-    # TODO: Define methods
-    meta_path = None
-    structural_value = None
-    domain_value = None
+	# TODO: Define methods
+	meta_path = None
+	structural_value = None
+	domain_value = None
 
-    def __init__(self, meta_path: MetaPath):
-        self.meta_path = meta_path
+	def __init__(self, meta_path: MetaPath):
+		self.meta_path = meta_path
 
-    def __init__(self, meta_path: MetaPath, structural_value: float, domain_value: float):
-        self.meta_path = meta_path
-        self.structural_value = structural_value
-        self.domain_value = domain_value
+	def __init__(self, meta_path: MetaPath, structural_value: float, domain_value: float):
+		self.meta_path = meta_path
+		self.structural_value = structural_value
+		self.domain_value = domain_value
 
 
 class UserOrderedMetaPaths:
-    meta_paths = None
-    distances = None
+	meta_paths = None
+	distances = None
 
-    def __init__(self, meta_paths: List[MetaPath], distances: List[float] = None):
-        """
+	def __init__(self, meta_paths: List[MetaPath], distances: List[float] = None):
+		"""
 
-        :param distances: Distances between meta-paths on UI
-        :param meta_paths: All meta-paths as ordered by the user
-        which were rated in one "session" (between each click on "Next five")
-        """
-        self.meta_paths = meta_paths
-        self.set_distances(distances)
+		:param distances: Distances between meta-paths on UI
+		:param meta_paths: All meta-paths as ordered by the user
+		which were rated in one "session" (between each click on "Next five")
+		"""
+		self.meta_paths = meta_paths
+		self.set_distances(distances)
 
-    def set_distances(self, distances: List[float]) -> None:
-        assert distances is None or len(self.meta_paths) == len(
-            distances), 'Number of meta-paths which is {} doesn\'t match number of passed distances which is {}'.format(
-            len(self.meta_paths), len(distances))
-        self.distances = distances
+	def set_distances(self, distances: List[float]) -> None:
+		assert distances is None or len(self.meta_paths) == len(
+			distances), 'Number of meta-paths which is {} doesn\'t match number of passed distances which is {}'.format(
+			len(self.meta_paths), len(distances))
+		self.distances = distances
 
 # class MetaPathRatingGraph:
 #
