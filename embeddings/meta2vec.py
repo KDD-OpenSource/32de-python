@@ -27,9 +27,9 @@ def calculate_metapath_embeddings(metapaths: List[List[int]], model_dir: str = '
 
     # TODO: Clean up the naming mess
     if model_type == 'skip-gram':
-        model_fn = input.bag_of_words_input()
+        model_fn = input.bag_of_words_input
     elif model_type == 'bag-of-words':
-        model_fn = input.skip_gram_input()
+        model_fn = input.skip_gram_input
     classifier = create_paragraph_estimator(model_dir=model_dir, model_fn=model_fn,
                                             node_count=input.get_vocab_size(), paths_count=input.paths_count(),
                                             sentence_embedding_size=metapath_embedding_size,
