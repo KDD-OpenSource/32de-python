@@ -235,7 +235,7 @@ class MetaPathsInput(Input):
         paths = np.array(paths, np.int32)
         indices = np.array(indices, np.int32)
         contexts = np.array(contexts, np.int32)
-        return sampling_strategy.paragraph_postprocess(paths, indices, contexts)
+        return sampling_strategy.paragraph_postprocselfess(paths, indices, contexts)
 
     def skip_gram_input(self) -> tf.data.Dataset:
         """
