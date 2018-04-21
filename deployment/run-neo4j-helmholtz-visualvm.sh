@@ -6,6 +6,7 @@ docker run \
     --volume=$HOME/bioDB/data:/data \
     --volume=$HOME/bioDB/logs:/logs \
     --volume=$HOME/bioDB/conf:/conf \
+    --env=NEO4J_dbms_logs_query_enabled=true \
     --env=NEO4J_ACCEPT_LICENSE_AGREEMENT=yes \
     --env=NEO4J_dbms_memory_pagecache_size=40G \
     --env=NEO4J_dbms_memory_heap_initial__size=50G \
