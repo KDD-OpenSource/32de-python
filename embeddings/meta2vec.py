@@ -1,6 +1,8 @@
 import argparse
 import json
 from typing import Tuple
+import logging
+logging.getLogger('MetaExp.meta2vec')
 
 from embeddings.estimators import create_word2vec_estimator, create_paragraph_estimator
 from embeddings.input import *
@@ -20,7 +22,7 @@ def calculate_metapath_embeddings(metapaths: List[List[int]], model_dir: str = '
     """
     input = MetaPathsInput.from_paths_list(metapaths)
 
-    if metapath_embedding_size == None:
+    if metapath_embedding_size is None:
         metapath_embedding_size = int(len(metapaths) / 100)  # TODO: there's some formula in the literatur
 
     model_fn = choose_model_function(model='paragraph_vectors', model_type=model_type)
@@ -30,8 +32,9 @@ def calculate_metapath_embeddings(metapaths: List[List[int]], model_dir: str = '
                                             word_embedding_size=node_embedding_size, optimizer=optimizer,
                                             loss=loss, gpu_memory=gpu_memory)
 
-    print("Training")
+    logging.info("Beginning training...")
     classifier.train(input_fn=choose_input_function(input=input, model_type=model_type))
+    logging.info("Finished training.")
 
     # Get trained embeddings
     trained_embeddings = classifier.get_variable_value(name='paragraph_embeddings')
@@ -40,6 +43,7 @@ def calculate_metapath_embeddings(metapaths: List[List[int]], model_dir: str = '
     for id, metapath in enumerate(trained_embeddings):
         embedded_metapaths.append((metapaths[id], metapath.tolist()))
 
+    logging.debug("Returning embedded meta-paths")
     return embedded_metapaths
 
 
@@ -156,6 +160,6 @@ if __name__ == "__main__":
         print("Training")
         classifier.train(input_fn=input_fn)
     elif args.mode == 'predict':
-        raise NotImplementedError()
+        raise NotImplementedError("Predict mode isn't implemented")
     elif args.mode == 'eval':
-        raise NotImplementedError()
+        raise NotImplementedError("Evaluate mode isn't implemented")
