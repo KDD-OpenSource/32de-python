@@ -87,7 +87,7 @@ class Neo4j:
 
     def test_whether_meta_path_exists(self, meta_path_query_string):
         self.logger.debug("Received match query string {}".format(meta_path_query_string))
-        query = "MATCH p = {} " \
+        query = "cypher planner=rule MATCH p = {} " \
                 "RETURN p limit 1".format(meta_path_query_string)
         self.logger.debug("Querying for '{}'".format(query))
         with self._driver.session() as session:
