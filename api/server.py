@@ -43,7 +43,7 @@ def run(port, hostname, debug_mode):
 
 @app.route('/redis-import', methods=['GET'])
 def redis_import():
-    RedisImporter(enable_existence_check=True).import_all()
+    RedisImporter(enable_existence_check=False).import_all()
     return jsonify({'status': 200})
 
 
