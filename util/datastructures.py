@@ -16,7 +16,7 @@ class MetaPath:
             nodes = kwargs['nodes']
             edges = kwargs['edges']
             assert (len(nodes) - 1 == len(edges)) or (
-                len(nodes) == 0 and len(edges) == 0), "Invalid path: number of edges and nodes do not match."
+                    len(nodes) == 0 and len(edges) == 0), "Invalid path: number of edges and nodes do not match."
             self._edges = edges
             self._nodes = nodes
 
@@ -33,6 +33,7 @@ class MetaPath:
 
     def store_embedding(self, embedding: List[float]):
         self._embedding = embedding
+        return self
 
     def is_empty(self) -> bool:
         return len(self) == 0

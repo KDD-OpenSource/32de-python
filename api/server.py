@@ -58,7 +58,6 @@ def test_import():
 @app.route('/train-embeddings/<string:database>', methods=['GET'])
 def train_embedding(database):
     redis = Redis(database)
-    redis.get_all_meta_paths()
     logger.debug("Start computation of embeddings...")
     meta_path_list_embeddings = embeddings.meta2vec.calculate_metapath_embeddings(redis.get_all_meta_paths())
     logger.debug("Received embeddings {}".format(meta_path_list_embeddings))
