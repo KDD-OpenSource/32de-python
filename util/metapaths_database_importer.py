@@ -65,6 +65,7 @@ class RedisImporter:
                 Redis(data_set['name'])._client.lpush("{}_{}_{}".format(data_set['name'], start_node, end_node),
                                                       pickle.dumps(MetaPath(edge_node_list=mp_as_list)))
                 return mp_as_list
+        return None
 
     # Executed if existence check is enabled
     def start_parallel_existence_checks(self, meta_paths: List[str], data_set: Dict) -> List[List[str]]:
