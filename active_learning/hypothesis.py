@@ -45,7 +45,8 @@ class GaussianProcessHypothesis:
         kernel = 1.0 * RBF(length_scale=1.0, length_scale_bounds=(1e-1, 10.0))
         self.gp = GaussianProcessRegressor(kernel=kernel, optimizer=None)
         if not 'embedding_strategy' in hypothesis_params:
-            self.meta_paths = [mp.retrieve_representation('embedding') for mp in meta_paths]
+            self.meta_paths = np.array([mp.retrieve_representation('embedding') for mp in meta_paths])
+            self.logger.debug(self.meta_paths)
         else:
             self.meta_paths = hypothesis_params['embedding_strategy'](meta_paths)
 
