@@ -168,8 +168,11 @@ if __name__ == "__main__":
 
     print("Created estimator")
     if args.mode == 'train':
-        print("Training")
-        classifier.train(input_fn=input_fn)
+        epochs = 0
+        while True:
+            print("Training epoch {}".format(epochs))
+            classifier.train(input_fn=input_fn)
+            epochs += 1
     elif args.mode == 'predict':
         raise NotImplementedError("Predict mode isn't implemented")
     elif args.mode == 'eval':
