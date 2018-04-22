@@ -4,6 +4,7 @@ from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import (RBF, Matern, RationalQuadratic,
                                               ExpSineSquared, DotProduct,
                                               ConstantKernel)
+from matplotlib import pyplot as plt
 import numpy as np
 import logging
 
@@ -42,13 +43,17 @@ class MPLengthHypothesis:
 class GaussianProcessHypothesis:
     def __init__(self, meta_paths, **hypothesis_params):
         self.logger = logging.getLogger('MetaExp.{}'.format(__class__.__name__))
-        kernel = 1.0 * RBF(length_scale=1.0, length_scale_bounds=(1e-1, 10.0))
+        kernel = 1.0 * RBF(length_scale=1.0, length_scale_bounds=(-1, 1))
         self.gp = GaussianProcessRegressor(kernel=kernel, optimizer=None)
         if not 'embedding_strategy' in hypothesis_params:
             self.meta_paths = np.array([mp.get_representation('embedding') for mp in meta_paths])
             self.logger.debug(self.meta_paths)
         else:
             self.meta_paths = hypothesis_params['embedding_strategy'](meta_paths)
+        self.plot_prior()
+
+    def plot_prior(self):
+        return 1
 
     def __getstate__(self):
         # Copy the object's state from self.__dict__ which contains
@@ -81,6 +86,7 @@ class GaussianProcessHypothesis:
         if len(idx) == 0:
             return []
         self.logger.debug("Fitting Gaussian process to new ratings...")
+        self.logger.debug("Metapaths {} where rated {}".format(self.meta_paths[idx], ratings))
         self.gp.fit(self.meta_paths[idx], ratings)
 
     def predict_rating(self, idx):
