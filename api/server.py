@@ -123,9 +123,6 @@ def stop_meta_path_rating():
 @app.route("/node-types", methods=["POST"])
 def receive_meta_path_start_and_end_label():
     redis = Redis(session['dataset']['name'])
-    #node_type_to_id = redis.node_type_to_id_map()
-
-    #logger.debug("node type to id map is: {}".format(node_type_to_id))
 
     json_response = request.get_json()
     start_type = json_response['start_label']
@@ -133,8 +130,6 @@ def receive_meta_path_start_and_end_label():
     start_node_ids = json_response['start_node_ids']
     end_node_ids = json_response['end_node_ids']
 
-    #start_type_id = node_type_to_id[start_type.encode()].decode()
-    #end_type_id = node_type_to_id[end_type.encode()].decode()
     session['active_learning_algorithm'] = UncertaintySamplingAlgorithm(
         redis.meta_paths(start_type, end_type),
         hypothesis='Gaussian Process')
