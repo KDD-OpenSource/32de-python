@@ -178,7 +178,7 @@ class MetaPathsInput(Input):
         highest_key = 1
 
         for path in paths:
-            assert len(path) % 2 == 1, "Invalid path shape."
+            assert len(path) % 2 == 1, "Invalid path shape for meta-path {}".format(path)
             new_path = []
             if len(path) == 1:
                 new_path.append(path[0])
