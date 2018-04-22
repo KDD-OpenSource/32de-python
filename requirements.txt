@@ -14,4 +14,4 @@ Flask-Session
 cryptography==2.1.4
 flask-ask
 neo4j-driver
-tensorflow
+tensorflow>=1.7.0
