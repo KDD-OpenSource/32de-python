@@ -24,7 +24,7 @@ REDIS_HOST = '172.20.14.22'
 #REDIS_HOST = '172.16.19.193'
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 REDIS_PASSWORD = None
-PARALLEL_EXISTENCE_TEST_PROCESSES = 10
+PARALLEL_EXISTENCE_TEST_PROCESSES = 12
 
 MAX_META_PATH_LENGTH = 6
 
