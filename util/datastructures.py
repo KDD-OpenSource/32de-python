@@ -58,7 +58,10 @@ class MetaPath:
     def __str__(self) -> str:
         return ' '.join(map(str, self.as_list()))
 
-    def retrieve_representation(self, representation_type='UI'):
+    def number_node_types(self):
+        return len(self._nodes)
+
+    def get_representation(self, representation_type='UI'):
         if representation_type == 'UI':
             return self.as_list()
         elif representation_type == 'embedding':
