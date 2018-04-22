@@ -280,7 +280,14 @@ class NodeInput(Input):
     def from_raw_file(cls, file_names: List[str], num_skips: Number, skip_window: Number):
         dataset = tf.data.TextLineDataset(file_names)
 
+        print(dataset.output_shapes)
+        iterator = dataset.make_one_shot_iterator()
+        iterator.get_next().eval()
+        print(iterator.get_next().eval())
+
         dataset = dataset.map(lambda line: tf.string_split([line]).values)
+
+
 
         # default_value = str(UNDEFINED_SYMBOL)
         # dataset = dataset.map(lambda sparse_tensor:
@@ -292,6 +299,10 @@ class NodeInput(Input):
         # print(tf.get_shape(iterator.get_next()))
 
         dataset = dataset.map(lambda string_tensor: (tf.string_to_number(string_tensor, out_type=tf.int32)))
+
+
+        iterator = dataset.make_one_shot_iterator()
+        print(tf.shape(iterator.get_next()))
 
         return cls(dataset, num_skips, skip_window)
 
@@ -307,11 +318,20 @@ class NodeInput(Input):
         :return: the dataset with node types as features and context as labels.
         """
         # output_labels = tf.reshape(self.dataset, [-1])
-        output_labels = self.dataset.map(lambda labels:tf.reshape(labels, [-1, 1]))
+        output_labels = self.dataset.flat_map(self.convert_labels)
+
+        iterator = output_labels.make_one_shot_iterator()
+        print(iterator.get_next().eval())
 
         output_context = self.dataset.map(lambda walk: (self.create_context(walk, self.skip_window, self.num_skips)))
         output_together = tf.data.Dataset.zip((output_labels, output_context))
         return output_together
+
+    def convert_labels(self, tensor):
+        print(tf.shape(tensor))
+        id_list = tf.reshape(tensor, [-1, 1])
+        # return id_list
+        return tf.data.Dataset.from_tensors(tensor)
 
     def create_context(self, tensor, skip_window, num_skips):
         with_padding = self.add_padding_for_tensor(tensor, skip_window)
