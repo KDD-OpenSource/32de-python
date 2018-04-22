@@ -1,9 +1,11 @@
 import multiprocessing
+from multiprocessing.dummy import Pool as ThreadPool
 from util.datastructures import MetaPath
 from util.config import MAX_META_PATH_LENGTH, AVAILABLE_DATA_SETS, PARALLEL_EXISTENCE_TEST_PROCESSES
 from api.neo4j_own import Neo4j
 from api.redis_own import Redis
 from typing import Dict, List
+from functools import partial
 import logging
 import ast
 import pickle
@@ -33,8 +35,9 @@ class RedisImporter:
                 self.id_to_edge_type_map = ast.literal_eval(record['edgesIDTypeDict'])
                 self.id_to_node_type_map = ast.literal_eval(record['nodesIDTypeDict'])
                 self.write_mappings(self.id_to_node_type_map, self.id_to_edge_type_map)
+                meta_paths_without_duplicates.sort(key=len)
                 if self.enable_existence_check:
-                    existing_meta_paths = self.start_sequential_existence_checks(meta_paths_without_duplicates, data_set)
+                    existing_meta_paths = self.start_parallel_existence_checks(meta_paths_without_duplicates, data_set)
                     self.logger.debug("From {} mps {} do not exist in graph {}".format(len(meta_paths_without_duplicates),
                                                                                        len(existing_meta_paths),
                                                                                        data_set['name']))
@@ -46,8 +49,8 @@ class RedisImporter:
     @staticmethod
     def check_existence(args):
         logger = logging.getLogger('MetaExp.ExistenceCheck')
-        (meta_path, data_set, edge_map, node_map) = args
         labels = []
+        (meta_path, data_set, edge_map, node_map) = args
         mp_as_list = meta_path.split("|")
         logger.debug("Checking existance of {}".format(mp_as_list))
         for i, type in enumerate(mp_as_list):
@@ -68,10 +71,27 @@ class RedisImporter:
                                                       pickle.dumps(MetaPath(edge_node_list=mp_as_list)))
                 return mp_as_list
 
+    @staticmethod
+    def abortable_worker(func, *args, **kwargs):
+        logger = logging.getLogger('MetaExp.ABORTABLE_WORKER')
+        timeout = kwargs.get('timeout', None)
+        p = ThreadPool(1)
+        res = p.apply_async(func, args)
+        try:
+            out = res.get(timeout)
+            logger.debug("Got result from worker {}".format(out))
+            return out
+        except multiprocessing.TimeoutError:
+            logger.debug("Aborting existence check for {} after {} seconds.".format(args[0], timeout))
+            p.terminate()
+            raise
+
     # Executed if existence check is enabled
     def start_parallel_existence_checks(self, meta_paths: List[str], data_set: Dict) -> List[List[str]]:
         with multiprocessing.Pool(processes=PARALLEL_EXISTENCE_TEST_PROCESSES) as pool:
             args = [(mp, data_set, self.id_to_edge_type_map, self.id_to_node_type_map) for mp in meta_paths]
+            #abortable_func = partial(self.abortable_worker, self.check_existence, timeout= 120)
+            #self.logger.debug(abortable_func)
             return pool.map(self.check_existence, args)
 
     def start_sequential_existence_checks(self, meta_paths: List[str], data_set:Dict) -> List[List[str]]:
