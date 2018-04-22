@@ -32,7 +32,7 @@ class Redis:
         return self._client.hgetall("{}_edge_type_map_reverse".format(self.data_set))
 
     def get_all_meta_paths(self):
-        for key in self._client.keys('{}_[-0-9]+_[-0-9]+'.format(self.data_set)):
+        for key in self._client.keys(pattern='{}_*_*'.format(self.data_set)):
             yield [pickle.loads(pickled_entry).as_list() for pickled_entry in self._client.lrange(key, 0, -1)]
 
     def store_embeddings(self, mp_embeddings_list: List[Tuple[List[str], List[float]]]):
