@@ -34,6 +34,7 @@ class Redis:
 
     def get_all_meta_paths(self):
         result = []
+        # TODO: Match only keys without '_embedding'
         for key in self._client.keys(pattern='{}_[0-9-]*_[0-9-]*'.format(self.data_set)):
             result.extend([[int(type) for type in pickle.loads(pickled_entry).as_list()]
                            for pickled_entry in self._client.lrange(key, 0, -1)])
