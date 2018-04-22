@@ -1,7 +1,7 @@
 import tensorflow as tf
 import logging
 
-logging.getLogger('MetaExp.meta2vec')
+logger = logging.getLogger('MetaExp.meta2vec')
 
 
 def create_word2vec_estimator(vocab_size: int, model_fn, model_dir, embedding_size: int, optimizer: str, loss: str,
@@ -33,12 +33,12 @@ def create_word2vec_estimator(vocab_size: int, model_fn, model_dir, embedding_si
 # TODO: We need an extra estimator for the dbow (naming after paper) because there we only have the paragraph as a feature
 def create_paragraph_estimator(model_dir, model_fn, node_count: int, paths_count: int, sentence_embedding_size: int,
                                word_embedding_size: int, optimizer: str, loss: str, gpu_memory: float):
-    logging.debug("Number of words: {}".format(node_count))
+    logger.debug("Number of words: {}".format(node_count))
     context = tf.feature_column.categorical_column_with_hash_bucket('features',
                                                                     node_count,
                                                                     dtype=tf.int32)
 
-    logging.debug("Number of paragraphs: {}".format(paths_count))
+    logger.debug("Number of paragraphs: {}".format(paths_count))
     paragraph = tf.feature_column.categorical_column_with_hash_bucket('paragraphs',
                                                                       paths_count,
                                                                       dtype=tf.int32)

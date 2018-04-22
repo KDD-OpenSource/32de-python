@@ -2,7 +2,8 @@ import argparse
 import json
 from typing import Tuple
 import logging
-logging.getLogger('MetaExp.meta2vec')
+
+logger = logging.getLogger('MetaExp.meta2vec')
 
 from embeddings.estimators import create_word2vec_estimator, create_paragraph_estimator
 from embeddings.input import *
@@ -32,14 +33,14 @@ def calculate_metapath_embeddings(metapaths: List[List[int]], model_dir: str = '
                                             word_embedding_size=node_embedding_size, optimizer=optimizer,
                                             loss=loss, gpu_memory=gpu_memory)
 
-    logging.info("Beginning training...")
+    logger.info("Beginning training...")
     # TODO: Clean up the naming mess
     if model_type == 'skip-gram':
         input_fn = input.bag_of_words_input
     elif model_type == 'bag-of-words':
         input_fn = input.skip_gram_input
     classifier.train(input_fn=input_fn)
-    logging.info("Finished training.")
+    logger.info("Finished training.")
 
     # Get trained embeddings
     trained_embeddings = classifier.get_variable_value(name='paragraph_embeddings')
@@ -48,7 +49,7 @@ def calculate_metapath_embeddings(metapaths: List[List[int]], model_dir: str = '
     for id, metapath in enumerate(trained_embeddings):
         embedded_metapaths.append((metapaths[id], metapath.tolist()))
 
-    logging.debug("Returning embedded meta-paths")
+    logger.debug("Returning embedded meta-paths")
     return embedded_metapaths
 
 
@@ -159,6 +160,11 @@ if __name__ == "__main__":
                                                 sentence_embedding_size=args.embedding_size[1],
                                                 word_embedding_size=args.embedding_size[0], optimizer=args.optimizer,
                                                 loss=args.loss, gpu_memory=args.gpu_memory)
+        # TODO: Clean up the naming mess
+        if args.model_type == 'skip-gram':
+            input_fn = input.bag_of_words_input
+        elif args.model_type == 'bag-of-words':
+            input_fn = input.skip_gram_input
 
     print("Created estimator")
     if args.mode == 'train':
