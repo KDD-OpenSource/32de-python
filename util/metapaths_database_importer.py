@@ -50,13 +50,19 @@ class RedisImporter:
     @staticmethod
     def check_existence(args):
         logger = logging.getLogger('MetaExp.ExistenceCheck')
+        labels = []
         (meta_path, data_set, edge_map, node_map) = args
         mp_as_list = meta_path.split("|")
         logger.debug("Checking existance of {}".format(mp_as_list))
-        mp_query = MetaPath(edge_node_list=mp_as_list).get_representation('query')
+        for i, type in enumerate(mp_as_list):
+            if i % 2:
+                labels.append("[n{}:{}]".format(i, edge_map[type]))
+            else:
+                labels.append("(e{}: {})".format(i, node_map[type]))
+        logger.debug("Querying for mp {}".format(mp_as_list))
         with Neo4j(data_set['bolt-url'], data_set['username'], data_set['password']) as neo4j:
-            if neo4j.test_whether_meta_path_exists(mp_query):
-                logger.debug("Mp {} exists!".format(mp_query))
+            if neo4j.test_whether_meta_path_exists("-".join(labels)):
+                logger.debug("Mp {} exists!".format("-".join(labels)))
                 start_node = mp_as_list[0]
                 end_node = mp_as_list[-1]
                 logger.debug("Adding metapath {} to record {}".format(mp_as_list, "{}_{}_{}".format(data_set['name'],
