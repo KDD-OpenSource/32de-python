@@ -45,7 +45,7 @@ class GaussianProcessHypothesis:
         kernel = 1.0 * RBF(length_scale=1.0, length_scale_bounds=(1e-1, 10.0))
         self.gp = GaussianProcessRegressor(kernel=kernel, optimizer=None)
         if not 'embedding_strategy' in hypothesis_params:
-            self.meta_paths = np.array([mp.retrieve_representation('embedding') for mp in meta_paths])
+            self.meta_paths = np.array([mp.get_representation('embedding') for mp in meta_paths])
             self.logger.debug(self.meta_paths)
         else:
             self.meta_paths = hypothesis_params['embedding_strategy'](meta_paths)
@@ -67,7 +67,7 @@ class GaussianProcessHypothesis:
         """
         Trivial transformation into feature space of length x unique_length.
         """
-        return np.array([[len(mp), len(set(mp.as_list()))] for mp in meta_paths])
+        return np.array([[len(mp), len(set(mp.get_representation('UI')))] for mp in meta_paths])
 
     def _tfidf_transform(self, meta_paths):
         """
@@ -80,6 +80,7 @@ class GaussianProcessHypothesis:
     def update(self, idx, ratings):
         if len(idx) == 0:
             return []
+        self.logger.debug("Fitting Gaussian process to new ratings...")
         self.gp.fit(self.meta_paths[idx], ratings)
 
     def predict_rating(self, idx):

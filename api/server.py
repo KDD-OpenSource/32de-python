@@ -206,31 +206,14 @@ def send_next_metapaths_to_rate(batch_size):
         'rating': 0.5}
     """
 
-    #redis = Redis(session['dataset']['name'])
-    #id_to_node_type = redis.id_to_node_type_map()
-    #id_to_edge_type = redis.id_to_edge_type_map()
-
     next_metapaths, is_last_batch, reference_paths = session['active_learning_algorithm'].get_next(
         batch_size=batch_size)
-
-    string = [next_metapaths[i]['metapath'].as_list() for i in range(len(next_metapaths))]
-    logger.debug("Received meta paths from active learner {}".format(string))
-
-    #for i in range(len(next_metapaths)):
-    #    transformed_mp = next_metapaths[i]['metapath'].transform_representation(id_to_node_type, id_to_edge_type)
-    #    logger.debug("Transformed {} to {}".format(next_metapaths[i]['metapath'], transformed_mp))
-    #    next_metapaths[i]['metapath'] = transformed_mp.as_list()
+    logger.debug("Received meta paths from active learner {}".format(next_metapaths))
 
     paths = {'meta_paths': next_metapaths,
              'next_batch_available': not is_last_batch}
     if reference_paths:
         logger.info("Appending reference paths to response...")
-        #reference_paths['min_path']['metapath'] = reference_paths['min_path']['metapath'].transform_representation(
-            #id_to_node_type, id_to_edge_type).as_list()
-        #reference_paths['max_path']['metapath'] = reference_paths['max_path']['metapath'].transform_representation(
-            #id_to_node_type, id_to_edge_type).as_list()
-        #logger.debug("Transformed path: {}".format(reference_paths['min_path']))
-        #logger.debug("Transformed path: {}".format(reference_paths['max_path']))
         paths['min_path'] = reference_paths['min_path']
         paths['max_path'] = reference_paths['max_path']
 
