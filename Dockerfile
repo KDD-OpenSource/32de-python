@@ -18,5 +18,5 @@ RUN pip3 install -r deployment/deployment.txt
 
 COPY . .
 
-ENTRYPOINT ["python3", "util/wait.py"]
-# ENTRYPOINT ["gunicorn", "--config", "deployment/gunicorn-config.py", "api.server:app"]
+# ENTRYPOINT ["python3", "util/wait.py"]
+ENTRYPOINT ["gunicorn", "--config", "deployment/gunicorn-config.py", "api.server:app"]

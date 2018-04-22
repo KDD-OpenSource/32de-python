@@ -115,6 +115,7 @@ class RedisImporter:
         self.logger.debug("Adding metapath {} to record {}".format(path, "{}_{}_{}".format(self.redis.data_set,
                                                                                                  start_node,
                                                                                                  end_node)))
+        self.logger.debug("Embedding is: {}".format(embedding))
         self.redis._client.lpush("{}_{}_{}".format(self.redis.data_set, start_node, end_node),
                                  pickle.dumps(MetaPath(edge_node_list=path)))
         self.redis._client.lpush("{}_{}_{}_embedded".format(self.redis.data_set, start_node, end_node),

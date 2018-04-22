@@ -1,13 +1,16 @@
 import argparse
 import json
 from typing import Tuple
+import logging
+
+logger = logging.getLogger('MetaExp.meta2vec')
 
 from embeddings.estimators import create_word2vec_estimator, create_paragraph_estimator
 from embeddings.input import *
 from embeddings.models import model_word2vec, model_paragraph_vectors_skipgram, model_paragraph_vectors_dbow
 
 
-def calculate_metapath_embeddings(metapaths: List[List[str]], model_dir: str = './model_dir', gpu_memory: float = 0.3,
+def calculate_metapath_embeddings(metapaths: List[List[int]], model_dir: str = './model_dir', gpu_memory: float = 0.3,
                                   loss: str = "cross_entropy", optimizer: str = "adam",
                                   metapath_embedding_size: int = None,
                                   node_embedding_size=4, model_type='skip-gram') -> List[Tuple[List[str], List[float]]]:
@@ -20,17 +23,24 @@ def calculate_metapath_embeddings(metapaths: List[List[str]], model_dir: str = '
     """
     input = MetaPathsInput.from_paths_list(metapaths)
 
-    if metapath_embedding_size == None:
+    if metapath_embedding_size is None:
         metapath_embedding_size = int(len(metapaths) / 100)  # TODO: there's some formula in the literatur
 
-    classifier = create_paragraph_estimator(model_dir=model_dir, model_fn=model_paragraph_vectors_dbow,
+    model_fn = choose_model_function(model='paragraph_vectors', model_type=model_type)
+    classifier = create_paragraph_estimator(model_dir=model_dir, model_fn=model_fn,
                                             node_count=input.get_vocab_size(), paths_count=input.paths_count(),
                                             sentence_embedding_size=metapath_embedding_size,
                                             word_embedding_size=node_embedding_size, optimizer=optimizer,
                                             loss=loss, gpu_memory=gpu_memory)
 
-    print("Training")
-    classifier.train(input_fn=choose_input_function(input=input, model_type=model_type))
+    logger.info("Beginning training...")
+    # TODO: Clean up the naming mess
+    if model_type == 'skip-gram':
+        input_fn = input.bag_of_words_input
+    elif model_type == 'bag-of-words':
+        input_fn = input.skip_gram_input
+    classifier.train(input_fn=input_fn)
+    logger.info("Finished training.")
 
     # Get trained embeddings
     trained_embeddings = classifier.get_variable_value(name='paragraph_embeddings')
@@ -39,6 +49,7 @@ def calculate_metapath_embeddings(metapaths: List[List[str]], model_dir: str = '
     for id, metapath in enumerate(trained_embeddings):
         embedded_metapaths.append((metapaths[id], metapath.tolist()))
 
+    logger.debug("Returning embedded meta-paths")
     return embedded_metapaths
 
 
@@ -149,12 +160,20 @@ if __name__ == "__main__":
                                                 sentence_embedding_size=args.embedding_size[1],
                                                 word_embedding_size=args.embedding_size[0], optimizer=args.optimizer,
                                                 loss=args.loss, gpu_memory=args.gpu_memory)
+        # TODO: Clean up the naming mess
+        if args.model_type == 'skip-gram':
+            input_fn = input.bag_of_words_input
+        elif args.model_type == 'bag-of-words':
+            input_fn = input.skip_gram_input
 
     print("Created estimator")
     if args.mode == 'train':
-        print("Training")
-        classifier.train(input_fn=input_fn)
+        epochs = 0
+        while True:
+            print("Training epoch {}".format(epochs))
+            classifier.train(input_fn=input_fn)
+            epochs += 1
     elif args.mode == 'predict':
-        raise NotImplementedError()
+        raise NotImplementedError("Predict mode isn't implemented")
     elif args.mode == 'eval':
-        raise NotImplementedError()
+        raise NotImplementedError("Evaluate mode isn't implemented")
