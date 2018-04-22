@@ -1,4 +1,5 @@
 from neo4j.v1 import GraphDatabase
+from neo4j.exceptions import ClientError
 from typing import List
 from util.datastructures import MetaPath
 import logging
@@ -96,9 +97,14 @@ class Neo4j:
                 "RETURN p limit 1".format(meta_path_query_string)
         self.logger.debug("Querying for '{}'".format(query))
         with self._driver.session() as session:
-            record = session.run(query).single()
-            self.logger.debug(record)
-            return bool(record)
+            try:
+                record = session.run(query).single()
+                self.logger.debug(record)
+                return bool(record)
+            except ClientError:
+                self.logger.debug("Query {} timed out".format(query))
+                return False
+
 
     def get_meta_paths_schema(self, length: int):
         """
