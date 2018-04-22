@@ -43,5 +43,7 @@ class Redis:
     def store_embeddings(self, mp_embeddings_list: List[Tuple[List[str], List[float]]]):
         for mp, embedding in mp_embeddings_list:
             start_type, end_type = mp[0], mp[-1]
-            meta_path = MetaPath(edge_node_list=mp).store_embedding(embedding)
+            meta_path = MetaPath(edge_node_list=mp)
+            meta_path.store_embedding(embedding)
+            self.logger.debug("Created meta path object".format(meta_path))
             self._client.lpush("{}_{}_{}_embedded".format(self.data_set, start_type, end_type), pickle.dumps(meta_path))
