@@ -1,7 +1,4 @@
 from typing import List
-# from graph_tool.all import *
-import numpy
-from api.redis_own import Redis
 
 
 class MetaPath:
