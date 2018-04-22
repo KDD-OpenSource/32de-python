@@ -263,6 +263,60 @@ class MetaPathsInput(Input):
 
 UNDEFINED_SYMBOL = -1
 
+class NodeFileInput:
+
+    def __init__(self,
+                 label_filename: str,
+                 features_filename: str,
+                 vocabulary_filename: str):
+        """
+        Wraps in the input function to embed meta-paths. It is a convention that the id of the meta-paths is given
+        by it's location in the paths list. Therefore the order of the paths is important.
+        """
+        self.id_mapping_tensor = self.create_id_mapping(vocabulary_filename)
+
+        self.labels = self.map_dataset(self.create_dataset_from_file(label_filename))
+        self.features = self.map_dataset(self.create_dataset_from_file(features_filename))
+
+    def create_id_mapping(self, vocabulary_filename):
+        mapping_dataset = tf.data.TextLineDataset([vocabulary_filename])
+        mapping_dataset = mapping_dataset.map(lambda line: tf.string_split([line]).values)
+        mapping_dataset = mapping_dataset.map(lambda string_tensor: (tf.string_to_number(string_tensor, out_type=tf.int32)))
+        mapping = mapping_dataset.make_one_shot_iterator().get_next()
+        return mapping
+
+    def get_mapped_id(self, original_id):
+        condition = tf.equal(self.id_mapping_tensor, original_id)
+        index = tf.where(condition)
+        return tf.squeeze(index)
+
+    def get_original_id(self, original_id):
+        index = tf.gather(self.id_mapping_tensor, [original_id])
+        return tf.squeeze(index)
+
+    @staticmethod
+    def create_dataset_from_file(filename):
+        dataset = tf.data.TextLineDataset([filename])
+        dataset = dataset.map(lambda string_tensor: (tf.string_to_number(string_tensor, out_type=tf.int32)))
+
+        iterator = dataset.make_one_shot_iterator()
+        print(tf.shape(iterator.get_next()))
+
+        return dataset
+
+    def map_dataset(self, dataset):
+        dataset = dataset.map(lambda node_id: self.get_mapped_id(node_id))
+        return dataset
+
+    def skip_gram_input(self) -> tf.data.Dataset:
+        """
+        Get the dataset to train on in skip-gram format.
+        :return: the dataset with node types as features and context as labels.
+        """
+        paragraphs, context, _ = self._apply_transformation(self.paths, self.samplingStrategies['skip-gram'])
+        return self._create_dataset(paragraphs, context)
+
+
 class NodeInput(Input):
 
     def __init__(self,
@@ -373,6 +427,12 @@ class NodeInput(Input):
 
 print("hello")
 sess = tf.InteractiveSession()
-node_input = NodeInput.from_raw_file(["mock_input.txt"], 2, 2)
-skip_gram_dataset = node_input.skip_gram_input()
+with open("/Users/laurenzseidel/Desktop/BachelorProjekt/Repo/32de-python/tests/data/mock_metapaths_edges.json", 'r') as myfile:
+    data=myfile.read()
+node_input = MetaPathsInput.from_json(data)
+skip_gram = node_input.skip_gram_input()
+# node_input = NodeFileInput("labels.txt", "features.txt", "vocabulary.txt")
+#
+# iterator = node_input.features.make_initializable_iterator()
+# sess.run(iterator.initializer)
 sess.close()

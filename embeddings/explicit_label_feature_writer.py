@@ -37,7 +37,6 @@ def write_labels_to_file(np_array, file):
 
 
 with open('labels.txt', 'w') as labels_file, open('features.txt', 'w') as features_file:
-
     for _ in range(iterations):
         batch_inputs, batch_context = batch_generator.generate_batch(batch_size, num_skips)
 
@@ -46,3 +45,7 @@ with open('labels.txt', 'w') as labels_file, open('features.txt', 'w') as featur
 
         write_labels_to_file(batch_inputs, labels_file)
         write_context_to_file(batch_context, features_file)
+
+with open('vocabulary.txt', 'w') as vocabulary_file:
+    for node_id in available_nodes:
+        vocabulary_file.write(str(node_id) + ' ')
