@@ -3,4 +3,4 @@ import redis
 
 if __name__=='__main__':
     client = redis.StrictRedis(host=REDIS_HOST, password=REDIS_PASSWORD, port=REDIS_PORT)
-    client.delete(*client.keys())
+    print(client.delete(*client.keys()))
