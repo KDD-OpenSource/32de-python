@@ -158,6 +158,13 @@ class SimilarityScore:
 			self.meta_paths_top_k[i]['similarity_score'] = self.similarity_scores[i]
 			self.explained_meta_paths_top_k.append(self.meta_paths_top_k[i])
 
+	def construct_query(self, query_mp, node_type_count, limit):
+		start_ids = '[' + ','.join(map(str, self.start_node_ids)) + ']'
+		end_ids = '[' + ','.join(map(str, self.end_node_ids)) + ']'
+		return "MATCH p = {} " \
+				"WHERE ID(n0) in {} and ID(n{}) in {} " \
+				"RETURN p LIMIT {}".format(query_mp, start_ids, node_type_count - 1, end_ids, limit)
+
 	def compute_contributing_meta_paths(self):
 		self.contributing_meta_paths = []
 
@@ -169,8 +176,9 @@ class SimilarityScore:
 				'color': 'hsl({}, 70%, 50%)'.format(np.random.rand() * 255),
 				'similarity_score': mp['similarity_score'],
 				'structural_value': int(mp['structural_value']),
-				'metapath': mp['metapath'].id_path_to_type_path(self.dataset['name']),
-				'instance_query': mp['metapath'].get_meta_path_instances_query(self.start_node_ids, self.end_node_ids, self.dataset['name'], 5)
+				'metapath': mp['metapath'].get_representation('UI'),
+				'instance_query': self.construct_query(mp['metapath'].get_representation('UI'),
+													   mp['metapath'].number_node_types(), 5)
 			}
 			self.contributing_meta_paths.append(mp_info)
 
