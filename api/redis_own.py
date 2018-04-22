@@ -16,7 +16,7 @@ class Redis:
 
     def meta_paths(self, start_type: str, end_type: str) -> List:
         self.logger.debug("Retrieving meta paths...")
-        pickled_list = self._client.lrange("{}_{}_{}".format(self.data_set, start_type, end_type), 0, -1)
+        pickled_list = self._client.lrange("{}_{}_{}_embedded".format(self.data_set, start_type, end_type), 0, -1)
         self.logger.debug("Number of meta paths for {} and {} is {}".format(start_type, end_type, len(pickled_list)))
         return [pickle.loads(pickled_entry) for pickled_entry in pickled_list]
 
@@ -43,7 +43,10 @@ class Redis:
     def store_embeddings(self, mp_embeddings_list: List[Tuple[List[str], List[float]]]):
         for mp, embedding in mp_embeddings_list:
             start_type, end_type = mp[0], mp[-1]
-            meta_path = MetaPath(edge_node_list=mp)
+            node_type_map, edge_type_map = self.id_to_node_type_map(), self.id_to_edge_type_map()
+            node_list = [node_type_map[str(node).encode()].decode() for node in mp[::2]]
+            edge_list = [edge_type_map[str(edge).encode()].decode() for edge in mp[1::2]]
+            meta_path = MetaPath(nodes=node_list, edges=edge_list)
             meta_path.store_embedding(embedding)
             self.logger.debug("Created meta path object".format(meta_path))
             self._client.lpush("{}_{}_{}_embedded".format(self.data_set, start_type, end_type), pickle.dumps(meta_path))
