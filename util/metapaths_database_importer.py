@@ -1,11 +1,10 @@
 import multiprocessing
 
-import embeddings.meta2vec
 from util.datastructures import MetaPath
 from util.config import MAX_META_PATH_LENGTH, AVAILABLE_DATA_SETS, PARALLEL_EXISTENCE_TEST_PROCESSES
 from api.neo4j_own import Neo4j
 from api.redis_own import Redis
-from typing import Dict, List, Tuple
+from typing import Dict, List
 import logging
 import ast
 import pickle
@@ -32,8 +31,6 @@ class RedisImporter:
                 self.logger.debug("Number of meta paths is: {}".format(len(meta_path_list)))
                 meta_paths_without_duplicates = list(set(meta_path_list))
                 self.logger.debug("After removal of duplicates: {}".format(len(meta_paths_without_duplicates)))
-                meta_path_list_embeddings = embeddings.meta2vec.calculate_metapath_embeddings(
-                    [[int(type) for type in mp.split("|")] for mp in meta_paths_without_duplicates])
                 self.id_to_edge_type_map = ast.literal_eval(record['edgesIDTypeDict'])
                 self.id_to_node_type_map = ast.literal_eval(record['nodesIDTypeDict'])
                 self.write_mappings(self.id_to_node_type_map, self.id_to_edge_type_map)
@@ -43,7 +40,7 @@ class RedisImporter:
                                                                                        len(existing_meta_paths),
                                                                                        data_set['name']))
                 else:
-                    self.write_paths(meta_path_list_embeddings)
+                    self.write_paths([mp.split("|") for mp in meta_paths_without_duplicates])
 
 
     # Executed if existence check is enabled
@@ -104,22 +101,19 @@ class RedisImporter:
         return existing_mps
 
     # Executed if existence check is disabled
-    def write_paths(self, paths: List[Tuple[List[str], List[float]]]):
-        for path, embedding in paths:
-            self.write_path(path, embedding)
+    def write_paths(self, paths: List[List[str]]):
+        for path in paths:
+            self.write_path(path)
 
     # Executed if existence check is disabled
-    def write_path(self, path: List[str], embedding: List[float]):
+    def write_path(self, path: List[str]):
         start_node = path[0]
         end_node = path[-1]
         self.logger.debug("Adding metapath {} to record {}".format(path, "{}_{}_{}".format(self.redis.data_set,
                                                                                                  start_node,
                                                                                                  end_node)))
-        self.logger.debug("Embedding is: {}".format(embedding))
         self.redis._client.lpush("{}_{}_{}".format(self.redis.data_set, start_node, end_node),
                                  pickle.dumps(MetaPath(edge_node_list=path)))
-        self.redis._client.lpush("{}_{}_{}_embedded".format(self.redis.data_set, start_node, end_node),
-                                 pickle.dumps(MetaPath(edge_node_list=embedding)))
 
     def write_mappings(self, node_type_mapping: Dict[int, str], edge_type_mapping: Dict[int, str]):
         self.redis._client.hmset("{}_node_type_map".format(self.redis.data_set), node_type_mapping)
