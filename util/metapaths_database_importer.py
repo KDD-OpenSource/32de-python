@@ -26,32 +26,34 @@ class RedisImporter:
         self.redis = Redis(data_set['name'])
         with Neo4j(data_set['bolt-url'], data_set['username'], data_set['password']) as neo4j:
             for record in neo4j.get_meta_paths_schema(MAX_META_PATH_LENGTH):
-                meta_path_list = ast.literal_eval(record['metaPaths'])
+                meta_path_dict = ast.literal_eval(record['metaPaths'])
+                self.logger.debug(type(meta_path_dict))
+                meta_path_list = list(meta_path_dict.items())
                 self.logger.debug("Received meta paths from neo4j: {}".format(meta_path_list))
                 self.logger.debug("Number of meta paths is: {}".format(len(meta_path_list)))
-                meta_paths_without_duplicates = list(set(meta_path_list))
-                self.logger.debug("After removal of duplicates: {}".format(len(meta_paths_without_duplicates)))
+                #meta_paths_without_duplicates = list(set(meta_path_list))
+                #self.logger.debug("After removal of duplicates: {}".format(len(meta_paths_without_duplicates)))
                 self.id_to_edge_type_map = ast.literal_eval(record['edgesIDTypeDict'])
                 self.id_to_node_type_map = ast.literal_eval(record['nodesIDTypeDict'])
                 self.write_mappings(self.id_to_node_type_map, self.id_to_edge_type_map)
-                meta_paths_without_duplicates.sort(key=len)
+                #meta_paths_without_duplicates.sort(key=len)
                 if self.enable_existence_check:
-                    result = self.start_parallel_existence_checks(meta_paths_without_duplicates, data_set)
+                    result = self.start_parallel_existence_checks(meta_path_list, data_set)
                     self.logger.debug("Got result from existence check {}".format(result))
                     existing_meta_paths = [x for x in result if x is not None]
                     self.logger.debug("Existing meta_paths are {}".format(existing_meta_paths))
-                    self.logger.debug("From {} mps {} exist in graph {}".format(len(meta_paths_without_duplicates),
+                    self.logger.debug("From {} mps {} exist in graph {}".format(len(meta_path_list),
                                                                                        len(existing_meta_paths),
                                                                                        data_set['name']))
                 else:
-                    self.write_paths([mp.split("|") for mp in meta_paths_without_duplicates])
+                    self.write_paths([(mp[0].split("|"), mp[1]) for mp in meta_path_list])
 
     # Executed if existence check is enabled
     @staticmethod
     def check_existence(args):
         logger = logging.getLogger('MetaExp.ExistenceCheck')
         labels = []
-        (meta_path, data_set, edge_map, node_map) = args
+        (meta_path, structural_value, data_set, edge_map, node_map) = args
         mp_as_list = meta_path.split("|")
         logger.debug("Checking existance of {}".format(mp_as_list))
         for i, type in enumerate(mp_as_list):
@@ -68,6 +70,8 @@ class RedisImporter:
                 logger.debug("Adding metapath {} to record {}".format(mp_as_list, "{}_{}_{}".format(data_set['name'],
                                                                                                     start_node,
                                                                                                     end_node)))
+                mp_object = MetaPath(edge_node_list=mp_as_list)
+                mp_object.store_structural_value(float(structural_value))
                 Redis(data_set['name'])._client.lpush("{}_{}_{}".format(data_set['name'], start_node, end_node),
                                                       pickle.dumps(MetaPath(edge_node_list=mp_as_list)))
                 return mp_as_list
@@ -76,7 +80,7 @@ class RedisImporter:
     # Executed if existence check is enabled
     def start_parallel_existence_checks(self, meta_paths: List[str], data_set: Dict) -> List[List[str]]:
         with multiprocessing.Pool(processes=PARALLEL_EXISTENCE_TEST_PROCESSES) as pool:
-            args = [(mp, data_set, self.id_to_edge_type_map, self.id_to_node_type_map) for mp in meta_paths]
+            args = [(mp[0], mp[1], data_set, self.id_to_edge_type_map, self.id_to_node_type_map) for mp in meta_paths]
             return pool.map(self.check_existence, args)
 
     def start_sequential_existence_checks(self, meta_paths: List[str], data_set: Dict) -> List[List[str]]:

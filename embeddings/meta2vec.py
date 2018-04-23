@@ -3,17 +3,22 @@ import json
 from typing import Tuple
 import logging
 
+from util.datastructures import MetaPath
+
 logger = logging.getLogger('MetaExp.meta2vec')
 
 from embeddings.estimators import create_word2vec_estimator, create_paragraph_estimator
 from embeddings.input import *
 from embeddings.models import model_word2vec, model_paragraph_vectors_skipgram, model_paragraph_vectors_dbow
 
-
-def calculate_metapath_embeddings(metapaths: List[List[int]], model_dir: str = './model_dir', gpu_memory: float = 0.3,
+"""
+result.extend([[int(label) for label in pickle.loads(pickled_entry).get_representation('UI')]
+                           for pickled_entry in self._client.lrange(key, 0, -1)])
+"""
+def calculate_metapath_embeddings(metapaths: List[MetaPath], model_dir: str = './model_dir', gpu_memory: float = 0.3,
                                   loss: str = "cross_entropy", optimizer: str = "adam",
                                   metapath_embedding_size: int = None,
-                                  node_embedding_size=4, model_type='skip-gram') -> List[Tuple[List[str], List[float]]]:
+                                  node_embedding_size=4, model_type='skip-gram') -> List[Tuple[MetaPath, List[float]]]:
     """
 
     :param metapath_embedding_size:
