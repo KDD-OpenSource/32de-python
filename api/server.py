@@ -9,11 +9,12 @@ from flask_ask import Ask
 import logging
 from typing import Dict
 
+import embeddings.meta2vec
 from util.config import *
-from util.meta_path_loader_dispatcher import MetaPathLoaderDispatcher
-from util.graph_stats import GraphStats
 from active_learning.active_learner import UncertaintySamplingAlgorithm
-from explanation.explanation import SimilarityScore
+from explanation.explanation import SimilarityScore, Explanation
+from api.redis_own import Redis
+from util.metapaths_database_importer import RedisImporter
 
 app = Flask(__name__)
 ask = Ask(app, '/alexa')
@@ -32,21 +33,36 @@ app.config.from_object(__name__)
 app.config["SECRET_KEY"] = "37Y,=i9.,U3RxTx92@9j9Z[}"
 Session(app)
 
-# TODO: Fix CORS origins specification
-# Configure Cross Site Scripting
-if "METAEXP_DEV" in os.environ.keys() and os.environ["METAEXP_DEV"] == "true":
-    if REACT_PORT == 80:
-        CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://{}".format(SERVER_PATH)}})
-    else:
-        CORS(app, supports_credentials=True,
-             resources={r"/*": {"origins": "http://{}:{}".format(SERVER_PATH, REACT_PORT)}})
-else:
-    CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}})
+CORS(app, supports_credentials=True, resources={r"/*": {
+    "origins": ["https://hpi.de/mueller/metaexp-demo-api/", "http://172.20.14.22:3000", "http://localhost",
+                "http://localhost:3000", "http://metaexp.herokuapp.com"]}})
 
 
 def run(port, hostname, debug_mode):
     app.run(host=hostname, port=port, debug=debug_mode, threaded=True)
 
+
+@app.route('/redis-import', methods=['GET'])
+def redis_import():
+    RedisImporter(enable_existence_check=False).import_all()
+    return jsonify({'status': 200})
+
+
+@app.route('/test-import', methods=['GET'])
+def test_import():
+    RedisImporter(enable_existence_check=False).import_data_set(
+        {'name': 'Helmholtz', 'bolt-url': 'bolt://172.20.14.22:7697', 'username': 'neo4j',
+         'password': ''})
+    return jsonify({'status': 200})
+
+@app.route('/train-embeddings/<string:database>', methods=['GET'])
+def train_embedding(database):
+    redis = Redis(database)
+    logger.debug("Start computation of embeddings...")
+    meta_path_list_embeddings = embeddings.meta2vec.calculate_metapath_embeddings(redis.get_all_meta_paths())
+    logger.debug("Received embeddings {}".format(meta_path_list_embeddings))
+    redis.store_embeddings(meta_path_list_embeddings)
+    return jsonify({'status': 200})
 
 @app.route('/login', methods=["POST"])
 def login():
@@ -58,20 +74,24 @@ def login():
     session['username'] = data['username']
     session['dataset'] = data['dataset']
     session['purpose'] = data['purpose']
+    chosen_dataset = None
+    for dataset in AVAILABLE_DATA_SETS:
+        if dataset['name'] == session['dataset']:
+            chosen_dataset = dataset
+    if not chosen_dataset:
+        logger.error('Dataset {} not available'.format(data['dataset']))
+    session['dataset'] = chosen_dataset
 
     # setup data
-    # TODO use key from dataset to select data
-    meta_path_loader = MetaPathLoaderDispatcher().get_loader(session['dataset'])
-    meta_paths = meta_path_loader.load_meta_paths()
-    # TODO get Graph stats for current dataset
-    graph_stats = GraphStats()
-    session['active_learning_algorithm'] = UncertaintySamplingAlgorithm(meta_paths, hypothesis='Gaussian Process')
     session['meta_path_id'] = 1
     session['rated_meta_paths'] = []
-    # TODO feed this selection to the ALgorithms
-    session['selected_node_types'] = build_selection(graph_stats.get_node_types())
-    session['selected_edge_types'] = build_selection(graph_stats.get_edge_types())
 
+    redis = Redis(session['dataset']['name'])
+
+    # TODO feed this selection to the ALgorithms
+    session['selected_node_types'] = [(node_type.decode(), True) for node_type in redis.node_type_to_id_map().keys()]
+    session['selected_edge_types'] = [(edge_type.decode(), True) for edge_type in redis.edge_type_to_id_map().keys()]
+    logger.debug(session)
     return jsonify({'status': 200})
 
 
@@ -79,114 +99,52 @@ def login():
 def logout():
     rated_meta_paths = {
         'meta_paths': session['active_learning_algorithm'].create_output(),
-        'dataset': session['dataset'],
+        'dataset': session['dataset']['name'],
         'node_type_selection': session['selected_node_types'],
         'edge_type_selection': session['selected_edge_types'],
         'username': session['username'],
         'purpose': session['purpose']
     }
-    filename = '{}_{}_{}.json'.format(session['dataset'], session['username'], time.time())
+    filename = '{}_{}_{}.json'.format(session['dataset']['name'], session['username'], time.time())
     logger.info("Writing results to file {}...".format(filename))
     path = os.path.join(RATED_DATASETS_PATH, filename)
     json.dump(rated_meta_paths, open(path, "w", encoding="utf8"))
     session.clear()
-    return 'OK'
+    return jsonify({'status': 200})
 
 
-# TODO: If functionality "meta-paths for node set A and B" will be written in Java, team alpha will need this information in Java
-@app.route("/node-sets", methods=["POST"])
-def receive_node_sets():
-    """
-    Receives the node sets from the "Setup" page which the user selects.
-    This endpoint is called for each new added node.
+@app.route("/stop-rating", methods=["GET"])
+def stop_meta_path_rating():
+    session['similarity_score'].refresh()
 
-    The repeated calling enables us to start the following computations as early as possible
-    so that we can return information on the next pages faster.
-    For example on the first call we already know the type of the whole node set and
-    therefore can begin to retrieve the corresponding node sets.
-    """
-    # TODO: Check if necessary information is in request object
-    if not request.json:
-        abort(400)
-    raise NotImplementedError("This API endpoint isn't implemented in the moment")
+    return jsonify({'status': 200})
 
 
-@app.route("/node-sets", methods=["GET"])
-def send_node_sets():
-    """
-    Returns the node sets which the user previously selected on the "Setup" page.
-    """
-    # TODO: Does active_learning really needs this endpoint? Does someone needs this endpoint?
-    # TODO: Call fitting method in active_learning
-    # TODO: Check if necessary information is in request object
-    raise NotImplementedError("This API endpoint isn't implemented in the moment")
+@app.route("/node-types", methods=["POST"])
+def receive_meta_path_start_and_end_label():
+    redis = Redis(session['dataset']['name'])
+
+    json_response = request.get_json()
+    start_type = json_response['start_label']
+    end_type = json_response['end_label']
+    start_node_ids = json_response['start_node_ids']
+    end_node_ids = json_response['end_node_ids']
+
+    session['active_learning_algorithm'] = UncertaintySamplingAlgorithm(
+        redis.meta_paths(start_type, end_type),
+        hypothesis='Gaussian Process')
+    session['similarity_score'] = SimilarityScore(session['active_learning_algorithm'].get_complete_rating,
+                                                  session['dataset'],
+                                                  start_node_ids,
+                                                  end_node_ids)
+
+    return jsonify({'status': 200})
 
 
-@app.route("/first-node -set-query", methods=["GET"])
-def send_first_node_set():
-    return jsonify({'node_set_query': 'MATCH (n)-[r]->(m) RETURN n,r,m'})
-
-
-@app.route("/second-node-set-query", methods=["GET"])
-def send_second_node_set():
-    return jsonify({'node_set_query': 'MATCH (n)-[r]->(m) RETURN n,r,m'})
-
-
-@app.route("/contributing-meta-paths", methods=["GET"])
-def send_contributing_meta_paths():
-    contributing_meta_paths = [
-        {
-            "id": "make",
-            "label": "make",
-            "value": 551,
-            "color": "hsl(131, 70%, 50%)"
-        },
-        {
-            "id": "erlang",
-            "label": "erlang",
-            "value": 226,
-            "color": "hsl(358, 70%, 50%)"
-        },
-        {
-            "id": "c",
-            "label": "c",
-            "value": 129,
-            "color": "hsl(151, 70%, 50%)"
-        },
-        {
-            "id": "php",
-            "label": "php",
-            "value": 67,
-            "color": "hsl(52, 70%, 50%)"
-        },
-        {
-            "id": "java",
-            "label": "java",
-            "value": 452,
-            "color": "hsl(221, 70%, 50%)"
-        },
-        {
-            "id": "stylus",
-            "label": "stylus",
-            "value": 406,
-            "color": "hsl(102, 70%, 50%)"
-        },
-        {
-            "id": "ruby",
-            "label": "ruby",
-            "value": 433,
-            "color": "hsl(341, 70%, 50%)"
-        }
-    ]
-
-    return jsonify({'contributing_meta_paths': contributing_meta_paths})
-
-
-# TODO: If functionality "meta-paths for node set A and B" will be written in Java, team alpha will need this information in Java
 @app.route("/set-edge-types", methods=["POST"])
 def receive_edge_types():
     """
-    Receives the node and edge types which are selected (types which are active) on the "Config" page.
+    Receives edge types which are selected on the Config page
     """
 
     # TODO: Check if necessary information is in request object
@@ -195,14 +153,14 @@ def receive_edge_types():
 
     edge_types = request.get_json()
     session['selected_edge_types'] = edge_types
-    return 'OK'
+
+    return jsonify({'edge_types': edge_types})
 
 
-# TODO: If functionality "meta-paths for node set A and B" will be written in Java, team alpha will need this information in Java
 @app.route("/set-node-types", methods=["POST"])
 def receive_node_types():
     """
-    Receives the node and edge types which are selected (types which are active) on the "Config" page.
+    Receives node types which are selected on the Config page
     """
 
     # TODO: Check if necessary information is in request object
@@ -211,27 +169,25 @@ def receive_node_types():
 
     node_types = request.get_json()
     session['selected_node_types'] = node_types
-    return 'OK'
+
+    return jsonify({'node_types': node_types})
 
 
 @app.route("/get-edge-types", methods=["GET"])
 def send_edge_types():
     """
-    Returns the available edge types for the "Config" page
+    :return: Array of available edge types for the Config page
     """
+
     return jsonify(session['selected_edge_types'])
 
 
 @app.route("/get-node-types", methods=["GET"])
 def send_node_types():
     """
-    Returns the available node types for the "Config" page
+    :return: Array of available node types for the Config page
     """
     return jsonify(session['selected_node_types'])
-
-
-def build_selection(types):
-    return [(element, True) for element in types]
 
 
 @app.route("/next-meta-paths/<int:batch_size>", methods=["GET"])
@@ -244,19 +200,17 @@ def send_next_metapaths_to_rate(batch_size):
         'metapath': ['Phenotype', 'HAS', 'Association', 'HAS', 'SNP', 'HAS', 'Phenotype'],
         'rating': 0.5}
     """
-    next_metapaths, is_last_batch, reference_paths = session['active_learning_algorithm'].get_next(batch_size=batch_size)
 
-    for i in range(len(next_metapaths)):
-        next_metapaths[i]['metapath'] = next_metapaths[i]['metapath'].as_list()
+    next_metapaths, is_last_batch, reference_paths = session['active_learning_algorithm'].get_next(
+        batch_size=batch_size)
+    logger.debug("Received meta paths from active learner {}".format(next_metapaths))
 
     paths = {'meta_paths': next_metapaths,
              'next_batch_available': not is_last_batch}
     if reference_paths:
         logger.info("Appending reference paths to response...")
-        min_path = reference_paths['min_path']
-        max_path = reference_paths['max_path']
-        paths['min_path']= min_path
-        paths['max_path']= max_path
+        paths['min_path'] = reference_paths['min_path']
+        paths['max_path'] = reference_paths['max_path']
 
     logger.debug("Responding to server: {}".format(paths))
     if "time" in session.keys():
@@ -269,12 +223,13 @@ def send_next_metapaths_to_rate(batch_size):
 @app.route("/get-available-datasets", methods=["GET"])
 def get_available_datasets():
     """
-        Deliver all available data sets for rating and a short description of each.
+    :return:  all data sets registered on the server and a dataset access properties of each
     """
-    return jsonify(MetaPathLoaderDispatcher().get_available_datasets())
+
+    return jsonify(AVAILABLE_DATA_SETS)
 
 
-def transform_rating(data:Dict) -> Dict:
+def transform_rating(data: Dict) -> Dict:
     logger.info("Transforming ratings")
 
     new_min_path_rating = data['min_path']['rating']
@@ -307,6 +262,7 @@ def transform_rating(data:Dict) -> Dict:
     logger.debug("Rating was transformed: {}".format(data['meta_paths']))
     return data
 
+
 # TODO: Maybe post each rated meta-path
 @app.route("/rate-meta-paths", methods=["POST"])
 def receive_rated_metapaths():
@@ -336,7 +292,7 @@ def receive_rated_metapaths():
             abort(400)
 
     if not session['active_learning_algorithm'].is_first_batch():
-       data = transform_rating(data)
+        data = transform_rating(data)
 
     logger.info("Updating active learning algorithm...")
     session['active_learning_algorithm'].update(data['meta_paths'])
@@ -346,16 +302,44 @@ def receive_rated_metapaths():
         if "time" in session.keys():
             data['time_to_rate'] = (time_results_received - session['time']).total_seconds()
 
-    return 'OK'
+    return jsonify({'status': 200})
 
 
 @app.route("/get-similarity-score", methods=["GET"])
 def send_similarity_score():
     """
-    TODO: Endpoint needs to request similarity score dynamically at SimilarityScore Class
+    :return: float, that is a similarity score between both node sets
     """
-    similarity_score = SimilarityScore()
-    return jsonify({'similarity_score': similarity_score.get_similarity_score()})
+    return jsonify({'similarity_score': session['similarity_score'].get_similarity_score()})
+
+
+@app.route("/contributing-meta-paths", methods=["GET"])
+def send_contributing_meta_paths():
+    """
+    :return: Array of dictionaries, that hold necessary information for a pie chart visualization
+            about k-most contributing meta-paths to overall similarity score
+    """
+    return jsonify({'contributing_meta_paths': session['similarity_score'].get_contributing_meta_paths()})
+
+
+@app.route("/contributing-meta-path/<int:meta_path_id>", methods=["GET"])
+def send_contributing_meta_path(meta_path_id):
+    """
+    :param meta_path_id: Integer, that is a unique identifier for a meta-path
+    :return: Dictionary, that holds detailed information about the belonging meta-path
+    """
+    return jsonify({'meta_path': session['similarity_score'].get_contributing_meta_path(meta_path_id)})
+
+
+@app.route("/similar-nodes", methods=["GET"])
+def send_similar_nodes():
+    """
+    :return: Array of dictionaries, that hold a 1-neighborhood query and properties about
+             k-similar nodes regarding both node sets
+    """
+
+    explanation = Explanation()
+    return jsonify({'similar_nodes': explanation.get_similar_nodes()})
 
 
 # Self defined intents
