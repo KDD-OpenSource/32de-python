@@ -4,6 +4,7 @@ from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import (RBF, Matern, RationalQuadratic,
                                               ExpSineSquared, DotProduct,
                                               ConstantKernel)
+
 from matplotlib import pyplot as plt
 import numpy as np
 import logging
@@ -44,7 +45,7 @@ class GaussianProcessHypothesis:
     def __init__(self, meta_paths, **hypothesis_params):
         self.logger = logging.getLogger('MetaExp.{}'.format(__class__.__name__))
         kernel = 1.0 * RBF(length_scale=1.0, length_scale_bounds=(-1, 1))
-        self.gp = GaussianProcessRegressor(kernel=kernel, optimizer=None)
+        self.gp = GaussianProcessRegressor(kernel=kernel)
         if not 'embedding_strategy' in hypothesis_params:
             self.meta_paths = np.array([mp.get_representation('embedding') for mp in meta_paths])
             self.logger.debug(self.meta_paths)
@@ -101,7 +102,7 @@ class GaussianProcessHypothesis:
     def predict_rating(self, idx):
         prediction = self.gp.predict(self.meta_paths[idx])
         self.logger.debug("prediction for {} is {}", self.meta_paths[idx], prediction)
-        return self.gp.predict(self.meta_paths[idx])
+        return prediction
 
     def get_uncertainty(self, idx):
         uncertainty_all_meta_paths = self.gp.predict(self.meta_paths[idx], return_std=True)[1]
