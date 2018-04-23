@@ -11,10 +11,7 @@ from embeddings.estimators import create_word2vec_estimator, create_paragraph_es
 from embeddings.input import *
 from embeddings.models import model_word2vec, model_paragraph_vectors_skipgram, model_paragraph_vectors_dbow
 
-"""
-result.extend([[int(label) for label in pickle.loads(pickled_entry).get_representation('UI')]
-                           for pickled_entry in self._client.lrange(key, 0, -1)])
-"""
+
 def calculate_metapath_embeddings(metapaths: List[MetaPath], model_dir: str = './model_dir', gpu_memory: float = 0.3,
                                   loss: str = "cross_entropy", optimizer: str = "adam",
                                   metapath_embedding_size: int = None,
@@ -26,7 +23,10 @@ def calculate_metapath_embeddings(metapaths: List[MetaPath], model_dir: str = '.
     :return: The embedding of the meta-paths in the same order as the given meta-paths.
              Every list represents a vector.
     """
-    input = MetaPathsInput.from_paths_list(metapaths)
+    result = []
+    for metapath in metapaths:
+        result.append([int(label) for label in metapath.as_list()])
+    input = MetaPathsInput.from_paths_list(result)
 
     if metapath_embedding_size is None:
         metapath_embedding_size = int(len(metapaths) / 100)  # TODO: there's some formula in the literatur
