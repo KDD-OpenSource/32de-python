@@ -28,7 +28,7 @@ class RedisImporter:
             for record in neo4j.get_meta_paths_schema(MAX_META_PATH_LENGTH):
                 meta_path_dict = ast.literal_eval(record['metaPaths'])
                 self.logger.debug(type(meta_path_dict))
-                meta_path_list = list(meta_path_dict.items())
+                meta_path_list = meta_path_dict
                 self.logger.debug("Received meta paths from neo4j: {}".format(meta_path_list))
                 self.logger.debug("Number of meta paths is: {}".format(len(meta_path_list)))
                 #meta_paths_without_duplicates = list(set(meta_path_list))
