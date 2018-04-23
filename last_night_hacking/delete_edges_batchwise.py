@@ -18,7 +18,7 @@ with open('last_night_hacking/UninterestingDomains.txt', 'r') as uninteresting_d
 
 def run_query_for_domain(domain):
 	print("Start deleting domain {}".format(domain))
-	with Neo4j(uri=bolt_url_local, user='neo4j', password='') as neo4j:
+	with Neo4j(uri=bolt_url_freebase, user='neo4j', password='') as neo4j:
 		neo4j.delete_edge_with_domain(domain)
 
 	print("Finshed deleting domain {}".format(domain))
