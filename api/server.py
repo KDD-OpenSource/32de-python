@@ -9,6 +9,7 @@ from flask_ask import Ask
 import logging
 from typing import Dict
 
+import embeddings.meta2vec
 from util.config import *
 from active_learning.active_learner import UncertaintySamplingAlgorithm
 from explanation.explanation import SimilarityScore, Explanation
@@ -43,7 +44,7 @@ def run(port, hostname, debug_mode):
 
 @app.route('/redis-import', methods=['GET'])
 def redis_import():
-    RedisImporter(enable_existence_check=False).import_all()
+    RedisImporter(enable_existence_check=True).import_all()
     return jsonify({'status': 200})
 
 
@@ -54,6 +55,14 @@ def test_import():
          'password': ''})
     return jsonify({'status': 200})
 
+@app.route('/train-embeddings/<string:database>', methods=['GET'])
+def train_embedding(database):
+    redis = Redis(database)
+    logger.debug("Start computation of embeddings...")
+    meta_path_list_embeddings = embeddings.meta2vec.calculate_metapath_embeddings(redis.get_all_meta_paths())
+    logger.debug("Received embeddings {}".format(meta_path_list_embeddings))
+    redis.store_embeddings(meta_path_list_embeddings)
+    return jsonify({'status': 200})
 
 @app.route('/login', methods=["POST"])
 def login():
@@ -114,9 +123,6 @@ def stop_meta_path_rating():
 @app.route("/node-types", methods=["POST"])
 def receive_meta_path_start_and_end_label():
     redis = Redis(session['dataset']['name'])
-    node_type_to_id = redis.node_type_to_id_map()
-
-    logger.debug("node type to id map is: {}".format(node_type_to_id))
 
     json_response = request.get_json()
     start_type = json_response['start_label']
@@ -124,10 +130,8 @@ def receive_meta_path_start_and_end_label():
     start_node_ids = json_response['start_node_ids']
     end_node_ids = json_response['end_node_ids']
 
-    start_type_id = node_type_to_id[start_type.encode()].decode()
-    end_type_id = node_type_to_id[end_type.encode()].decode()
     session['active_learning_algorithm'] = UncertaintySamplingAlgorithm(
-        redis.meta_paths(start_type_id, end_type_id),
+        redis.meta_paths(start_type, end_type),
         hypothesis='Gaussian Process')
     session['similarity_score'] = SimilarityScore(session['active_learning_algorithm'].get_complete_rating,
                                                   session['dataset'],
@@ -197,31 +201,14 @@ def send_next_metapaths_to_rate(batch_size):
         'rating': 0.5}
     """
 
-    redis = Redis(session['dataset']['name'])
-    id_to_node_type = redis.id_to_node_type_map()
-    id_to_edge_type = redis.id_to_edge_type_map()
-
     next_metapaths, is_last_batch, reference_paths = session['active_learning_algorithm'].get_next(
         batch_size=batch_size)
-
-    string = [next_metapaths[i]['metapath'].as_list() for i in range(len(next_metapaths))]
-    logger.debug("Received meta paths from active learner {}".format(string))
-
-    for i in range(len(next_metapaths)):
-        transformed_mp = next_metapaths[i]['metapath'].transform_representation(id_to_node_type, id_to_edge_type)
-        logger.debug("Transformed {} to {}".format(next_metapaths[i]['metapath'], transformed_mp))
-        next_metapaths[i]['metapath'] = transformed_mp.as_list()
+    logger.debug("Received meta paths from active learner {}".format(next_metapaths))
 
     paths = {'meta_paths': next_metapaths,
              'next_batch_available': not is_last_batch}
     if reference_paths:
         logger.info("Appending reference paths to response...")
-        reference_paths['min_path']['metapath'] = reference_paths['min_path']['metapath'].transform_representation(
-            id_to_node_type, id_to_edge_type).as_list()
-        reference_paths['max_path']['metapath'] = reference_paths['max_path']['metapath'].transform_representation(
-            id_to_node_type, id_to_edge_type).as_list()
-        logger.debug("Transformed path: {}".format(reference_paths['min_path']))
-        logger.debug("Transformed path: {}".format(reference_paths['max_path']))
         paths['min_path'] = reference_paths['min_path']
         paths['max_path'] = reference_paths['max_path']
 

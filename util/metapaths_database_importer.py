@@ -1,4 +1,5 @@
 import multiprocessing
+
 from util.datastructures import MetaPath
 from util.config import MAX_META_PATH_LENGTH, AVAILABLE_DATA_SETS, PARALLEL_EXISTENCE_TEST_PROCESSES
 from api.neo4j_own import Neo4j
@@ -33,21 +34,24 @@ class RedisImporter:
                 self.id_to_edge_type_map = ast.literal_eval(record['edgesIDTypeDict'])
                 self.id_to_node_type_map = ast.literal_eval(record['nodesIDTypeDict'])
                 self.write_mappings(self.id_to_node_type_map, self.id_to_edge_type_map)
+                meta_paths_without_duplicates.sort(key=len)
                 if self.enable_existence_check:
-                    existing_meta_paths = self.start_parallel_existence_checks(meta_paths_without_duplicates, data_set)
-                    self.logger.debug("From {} mps {} do not exist in graph {}".format(len(meta_paths_without_duplicates),
+                    result = self.start_parallel_existence_checks(meta_paths_without_duplicates, data_set)
+                    self.logger.debug("Got result from existence check {}".format(result))
+                    existing_meta_paths = [x for x in result if x is not None]
+                    self.logger.debug("Existing meta_paths are {}".format(existing_meta_paths))
+                    self.logger.debug("From {} mps {} exist in graph {}".format(len(meta_paths_without_duplicates),
                                                                                        len(existing_meta_paths),
                                                                                        data_set['name']))
                 else:
-                    self.write_paths(meta_paths_without_duplicates)
-
+                    self.write_paths([mp.split("|") for mp in meta_paths_without_duplicates])
 
     # Executed if existence check is enabled
     @staticmethod
     def check_existence(args):
         logger = logging.getLogger('MetaExp.ExistenceCheck')
-        (meta_path, data_set, edge_map, node_map) = args
         labels = []
+        (meta_path, data_set, edge_map, node_map) = args
         mp_as_list = meta_path.split("|")
         logger.debug("Checking existance of {}".format(mp_as_list))
         for i, type in enumerate(mp_as_list):
@@ -67,6 +71,7 @@ class RedisImporter:
                 Redis(data_set['name'])._client.lpush("{}_{}_{}".format(data_set['name'], start_node, end_node),
                                                       pickle.dumps(MetaPath(edge_node_list=mp_as_list)))
                 return mp_as_list
+        return None
 
     # Executed if existence check is enabled
     def start_parallel_existence_checks(self, meta_paths: List[str], data_set: Dict) -> List[List[str]]:
@@ -74,7 +79,7 @@ class RedisImporter:
             args = [(mp, data_set, self.id_to_edge_type_map, self.id_to_node_type_map) for mp in meta_paths]
             return pool.map(self.check_existence, args)
 
-    def start_sequential_existence_checks(self, meta_paths: List[str], data_set:Dict) -> List[List[str]]:
+    def start_sequential_existence_checks(self, meta_paths: List[str], data_set: Dict) -> List[List[str]]:
         existing_mps = []
         for meta_path in meta_paths:
             labels = []
@@ -100,20 +105,19 @@ class RedisImporter:
         return existing_mps
 
     # Executed if existence check is disabled
-    def write_paths(self, paths: List[str]):
+    def write_paths(self, paths: List[List[str]]):
         for path in paths:
             self.write_path(path)
 
     # Executed if existence check is disabled
-    def write_path(self, path: str):
-        mp_as_list = path.split("|")
-        start_node = mp_as_list[0]
-        end_node = mp_as_list[-1]
-        self.logger.debug("Adding metapath {} to record {}".format(mp_as_list, "{}_{}_{}".format(self.redis.data_set,
+    def write_path(self, path: List[str]):
+        start_node = path[0]
+        end_node = path[-1]
+        self.logger.debug("Adding metapath {} to record {}".format(path, "{}_{}_{}".format(self.redis.data_set,
                                                                                                  start_node,
                                                                                                  end_node)))
         self.redis._client.lpush("{}_{}_{}".format(self.redis.data_set, start_node, end_node),
-                                 pickle.dumps(MetaPath(edge_node_list=mp_as_list)))
+                                 pickle.dumps(MetaPath(edge_node_list=path)))
 
     def write_mappings(self, node_type_mapping: Dict[int, str], edge_type_mapping: Dict[int, str]):
         self.redis._client.hmset("{}_node_type_map".format(self.redis.data_set), node_type_mapping)

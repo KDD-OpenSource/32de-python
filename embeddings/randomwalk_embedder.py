@@ -76,7 +76,7 @@ class LongWalkBatchGenerator(BatchGenerator):
 
         dummy_back = [None] * padding_size
         for i in range(padding_size):
-            dummy_back[i] = seq[len(seq) - (i % len(seq))]
+            dummy_back[i] = seq[(len(seq) - 1 - i) % len(seq)]
 
         prepared = dummy_front + seq + dummy_back
         return prepared
@@ -118,6 +118,18 @@ def read_walks(file_name):
         for line in file:
             content = line[line.find("[") + 1:line.find("]")]
             node_ids = [int(id) for id in content.split(", ")]
+
+            walk_list.append(node_ids)
+            available_nodes |= set(node_ids)
+    return walk_list, available_nodes
+
+# Walks are given like "2314 123123 4324 2344 2344"
+def simple_read_walks(file_name):
+    walk_list = []
+    available_nodes = set()
+    with open(file_name) as file:
+        for line in file:
+            node_ids = [int(id) for id in line.split(" ")]
 
             walk_list.append(node_ids)
             available_nodes |= set(node_ids)

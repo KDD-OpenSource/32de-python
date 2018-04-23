@@ -52,7 +52,7 @@ class AbstractActiveLearningAlgorithm(ABC):
         self.logger.debug(
             "Max ref path is {} with rating {}".format(max_ref_path_id, self.meta_paths_rating[max_ref_path_id]))
         return {'id': int(max_ref_path_id),
-                'metapath': copy(self.meta_paths[max_ref_path_id]),
+                'metapath': self.meta_paths[max_ref_path_id].get_representation('UI'),
                 'rating': self.UI_MAX_VALUE}
 
     def get_min_ref_path(self) -> Dict:
@@ -62,7 +62,7 @@ class AbstractActiveLearningAlgorithm(ABC):
         self.logger.debug(
             "Max ref path is {} with rating {}".format(min_ref_path_id, self.meta_paths_rating[min_ref_path_id]))
         return {'id': int(min_ref_path_id),
-                'metapath': copy(self.meta_paths[min_ref_path_id]),
+                'metapath': self.meta_paths[min_ref_path_id].get_representation('UI'),
                 'rating': self.UI_MIN_VALUE}
 
     def has_one_batch_left(self, batch_size):
@@ -94,7 +94,7 @@ class AbstractActiveLearningAlgorithm(ABC):
         ids = self._select(batch_size)
 
         mps = [{'id': int(meta_id),
-                'metapath': copy(meta_path),
+                'metapath': meta_path.get_representation('UI'),
                 'rating': self.STANDARD_RATING} for meta_id, meta_path in
                zip(ids, self.meta_paths[ids])]
 
@@ -111,7 +111,7 @@ class AbstractActiveLearningAlgorithm(ABC):
 
     def create_output(self):
         mps = [{'id': int(meta_id[0]),
-                'metapath': meta_path.as_list(),
+                'metapath': meta_path.get_representation('UI'),
                 'rating': self.meta_paths_rating[meta_id]} for meta_id, meta_path in np.ndenumerate(self.meta_paths) if
                self.visited[meta_id] == State.VISITED]
         return mps

@@ -1,111 +1,56 @@
-import tensorflow as tf
 import argparse
 import json
+from typing import Tuple
+import logging
 
-from embeddings.input import Input, NodeEdgeTypeInput, NodeInput
+logger = logging.getLogger('MetaExp.meta2vec')
+
+from embeddings.estimators import create_word2vec_estimator, create_paragraph_estimator
+from embeddings.input import *
+from embeddings.models import model_word2vec, model_paragraph_vectors_skipgram, model_paragraph_vectors_dbow
 
 
-def model_word2vec(features, labels, mode, params):
+def calculate_metapath_embeddings(metapaths: List[List[int]], model_dir: str = './model_dir', gpu_memory: float = 0.3,
+                                  loss: str = "cross_entropy", optimizer: str = "adam",
+                                  metapath_embedding_size: int = None,
+                                  node_embedding_size=4, model_type='skip-gram') -> List[Tuple[List[str], List[float]]]:
     """
-    Word2vec model from "Efficient Estimation of Word Representations in Vector Space" (Mikolov et al.)
-    TODO: Add documentation
-    :return:
+
+    :param metapath_embedding_size:
+    :param metapaths: The meta-paths to be embedded.
+    :return: The embedding of the meta-paths in the same order as the given meta-paths.
+             Every list represents a vector.
     """
-    input = tf.feature_column.input_layer(features, params['feature_columns'])
-    size_of_vocabulary = input.shape[1].value
+    input = MetaPathsInput.from_paths_list(metapaths)
 
-    word_embeddings = tf.Variable(
-        initial_value=tf.random_uniform(shape=[size_of_vocabulary, params['embedding_size']], minval=-1, maxval=1),
-        name='word_embeddings')
+    if metapath_embedding_size is None:
+        metapath_embedding_size = int(len(metapaths) / 100)  # TODO: there's some formula in the literatur
 
-    # Look up embedding for all words
-    embedded_words = tf.nn.embedding_lookup(word_embeddings, tf.argmax(input, axis=1))
-    assert embedded_words.shape == (
-        input.shape[0].value, params['embedding_size']), 'Shape expected ({}, {}), but was {}'.format(
-        input.shape[0].value, params['embedding_size'], embedded_words.shape)
+    model_fn = choose_model_function(model='paragraph_vectors', model_type=model_type)
+    classifier = create_paragraph_estimator(model_dir=model_dir, model_fn=model_fn,
+                                            node_count=input.get_vocab_size(), paths_count=input.paths_count(),
+                                            sentence_embedding_size=metapath_embedding_size,
+                                            word_embedding_size=node_embedding_size, optimizer=optimizer,
+                                            loss=loss, gpu_memory=gpu_memory)
 
-    return _model_word2vec(mode, size_of_vocabulary, params['loss'], labels, embedded_words)
+    logger.info("Beginning training...")
+    # TODO: Clean up the naming mess
+    if model_type == 'skip-gram':
+        input_fn = input.bag_of_words_input
+    elif model_type == 'bag-of-words':
+        input_fn = input.skip_gram_input
+    classifier.train(input_fn=input_fn)
+    logger.info("Finished training.")
 
+    # Get trained embeddings
+    trained_embeddings = classifier.get_variable_value(name='paragraph_embeddings')
 
-def _model_word2vec(mode, size_of_vocabulary, loss: str, labels, embedded_words):
-    # Concatenate vectors
-    concatenated_embeddings = tf.reshape(tf.concat(tf.unstack(embedded_words, axis=0), axis=0), shape=[1, -1])
-    assert concatenated_embeddings.shape == (
-        1, embedded_words.shape[0].value * embedded_words.shape[1].value), 'Shape expected ({}), but was {}'.format(
-        1, embedded_words.shape[0].value * embedded_words.shape[1].value, concatenated_embeddings.shape)
+    embedded_metapaths = []
+    for id, metapath in enumerate(trained_embeddings):
+        embedded_metapaths.append((metapaths[id], metapath.tolist()))
 
-    # Transform embeddings linearly
-    hidden_layer = tf.layers.dense(inputs=concatenated_embeddings, units=size_of_vocabulary, activation=None,
-                                   use_bias=True,
-                                   name="linear_transformation",
-                                   kernel_initializer=tf.random_uniform_initializer(minval=-1, maxval=1))
-    assert hidden_layer.shape == (
-        1, size_of_vocabulary), 'Shape expected ({}, {}), but was {}'.format(
-        1, size_of_vocabulary, hidden_layer.shape)
-
-    # Apply softmax and calulate loss
-    if loss == 'cross_entropy':
-        # TODO: Reduce to one vector when using skip-grams (so shape is (1, 14) and not (1, 56))
-        labels = tf.reshape(tf.one_hot(indices=labels, depth=size_of_vocabulary), shape=[1, -1])
-        assert labels.shape == (
-            1, size_of_vocabulary), 'Shape expected ({}, {}), but was {}'.format(
-            1, size_of_vocabulary, labels.shape)
-        loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=hidden_layer, labels=labels),
-                              name="cross_entropy_loss")
-    else:
-        raise NotImplementedError("This loss isn't implemented yet. Implement it!")
-
-    optimizer = tf.train.AdamOptimizer()
-    total_train_op = optimizer.minimize(loss, global_step=tf.train.get_global_step())
-
-    metrics = {'loss': loss}
-    # Loss for tensorboard
-    tf.summary.scalar('Loss', loss)
-
-    if mode == tf.estimator.ModeKeys.TRAIN:
-        return tf.estimator.EstimatorSpec(mode, loss=loss, train_op=total_train_op)
-    else:
-        raise NotImplementedError("This mode isn't implemented yet")
-
-
-def model_paragraph_vectors_skipgram():
-    """
-    Distributed Memory Model of Paragraph Vectors (PV-DM) from "Distributed Representations of Sentences and Documents" (Mikolov et al.)
-    :return:
-    """
-    pass
-
-
-def model_paragraph_vectors_dbow():
-    """
-    Distributed Bag of Words version of Paragraph Vector (PV-DBOW) from "Distributed Representations of Sentences and Documents" (Mikolov et al.)
-    :return:
-    """
-    pass
-
-
-def create_estimator(model_dir, model_fn, input: Input, embedding_size: int, loss: str, gpu_memory: float):
-    features = tf.feature_column.categorical_column_with_hash_bucket('features',
-                                                                     input.get_vocab_size(),
-                                                                     dtype=tf.int32)
-    indicator_column = tf.feature_column.indicator_column(features)
-    session_config = tf.ConfigProto()
-    session_config.gpu_options.per_process_gpu_memory_fraction = gpu_memory
-    run_config = tf.estimator.RunConfig(tf_random_seed=42,
-                                        save_summary_steps=500,
-                                        save_checkpoints_steps=1000,
-                                        keep_checkpoint_max=5,
-                                        keep_checkpoint_every_n_hours=0.25,
-                                        log_step_count_steps=50,
-                                        session_config=session_config)
-    classifier = tf.estimator.Estimator(
-        model_fn=model_fn,
-        model_dir=model_dir,
-        params={'feature_columns': [indicator_column],
-                'embedding_size': embedding_size,
-                'loss': loss},
-        config=run_config)
-    return classifier
+    logger.debug("Returning embedded meta-paths")
+    return embedded_metapaths
 
 
 def parse_arguments():
@@ -115,7 +60,7 @@ def parse_arguments():
                         default="train",
                         help="Specify what you want to do: 'train', 'predict' or 'eval'.")
     parser.add_argument('--input_type',
-                        choices=["meta-paths", "nodes"],
+                        choices=["meta-paths", "node-types", "nodes"],
                         help='Choose input type of data in json',
                         type=str,
                         required=True)
@@ -138,8 +83,10 @@ def parse_arguments():
                         type=str,
                         required=True)
     parser.add_argument('--embedding_size',
-                        help='Specify the size of the embedding',
+                        help='Specify the size of the node embedding, paragraph embedding or both.'
+                             'If you want to specify both, you need to specify the node embedding first.',
                         type=int,
+                        nargs='+',
                         required=True)
     parser.add_argument('--gpu_memory',
                         help='Specify amount of GPU memory this process is allowed to use',
@@ -150,24 +97,42 @@ def parse_arguments():
                         help='Choose which loss should be used',
                         type=str,
                         required=True)
+    parser.add_argument('--optimizer',
+                        choices=['adam', 'sgd'],
+                        help='Choose which optimizer should be used',
+                        type=str,
+                        default='adam')
     return parser.parse_args()
 
 
 def choose_function(model: str, model_type: str, input_type: str, json_path: str):
     json_file = open(json_path, mode='r')
     json_data = json.load(json_file)
-    if input_type == "meta-paths":
+    json_file.close()
+    if input_type == "node-types":
         input = NodeEdgeTypeInput.from_json(json_data)
-        if model_type == "bag-of-words":
-            input_fn = input.bag_of_words_input
-        elif model_type == "skip-gram":
-            input_fn = input.skip_gram_input
     elif input_type == "nodes":
         input = NodeInput.from_json(json_data)
-        if model_type == "bag-of-words":
-            input_fn = input.bag_of_words_input
-        elif model_type == "skip-gram":
-            input_fn = input.skip_gram_input
+    elif input_type == "meta-paths":
+        input = MetaPathsInput.from_json(json_data)
+    else:
+        input = Input(paths=[], vocabulary=[])
+
+    input_fn = choose_input_function(input, model_type)
+
+    model_fn = choose_model_function(model, model_type)
+    return input, model_fn, input_fn
+
+
+def choose_input_function(input, model_type):
+    if model_type == "bag-of-words":
+        input_fn = input.bag_of_words_input
+    elif model_type == "skip-gram":
+        input_fn = input.skip_gram_input
+    return input_fn
+
+
+def choose_model_function(model, model_type):
     if model == "word2vec":
         model_fn = model_word2vec
     elif model == "paragraph_vectors":
@@ -175,7 +140,7 @@ def choose_function(model: str, model_type: str, input_type: str, json_path: str
             model_fn = model_paragraph_vectors_dbow
         elif model_type == "skip-gram":
             model_fn = model_paragraph_vectors_skipgram
-    return input, model_fn, input_fn
+    return model_fn
 
 
 if __name__ == "__main__":
@@ -183,13 +148,32 @@ if __name__ == "__main__":
     input, model_fn, input_fn = choose_function(model=args.model, model_type=args.model_type,
                                                 input_type=args.input_type,
                                                 json_path=args.json_path)
+    print("chose function")
+    if args.model == "word2vec":
+        classifier = create_word2vec_estimator(vocab_size=input.get_vocab_size(), model_fn=model_fn,
+                                               model_dir=args.model_dir,
+                                               embedding_size=args.embedding_size, loss=args.loss,
+                                               gpu_memory=args.gpu_memory)
+    elif args.model == "paragraph_vectors":
+        classifier = create_paragraph_estimator(model_dir=args.model_dir, model_fn=model_fn,
+                                                node_count=input.get_vocab_size(), paths_count=input.paths_count(),
+                                                sentence_embedding_size=args.embedding_size[1],
+                                                word_embedding_size=args.embedding_size[0], optimizer=args.optimizer,
+                                                loss=args.loss, gpu_memory=args.gpu_memory)
+        # TODO: Clean up the naming mess
+        if args.model_type == 'skip-gram':
+            input_fn = input.bag_of_words_input
+        elif args.model_type == 'bag-of-words':
+            input_fn = input.skip_gram_input
 
-    classifier = create_estimator(model_dir=args.model_dir, model_fn=model_fn, input=input,
-                                  embedding_size=args.embedding_size, loss=args.loss, gpu_memory=args.gpu_memory)
-
+    print("Created estimator")
     if args.mode == 'train':
-        classifier.train(input_fn=input_fn)
+        epochs = 0
+        while True:
+            print("Training epoch {}".format(epochs))
+            classifier.train(input_fn=input_fn)
+            epochs += 1
     elif args.mode == 'predict':
-        raise NotImplementedError()
+        raise NotImplementedError("Predict mode isn't implemented")
     elif args.mode == 'eval':
-        raise NotImplementedError()
+        raise NotImplementedError("Evaluate mode isn't implemented")
