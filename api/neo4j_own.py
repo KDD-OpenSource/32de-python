@@ -54,6 +54,12 @@ class Neo4j:
                 "Call apoc.util.sleep($duration);", duration=time)
             return probably_json.records()
 
+    def delete_edge_with_domain(self, domain):
+        query = 'MATCH ()-[r0:`{}`]-() DELETE r0;'.format(domain)
+        with self._driver.session() as session:
+            statement_result = session.run(query)
+            return statement_result
+
     def get_meta_paths_for_node_types(self, startType: str, endType: str, length: int):
         """
 
