@@ -53,7 +53,16 @@ class GaussianProcessHypothesis:
         self.plot_prior()
 
     def plot_prior(self):
-        return 1
+        X_ = self.meta_paths[:100]
+        y_mean, y_std = self.gp.predict(X_, return_std=True)
+        plt.plot(X_, y_mean, 'k', lw=3, zorder=9)
+        y_samples = self.gp.sample_y(X_, 10)
+        plt.plot(X_, y_samples, lw=1)
+        plt.xlim(-1, 1)
+        plt.ylim(-3, 3)
+        plt.title("Prior of GP", fontsize=12)
+        plt.savefig('prior.png', facecolor='w', edgecolor='w')
+        plt.savefig('prior.png', facecolor='w', edgecolor='w')
 
     def __getstate__(self):
         # Copy the object's state from self.__dict__ which contains
