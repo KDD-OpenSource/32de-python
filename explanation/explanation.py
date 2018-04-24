@@ -135,7 +135,7 @@ class SimilarityScore:
 	def apply_low_pass_filtering(input_array: List[float], filter_rate: int) -> List[float]:
 		return np.argsort(input_array)[-filter_rate:]
 
-	def get_normalized_structural_value(self, structural_value: float) -> float:
+	def get_normalized_structural_value(self, structural_value: float) -> List[float]:
 		return structural_value / self.sum_structural_values
 
 	def compute_top_k_contributing_meta_paths(self, k: int):
@@ -143,8 +143,8 @@ class SimilarityScore:
 		meta_paths_top_k_idx = np.argsort(self.similarity_scores)[-k:]
 		self.explained_meta_paths_top_k = []
 		for i in meta_paths_top_k_idx:
-			self.meta_paths_top_k[i]['similarity_score'] = self.similarity_scores[i]
-			self.explained_meta_paths_top_k.append(self.meta_paths_top_k[i])
+			self.meta_paths[i]['similarity_score'] = self.similarity_scores[i]
+			self.explained_meta_paths_top_k.append(self.meta_paths[i])
 
 	def construct_query(self, query_mp, node_type_count, limit):
 		start_ids = '[' + ','.join(map(str, self.start_node_ids)) + ']'
@@ -180,8 +180,8 @@ class SimilarityScore:
 		contrib_mp_sim_score_sum = np.sum(np.array([mp['similarity_score'] for mp in self.contributing_meta_paths]))
 		other_mp_sim_score = 1.0 - contrib_mp_sim_score_sum
 
-		contrib_mp_struct_sum = np.sum(np.array([mp['structural_value'] for mp in self.contributing_meta_paths]))
-		top_k_mp_struct_sum = np.sum(np.array([mp['structural_value'] for mp in self.meta_paths_top_k]))
+		contrib_mp_struct_sum = np.sum(np.array([mp.get_structural_value() for mp in self.contributing_meta_paths]))
+		top_k_mp_struct_sum = np.sum(np.array([mp.get_structural_value() for mp in self.meta_paths]))
 		other_mp_struct_score = top_k_mp_struct_sum - contrib_mp_struct_sum
 
 		other_mps_info = {
