@@ -43,11 +43,6 @@ class MetaPath:
     def is_empty(self) -> bool:
         return len(self) == 0
 
-    def transform_representation(self, node_map, label_map):
-        self._edges = [label_map[edge.encode()].decode() for edge in self._edges]
-        self._nodes = [node_map[node.encode()].decode() for node in self._nodes]
-        return self
-
     def as_list(self) -> List[str]:
         representation = [None] * len(self)
         representation[::2] = self._nodes

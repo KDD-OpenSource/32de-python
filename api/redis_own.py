@@ -45,12 +45,11 @@ class Redis:
             structural_value = mp_object.get_structural_value()
             self.logger.debug("Got mp {}".format(mp))
             node_type_map, edge_type_map = self.id_to_node_type_map(), self.id_to_edge_type_map()
-            start_type, end_type = node_type_map[str(mp[0][0]).encode()].decode(), node_type_map[str(mp[0][-1]).encode()].decode()
-            node_list = [node_type_map[str(node).encode()].decode() for node in mp[0][::2]]
-            edge_list = [edge_type_map[str(edge).encode()].decode() for edge in mp[0][1::2]]
+            start_type, end_type = node_type_map[str(mp[0]).encode()].decode(), node_type_map[str(mp[-1]).encode()].decode()
+            node_list = [node_type_map[str(node).encode()].decode() for node in mp[::2]]
+            edge_list = [edge_type_map[str(edge).encode()].decode() for edge in mp[1::2]]
             meta_path = MetaPath(nodes=node_list, edges=edge_list)
             meta_path.store_embedding(embedding)
-            meta_path.store_structural_value(structural_value)
             meta_path.store_structural_value(structural_value)
             self.logger.debug("Created meta path object {}".format(meta_path))
             self._client.lpush("{}_{}_{}_embedded".format(self.data_set, start_type, end_type), pickle.dumps(meta_path))
