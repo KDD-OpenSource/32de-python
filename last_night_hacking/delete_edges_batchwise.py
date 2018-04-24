@@ -10,18 +10,29 @@ bolt_url_local = 'bolt://10.188.123.112:7697/'
 
 print("Extract Domains")
 
+counter = 0
+domain_batch = []
+
 with open('last_night_hacking/UninterestingDomains.txt', 'r') as uninteresting_domains_file:
 	for line in uninteresting_domains_file:
+		counter += 1
+		if counter > 125:
+			counter = 1
+			extracted_domains.append(domain_batch)
+			domain_batch = []
 		extracted_domain = line.replace('\n', '').replace('\r', '')
-		extracted_domains.append(extracted_domain)
+		domain_batch.append(extracted_domain)
+	extracted_domains.append(domain_batch)
+
+print(extracted_domains)
 
 
-def run_query_for_domain(domain):
-	print("Start deleting domain {}".format(domain))
+def run_query_for_domain(dom_batch):
+	print("Start deleting domain batch")
 	with Neo4j(uri=bolt_url_freebase, user='neo4j', password='') as neo4j:
-		neo4j.delete_edge_with_domain(domain)
+		print(neo4j.delete_edge_with_domain_batch(dom_batch))
 
-	print("Finshed deleting domain {}".format(domain))
+	print("Finished deleting domain batch")
 
 
 print("Start multiprocessing")
