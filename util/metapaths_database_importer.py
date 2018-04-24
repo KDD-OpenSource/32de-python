@@ -71,9 +71,10 @@ class RedisImporter:
                                                                                                     start_node,
                                                                                                     end_node)))
                 mp_object = MetaPath(edge_node_list=mp_as_list)
+                logger.debug("Storing structural value {}...".format(structural_value))
                 mp_object.store_structural_value(float(structural_value))
                 Redis(data_set['name'])._client.lpush("{}_{}_{}".format(data_set['name'], start_node, end_node),
-                                                      pickle.dumps(MetaPath(edge_node_list=mp_as_list)))
+                                                      pickle.dumps(mp_object))
                 return mp_as_list
         return None
 
@@ -82,32 +83,6 @@ class RedisImporter:
         with multiprocessing.Pool(processes=PARALLEL_EXISTENCE_TEST_PROCESSES) as pool:
             args = [(mp[0], mp[1], data_set, self.id_to_edge_type_map, self.id_to_node_type_map) for mp in meta_paths]
             return pool.map(self.check_existence, args)
-
-    def start_sequential_existence_checks(self, meta_paths: List[str], data_set: Dict) -> List[List[str]]:
-        existing_mps = []
-        for meta_path in meta_paths:
-            labels = []
-            mp_as_list = meta_path.split("|")
-            self.logger.debug("Checking existance of {}".format(mp_as_list))
-            for i, type in enumerate(mp_as_list):
-                if i % 2:
-                    labels.append("[n{}:{}]".format(i, self.id_to_edge_type_map[type]))
-                else:
-                    labels.append("(e{}: {})".format(i, self.id_to_node_type_map[type]))
-            self.logger.debug("Querying for mp {}".format(mp_as_list))
-            with Neo4j(data_set['bolt-url'], data_set['username'], data_set['password']) as neo4j:
-                if neo4j.test_whether_meta_path_exists("-".join(labels)):
-                    self.logger.debug("Mp {} exists!".format("-".join(labels)))
-                    existing_mps.append(mp_as_list)
-                    start_node = mp_as_list[0]
-                    end_node = mp_as_list[-1]
-                    self.logger.debug(
-                        "Adding metapath {} to record {}".format(mp_as_list, "{}_{}_{}".format(data_set['name'],
-                                                                                               start_node,
-                                                                                               end_node)))
-                    Redis(data_set['name'])._client.lpush("{}_{}_{}".format(data_set['name'], start_node, end_node),
-                                                          pickle.dumps(MetaPath(edge_node_list=mp_as_list)))
-        return existing_mps
 
     # Executed if existence check is disabled
     def write_paths(self, paths: List[Tuple[List[str], float]]):
