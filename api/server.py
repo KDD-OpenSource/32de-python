@@ -15,6 +15,7 @@ from active_learning.active_learner import UncertaintySamplingAlgorithm
 from explanation.explanation import SimilarityScore, Explanation
 from api.redis_own import Redis
 from util.metapaths_database_importer import RedisImporter
+import util.tensor_logging as tl
 
 app = Flask(__name__)
 ask = Ask(app, '/alexa')
@@ -82,6 +83,11 @@ def login():
         logger.error('Dataset {} not available'.format(data['dataset']))
     session['dataset'] = chosen_dataset
 
+    session['logger'] = session['username'] + str(int(time.time()))
+    tl.get_logger(session['logger']).track_histogram('uncertainty')
+    tl.get_logger(session['logger']).track_histogram('rating')
+    tl.get_logger(session['logger']).start_writer()
+
     # setup data
     session['meta_path_id'] = 1
     session['rated_meta_paths'] = []
@@ -132,7 +138,7 @@ def receive_meta_path_start_and_end_label():
 
     session['active_learning_algorithm'] = UncertaintySamplingAlgorithm(
         redis.meta_paths(start_type, end_type),
-        hypothesis='Gaussian Process')
+        hypothesis='Gaussian Process', tf_logger=session['logger'])
     session['similarity_score'] = SimilarityScore(session['active_learning_algorithm'].get_complete_rating,
                                                   session['dataset'],
                                                   start_node_ids,
@@ -301,7 +307,7 @@ def receive_rated_metapaths():
     else:
         if "time" in session.keys():
             data['time_to_rate'] = (time_results_received - session['time']).total_seconds()
-
+    tl.get_logger(session['logger']).write_summary()
     return jsonify({'status': 200})
 
 

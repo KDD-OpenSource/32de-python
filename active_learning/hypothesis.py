@@ -3,12 +3,13 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import (RBF, Matern, RationalQuadratic,
                                               ExpSineSquared, DotProduct,
-                                              ConstantKernel)
+                                              ConstantKernel, PairwiseKernel)
+from sklearn.metrics.pairwise import cosine_similarity
 
 from matplotlib import pyplot as plt
 import numpy as np
 import logging
-import util.tensor_logging as tf_log
+import util.tensor_logging as tl
 
 class MPLengthHypothesis:
     """
@@ -42,9 +43,13 @@ class MPLengthHypothesis:
 
 
 class GaussianProcessHypothesis:
-    def __init__(self, meta_paths, **hypothesis_params):
+    def __init__(self, meta_paths, tf_logger, **hypothesis_params):
         self.logger = logging.getLogger('MetaExp.{}'.format(__class__.__name__))
-        kernel = 1.0 * RBF(length_scale=1.0, length_scale_bounds=(-1, 1))
+        kernel = DotProduct()
+        #kernel = 1.0 * RBF(length_scale=1.0, length_scale_bounds=(-1, 1))
+        #kernel = PairwiseKernel(cosine_similarity)
+        print(kernel)
+        self._tf_logger = tf_logger
         self.gp = GaussianProcessRegressor(kernel=kernel)
         if not 'embedding_strategy' in hypothesis_params:
             self.meta_paths = np.array([mp.get_representation('embedding') for mp in meta_paths])
@@ -106,6 +111,6 @@ class GaussianProcessHypothesis:
 
     def get_uncertainty(self, idx):
         uncertainty_all_meta_paths = self.gp.predict(self.meta_paths[idx], return_std=True)[1]
-        tf_log.get_logger('evaluator').update('uncertainty', uncertainty_all_meta_paths)
+        tl.get_logger(self._tf_logger).update('uncertainty',uncertainty_all_meta_paths)
         self.logger.debug("The uncertainty for the meta paths is: {}".format(uncertainty_all_meta_paths))
         return uncertainty_all_meta_paths
