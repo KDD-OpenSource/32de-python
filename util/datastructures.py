@@ -12,6 +12,7 @@ class MetaPath:
         self._edges = None
         self._nodes = None
         self._embedding = None
+        self._structural_value = None
         if 'nodes' in kwargs.keys() and 'edges' in kwargs.keys():
             nodes = kwargs['nodes']
             edges = kwargs['edges']
@@ -35,6 +36,10 @@ class MetaPath:
         self._embedding = embedding
         return self
 
+    def store_structural_value(self, structural_value: float):
+        self._structural_value = structural_value
+        return self
+
     def is_empty(self) -> bool:
         return len(self) == 0
 
@@ -48,6 +53,9 @@ class MetaPath:
         representation[::2] = self._nodes
         representation[1::2] = self._edges
         return representation
+
+    def get_structural_value(self) -> float:
+        return self._structural_value
 
     def __copy__(self):
         return type(self)(nodes=self._nodes, edges=self._edges)
