@@ -94,19 +94,7 @@ class SimilarityScore:
 		self.logger = logging.getLogger('MetaExp.{}'.format(__class__.__name__))
 
 	def refresh(self):
-		self.meta_paths_top_k = []
 		self.meta_paths = self.get_complete_rating()
-
-		domain_values = np.array([mp['domain_value'] for mp in self.meta_paths])
-		top_k_domain_idx = self.apply_low_pass_filtering(domain_values, 20)
-
-		for i in top_k_domain_idx:
-			self.meta_paths_top_k.append(self.meta_paths[i])
-
-		with Neo4j(uri=self.dataset['bolt-url'], user=self.dataset['username'],
-				   password=self.dataset['password']) as neo4j:
-			for mp in self.meta_paths_top_k:
-				mp['structural_value'] = neo4j.get_structural_value(mp['metapath'], self.start_node_ids, self.end_node_ids, self.dataset['name'])
 
 		self.compute_similarity_score()
 		self.compute_top_k_contributing_meta_paths(5)
@@ -121,8 +109,8 @@ class SimilarityScore:
 		over all meta-paths. First simplified, not experimentally tested baseline.
 		:return: similarity score between both node sets as float
 		"""
-		structural_values = np.array([mp['structural_value'] for mp in self.meta_paths_top_k])
-		domain_values = np.array([mp['domain_value'] for mp in self.meta_paths_top_k])
+		structural_values = np.array([mp.get_structural_value() for mp in self.meta_paths])
+		domain_values = np.array([mp['domain_value'] for mp in self.meta_paths])
 		domain_values = self.apply_rescaling(domain_values)
 		self.sum_structural_values = np.sum(structural_values)
 
