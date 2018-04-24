@@ -8,7 +8,7 @@ from sklearn.gaussian_process.kernels import (RBF, Matern, RationalQuadratic,
 from matplotlib import pyplot as plt
 import numpy as np
 import logging
-
+import util.tensor_logging as tf_log
 
 class MPLengthHypothesis:
     """
@@ -51,7 +51,7 @@ class GaussianProcessHypothesis:
             self.logger.debug(self.meta_paths)
         else:
             self.meta_paths = hypothesis_params['embedding_strategy'](meta_paths)
-        self.plot_prior()
+        #self.plot_prior()
 
     def plot_prior(self):
         X_ = self.meta_paths[:100]
@@ -106,5 +106,6 @@ class GaussianProcessHypothesis:
 
     def get_uncertainty(self, idx):
         uncertainty_all_meta_paths = self.gp.predict(self.meta_paths[idx], return_std=True)[1]
+        tf_log.get_logger('evaluator').update('uncertainty', uncertainty_all_meta_paths)
         self.logger.debug("The uncertainty for the meta paths is: {}".format(uncertainty_all_meta_paths))
         return uncertainty_all_meta_paths
