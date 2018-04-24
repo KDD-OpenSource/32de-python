@@ -25,7 +25,7 @@ class RedisImporter:
     def import_data_set(self, data_set: Dict):
         self.redis = Redis(data_set['name'])
         with Neo4j(data_set['bolt-url'], data_set['username'], data_set['password']) as neo4j:
-            for record in neo4j.get_meta_paths_schema(MAX_META_PATH_LENGTH):
+            for record in neo4j.get_meta_paths_schema_weigths(MAX_META_PATH_LENGTH):
                 meta_path_dict = ast.literal_eval(record['metaPaths'])
                 self.logger.debug(type(meta_path_dict))
                 meta_path_list = list(meta_path_dict.items())

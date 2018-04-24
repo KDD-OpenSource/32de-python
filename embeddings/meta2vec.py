@@ -12,7 +12,7 @@ from embeddings.input import *
 from embeddings.models import model_word2vec, model_paragraph_vectors_skipgram, model_paragraph_vectors_dbow
 
 
-def calculate_metapath_embeddings(metapaths: List[MetaPath], model_dir: str = './model_dir', gpu_memory: float = 0.3,
+def calculate_metapath_embeddings(metapaths: List[MetaPath], model_dir: str = './model_dir-7', gpu_memory: float = 0.3,
                                   loss: str = "cross_entropy", optimizer: str = "adam",
                                   metapath_embedding_size: int = None,
                                   node_embedding_size=4, model_type='skip-gram') -> List[Tuple[MetaPath, List[float]]]:

@@ -96,6 +96,17 @@ class Neo4j:
                 self.logger.debug("Query {} timed out".format(query))
                 return False
 
+    def get_meta_paths_schema_weigths(self, length: int):
+        """
+
+        :param length:
+        :return:
+        """
+        with self._driver.session() as session:
+            statement_result = session.run("Call algo.ComputeAllMetaPathsSchemaFullWeights($length);",
+                                           length=str(length))
+            return statement_result.records()
+
 
     def get_meta_paths_schema(self, length: int):
         """
