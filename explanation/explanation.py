@@ -72,6 +72,7 @@ class SimilarityScore:
 	similarity_scores = []
 	contributing_meta_paths = []
 	explained_meta_paths_top_k = []
+	structural_value = []
 
 	def __init__(self, get_complete_rating, dataset, start_node_ids, end_node_ids, algorithm_type=BASELINE_MODE):
 		self.algorithm_type = algorithm_type
@@ -109,14 +110,20 @@ class SimilarityScore:
 		over all meta-paths. First simplified, not experimentally tested baseline.
 		:return: similarity score between both node sets as float
 		"""
-		structural_values = np.array([mp.get_structural_value() for mp in self.meta_paths])
+		structural_values = np.array([mp['metapath'].get_structural_value() for mp in self.meta_paths])
 		domain_values = np.array([mp['domain_value'] for mp in self.meta_paths])
 		domain_values = self.apply_rescaling(domain_values)
-		self.sum_structural_values = np.sum(structural_values)
-
+		structural_values = self.min_max_normalization(structural_values)
+		self.structural_value = structural_values
 		self.similarity_scores = structural_values * domain_values
-
 		self.similarity_score = np.sum(self.similarity_scores) / len(self.similarity_scores)
+
+	@staticmethod
+	def min_max_normalization(input_array):
+		min_value = np.amin(input_array)
+		max_value = np.amax(input_array)
+		range = max_value - min_value
+		return ((input_array - min_value)/range)*100
 
 	@staticmethod
 	def apply_rescaling(input_array):
@@ -135,15 +142,13 @@ class SimilarityScore:
 	def apply_low_pass_filtering(input_array: List[float], filter_rate: int) -> List[float]:
 		return np.argsort(input_array)[-filter_rate:]
 
-	def get_normalized_structural_value(self, structural_value: float) -> List[float]:
-		return structural_value / self.sum_structural_values
-
 	def compute_top_k_contributing_meta_paths(self, k: int):
 		self.similarity_scores = self.apply_soft_max(self.similarity_scores)
 		meta_paths_top_k_idx = np.argsort(self.similarity_scores)[-k:]
 		self.explained_meta_paths_top_k = []
 		for i in meta_paths_top_k_idx:
 			self.meta_paths[i]['similarity_score'] = self.similarity_scores[i]
+			self.meta_paths[i]['metapath'].store_structural_value(self.structural_value[i])
 			self.explained_meta_paths_top_k.append(self.meta_paths[i])
 
 	def construct_query(self, query_mp, node_type_count, limit):
@@ -163,7 +168,7 @@ class SimilarityScore:
 				'value': round(mp['similarity_score'] * 100, 2),
 				'color': 'hsl({}, 70%, 50%)'.format(np.random.rand() * 255),
 				'similarity_score': mp['similarity_score'],
-				'structural_value': int(mp['structural_value']),
+				'structural_value': round(float(mp['metapath'].get_structural_value()), 2),
 				'metapath': mp['metapath'].get_representation('UI'),
 				'instance_query': self.construct_query(mp['metapath'].get_representation('UI'),
 													   mp['metapath'].number_node_types(), 5)
@@ -177,26 +182,6 @@ class SimilarityScore:
 			rank = int(rank[0] + 1)
 			self.contributing_meta_paths[i]['contribution_ranking'] = rank
 
-		contrib_mp_sim_score_sum = np.sum(np.array([mp['similarity_score'] for mp in self.contributing_meta_paths]))
-		other_mp_sim_score = 1.0 - contrib_mp_sim_score_sum
-
-		contrib_mp_struct_sum = np.sum(np.array([mp.get_structural_value() for mp in self.contributing_meta_paths]))
-		top_k_mp_struct_sum = np.sum(np.array([mp.get_structural_value() for mp in self.meta_paths]))
-		other_mp_struct_score = top_k_mp_struct_sum - contrib_mp_struct_sum
-
-		other_mps_info = {
-			'id': 0,
-			'label': "Others",
-			'value': int(other_mp_sim_score * 100),
-			'color': 'hsl({}, 70%, 50%)'.format(np.random.rand() * 255),
-			'similarity_score': other_mp_sim_score,
-			'structural_value': int(other_mp_struct_score),
-			'metapath': 'Seen on Explore Page',
-			'instance_query': 'RETURN 1',
-			'contribution_ranking': 0
-		}
-
-		self.contributing_meta_paths = [other_mps_info] + self.contributing_meta_paths
 
 	def get_similarity_score(self) -> float:
 		"""
