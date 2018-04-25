@@ -81,11 +81,12 @@ class GaussianProcessHypothesis:
         if len(idx) == 0:
             return []
         self.logger.debug("Fitting Gaussian process to new ratings...")
+
         self.gp.fit(self.meta_paths[idx], ratings)
 
     def predict_rating(self, idx):
         prediction = self.gp.predict(self.meta_paths[idx])
-        self.logger.debug("prediction for {} is {}", self.meta_paths[idx], prediction)
+        self.logger.debug("prediction for {} is {}".format(self.meta_paths[idx], prediction))
         return self.gp.predict(self.meta_paths[idx])
 
     def get_uncertainty(self, idx):

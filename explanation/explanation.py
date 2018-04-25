@@ -111,11 +111,16 @@ class SimilarityScore:
         """
         structural_values = np.array([mp['metapath'].get_structural_value() for mp in self.meta_paths])
         domain_values = np.array([mp['domain_value'] for mp in self.meta_paths])
+        self.logger.debug("All domain values {}".format(domain_values))
         domain_values = self.apply_rescaling(domain_values)
+        self.logger.debug("All domain values after rescale {}".format(domain_values))
         structural_values = self.min_max_normalization(structural_values)
         self.structural_value = structural_values
         self.similarity_scores = structural_values * domain_values
         self.similarity_score = np.sum(self.similarity_scores) / len(self.similarity_scores)
+        self.logger.debug("Structural Values {}".format(self.structural_value))
+        self.logger.debug("Domain Values {}".format(domain_values))
+        self.logger.debug("Similarity score ist {}".format(self.similarity_score))
 
     @staticmethod
     def min_max_normalization(input_array):
@@ -151,11 +156,8 @@ class SimilarityScore:
             self.explained_meta_paths_top_k.append(self.meta_paths[i])
 
     def construct_query(self, query_mp, node_type_count, limit):
-        start_ids = '[' + ','.join(map(str, self.start_node_ids)) + ']'
-        end_ids = '[' + ','.join(map(str, self.end_node_ids)) + ']'
         query = "MATCH p = {} " \
-                "WHERE ID(n0) in {} and ID(n{}) in {} " \
-                "RETURN p LIMIT {}".format(query_mp, start_ids, node_type_count - 1, end_ids, limit)
+                "RETURN p LIMIT {}".format(query_mp, limit)
         self.logger.debug(query)
         return query
 
