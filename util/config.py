@@ -39,7 +39,7 @@ MAX_META_PATH_LENGTH = 6
 AVAILABLE_DATA_SETS = [
     {
         'name': 'Helmholtz',
-        'url': 'https://hpi.de/mueller/metaexp-demo-neo4j',
+        'url': 'http://172.20.14.22:7484',
         'bolt-url': 'bolt://172.20.14.22:7697',
         'username': 'neo4j',
         'password': ''

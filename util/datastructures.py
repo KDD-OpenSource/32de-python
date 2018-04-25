@@ -70,8 +70,8 @@ class MetaPath:
         elif representation_type == 'embedding':
             return self._embedding
         elif representation_type == 'query':
-            nodes = ['[n{}:{}]'.format(i, node) for i, node in enumerate(self._nodes)]
-            edges = ['(e{}:{})'.format(i, edge) for i, edge in enumerate(self._edges)]
+            nodes = ['(n{}:{})'.format(i, node) for i, node in enumerate(self._nodes)]
+            edges = ['[e{}:{}]'.format(i, edge) for i, edge in enumerate(self._edges)]
             mp_query = [None] * len(self)
             mp_query[::2] = nodes
             mp_query[1::2] = edges
