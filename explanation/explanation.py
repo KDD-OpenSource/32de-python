@@ -147,7 +147,7 @@ class SimilarityScore:
         return np.argsort(input_array)[-filter_rate:]
 
     def compute_top_k_contributing_meta_paths(self, k: int):
-        self.similarity_scores = self.apply_soft_max(self.similarity_scores)
+        #self.similarity_scores = self.apply_soft_max(self.similarity_scores)
         meta_paths_top_k_idx = np.argsort(self.similarity_scores)[-k:]
         self.explained_meta_paths_top_k = []
         for i in meta_paths_top_k_idx:
@@ -168,7 +168,7 @@ class SimilarityScore:
             mp_info = {
                 'id': mp['id'],
                 'label': "Meta-Path " + str(mp['id']),
-                'value': round(mp['similarity_score'] * 100, 2),
+                'value': round(mp['similarity_score'], 2),
                 'color': 'hsl({}, 70%, 50%)'.format(np.random.rand() * 255),
                 'similarity_score': mp['similarity_score'],
                 'structural_value': round(float(mp['metapath'].get_structural_value()), 2),
