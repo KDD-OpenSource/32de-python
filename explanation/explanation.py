@@ -215,7 +215,7 @@ class SimilarityScore:
             "name": "Meta-Path " + str(meta_path['id']),
             "structural_value": meta_path['structural_value'],
             "contribution_ranking": meta_path['contribution_ranking'],
-            "contribution_value": round(meta_path['similarity_score']*100, 2),
+            "contribution_value": round(meta_path['similarity_score'], 2),
             "meta_path": meta_path['metapath'],
             "instance_query": meta_path['instance_query']
         }
