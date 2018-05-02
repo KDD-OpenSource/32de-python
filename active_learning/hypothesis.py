@@ -49,7 +49,7 @@ class GaussianProcessHypothesis:
             self.logger.debug(self.meta_paths)
         else:
             self.meta_paths = hypothesis_params['embedding_strategy'](meta_paths)
-        self.similarity = kernel(self.meta_paths,self.meta_paths)
+        self.similarity = kernel(self.meta_paths, self.meta_paths)
 
     def __getstate__(self):
         # Copy the object's state from self.__dict__ which contains
