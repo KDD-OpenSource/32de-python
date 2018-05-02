@@ -56,7 +56,7 @@ class GaussianProcessHypothesis:
             self.logger.debug(self.meta_paths)
         else:
             self.meta_paths = hypothesis_params['embedding_strategy'](meta_paths)
-        #self.plot_prior()
+        self.similarity = kernel(self.meta_paths, self.meta_paths)
 
     def plot_prior(self):
         X_ = self.meta_paths[:100]
@@ -69,7 +69,6 @@ class GaussianProcessHypothesis:
         plt.title("Prior of GP", fontsize=12)
         plt.savefig('prior.png', facecolor='w', edgecolor='w')
         plt.savefig('prior.png', facecolor='w', edgecolor='w')
-        self.similarity = kernel(self.meta_paths, self.meta_paths)
 
     def __getstate__(self):
         # Copy the object's state from self.__dict__ which contains
