@@ -57,6 +57,8 @@ class TensorboardLogger:
             tf.summary.histogram(name, self._tracked_vars[name]['node'])
             self._tracked_vars[name]['value'] = None
 
+    # TODO mabe track metadata as well (run parameters)
+
     # Functions for updating and writing the summaries
 
     def start_writer(self):

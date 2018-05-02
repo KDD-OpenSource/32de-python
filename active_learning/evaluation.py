@@ -29,6 +29,7 @@ class Evaluator:
         self._tf_logger.track_scalar('mse')
         self._tf_logger.track_scalar('abs')
         self._tf_logger.track_histogram('uncertainty')
+        self._tf_logger.track_histogram('rating')
         self._tf_logger.start_writer()
 
         self.batch_size = batch_size
