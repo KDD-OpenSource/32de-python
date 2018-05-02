@@ -43,7 +43,7 @@ class MPLengthHypothesis:
 
 
 class GaussianProcessHypothesis:
-    def __init__(self, meta_paths, **hypothesis_params):
+    def __init__(self, meta_paths, tf_logger, **hypothesis_params):
         self.logger = logging.getLogger('MetaExp.{}'.format(__class__.__name__))
         kernel = DotProduct()
         #kernel = 1.0 * RBF(length_scale=1.0, length_scale_bounds=(-1, 1))

@@ -48,7 +48,7 @@ class Evaluator:
         print('end metapath-embedding')
 
         print(meta_paths)
-        self.algorithm = algorithm(meta_paths=meta_paths, seed=seed, **evaluator_params)
+        self.algorithm = algorithm(meta_paths=meta_paths, seed=seed, tf_logger=self._tf_logger,**evaluator_params)
         self.oracle = oracle
 
     def compute(self) -> pd.DataFrame:
