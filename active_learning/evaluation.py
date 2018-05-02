@@ -38,10 +38,9 @@ class Evaluator:
         meta_paths = meta_path_loader.load_meta_paths()
 
         # TODO find unique names
-        # create maps
+        # create mps
+        mp_list = [MetaPath(edge_node_list=[hash(i) for i in mp.as_list()]) for mp in meta_paths]
 
-        mp_list = [[hash(i) for i in mp.as_list()] for mp in meta_paths]
-        # [
         print('run metapath-embedding')
         embed = embeddings.meta2vec.calculate_metapath_embeddings(mp_list, metapath_embedding_size=10)
         [mp.store_embedding(embed[i][1]) for i, mp in enumerate(meta_paths)]
