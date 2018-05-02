@@ -3,6 +3,7 @@ from enum import Enum
 from typing import List, Dict
 import numpy as np
 import logging
+import math
 from copy import copy
 
 from util.datastructures import MetaPath
@@ -214,14 +215,39 @@ class HypothesisBasedAlgorithm(AbstractActiveLearningAlgorithm, metaclass=ABCMet
 
     def _select(self, batch_size):
         criterion = self.compute_selection_criterion()
-        criterion = criterion[np.where(self.visited == State.NOT_VISITED)]
-        self.logger.debug("Meta paths that were already rated were filtered: {}".format(criterion))
-        # np.argpartition is used to retrieve the k-max elements. It uses the unstable introselect algorithm.
-        # TODO randomise retrieval of k-max elements
-        most_uncertain_idx = np.argpartition(criterion, -batch_size)[-batch_size:]
-        most_uncertain_ids = np.where(self.visited == State.NOT_VISITED)[0][most_uncertain_idx]
-        self.logger.debug("Most {} uncertain ids are {}".format(batch_size, most_uncertain_ids))
-        return most_uncertain_ids
+        n = len(criterion)
+        ids = np.arange(n)
+        unvisited = np.where(self.visited == State.NOT_VISITED)[0]
+
+        similarity = self.hypothesis.get_similarity()
+
+        #self.logger.debug("Meta paths that were already rated were filtered: {}".format(criterion))
+        selected_ids = []
+        for i in range(batch_size):
+            if len(unvisited) > 0:
+                criterion_unvisited = criterion[unvisited]
+                ids_unvisited = ids[unvisited]
+                most_uncertain = np.random.choice(np.where(criterion_unvisited == np.amax(criterion_unvisited))[0])
+                most_uncertain_id = ids_unvisited[most_uncertain]
+                unvisited = np.delete(unvisited, np.where(most_uncertain_id == unvisited))
+                selected_ids.append(most_uncertain_id)
+
+                # remove the len/batchsize - 1 closest elements from the list
+                remove_n = int(math.floor(n/batch_size) - 1)
+                self.logger.debug("Removing {} elements close to the most uncertain element.".format(remove_n))
+                if len(unvisited) > remove_n and remove_n > 0:
+                    ids_unvisited = ids[unvisited]
+                    closest_elements = np.argpartition(similarity[most_uncertain_id][unvisited],remove_n)[:remove_n]
+                    ignore_closest_idx = ids_unvisited[closest_elements]
+                    for ignore in ignore_closest_idx:
+                        unvisited = np.delete(unvisited,np.where(np.isin(ignore, unvisited)))
+            else:
+                self.logger.debug("Not items left")
+
+
+
+        self.logger.debug("Most {} uncertain ids are {}".format(batch_size, selected_ids))
+        return selected_ids
 
     @abstractmethod
     def compute_selection_criterion(self):
