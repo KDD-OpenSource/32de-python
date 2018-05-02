@@ -3,6 +3,8 @@ import json
 from typing import Tuple
 import logging
 
+from util.datastructures import MetaPath
+
 logger = logging.getLogger('MetaExp.meta2vec')
 
 from embeddings.estimators import create_word2vec_estimator, create_paragraph_estimator
@@ -10,10 +12,10 @@ from embeddings.input import *
 from embeddings.models import model_word2vec, model_paragraph_vectors_skipgram, model_paragraph_vectors_dbow
 
 
-def calculate_metapath_embeddings(metapaths: List[List[int]], model_dir: str = './model_dir', gpu_memory: float = 0.3,
+def calculate_metapath_embeddings(metapaths: List[MetaPath], model_dir: str = './model_dir-7', gpu_memory: float = 0.3,
                                   loss: str = "cross_entropy", optimizer: str = "adam",
                                   metapath_embedding_size: int = None,
-                                  node_embedding_size=4, model_type='skip-gram') -> List[Tuple[List[str], List[float]]]:
+                                  node_embedding_size=4, model_type='skip-gram') -> List[Tuple[MetaPath, List[float]]]:
     """
 
     :param metapath_embedding_size:
@@ -21,7 +23,10 @@ def calculate_metapath_embeddings(metapaths: List[List[int]], model_dir: str = '
     :return: The embedding of the meta-paths in the same order as the given meta-paths.
              Every list represents a vector.
     """
-    input = MetaPathsInput.from_paths_list(metapaths)
+    result = []
+    for metapath in metapaths:
+        result.append([int(label) for label in metapath.as_list()])
+    input = MetaPathsInput.from_paths_list(result)
 
     if metapath_embedding_size is None:
         metapath_embedding_size = int(len(metapaths) / 100)  # TODO: there's some formula in the literatur

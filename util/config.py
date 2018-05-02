@@ -18,13 +18,15 @@ SESSION_CACHE_DIR = os.path.join('tmp', 'sessions')
 SESSION_THRESHOLD = 500
 SESSION_MODE = '0700'
 # Redis Configuration
-REDIS_PORT = 6379
+REDIS_PORT = 6381
 REDIS_HOST = '172.20.14.22'
 #!!!!!!!!!!!!!!!!!!!!!!!!PLEASE LEAVE THERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #REDIS_HOST = '172.16.19.193'
 #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 REDIS_PASSWORD = None
 PARALLEL_EXISTENCE_TEST_PROCESSES = 12
+
+LOG_DIR = 'log'
 
 MAX_META_PATH_LENGTH = 6
 
@@ -39,7 +41,7 @@ MAX_META_PATH_LENGTH = 6
 AVAILABLE_DATA_SETS = [
     {
         'name': 'Helmholtz',
-        'url': 'https://hpi.de/mueller/metaexp-demo-neo4j',
+        'url': 'http://172.20.14.22:7484',
         'bolt-url': 'bolt://172.20.14.22:7697',
         'username': 'neo4j',
         'password': ''

@@ -15,6 +15,7 @@ from active_learning.active_learner import UncertaintySamplingAlgorithm
 from explanation.explanation import SimilarityScore, Explanation
 from api.redis_own import Redis
 from util.metapaths_database_importer import RedisImporter
+import util.tensor_logging as tl
 
 app = Flask(__name__)
 ask = Ask(app, '/alexa')
@@ -59,7 +60,8 @@ def test_import():
 def train_embedding(database):
     redis = Redis(database)
     logger.debug("Start computation of embeddings...")
-    meta_path_list_embeddings = embeddings.meta2vec.calculate_metapath_embeddings(redis.get_all_meta_paths())
+    meta_path_list_embeddings = embeddings.meta2vec.calculate_metapath_embeddings(redis.get_all_meta_paths(),
+                                                                                  metapath_embedding_size=30)
     logger.debug("Received embeddings {}".format(meta_path_list_embeddings))
     redis.store_embeddings(meta_path_list_embeddings)
     return jsonify({'status': 200})
@@ -81,6 +83,11 @@ def login():
     if not chosen_dataset:
         logger.error('Dataset {} not available'.format(data['dataset']))
     session['dataset'] = chosen_dataset
+
+    session['logger'] = session['username'] + str(int(time.time()))
+    tl.get_logger(session['logger']).track_histogram('uncertainty')
+    tl.get_logger(session['logger']).track_histogram('rating')
+    tl.get_logger(session['logger']).start_writer()
 
     # setup data
     session['meta_path_id'] = 1
@@ -132,7 +139,7 @@ def receive_meta_path_start_and_end_label():
 
     session['active_learning_algorithm'] = UncertaintySamplingAlgorithm(
         redis.meta_paths(start_type, end_type),
-        hypothesis='Gaussian Process')
+        hypothesis='Gaussian Process', tf_logger=session['logger'])
     session['similarity_score'] = SimilarityScore(session['active_learning_algorithm'].get_complete_rating,
                                                   session['dataset'],
                                                   start_node_ids,

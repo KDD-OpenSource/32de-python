@@ -3,10 +3,13 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import (RBF, Matern, RationalQuadratic,
                                               ExpSineSquared, DotProduct,
-                                              ConstantKernel)
+                                              ConstantKernel, PairwiseKernel)
+from sklearn.metrics.pairwise import cosine_similarity
+
+from matplotlib import pyplot as plt
 import numpy as np
 import logging
-
+import util.tensor_logging as tf_log
 
 class MPLengthHypothesis:
     """
@@ -40,16 +43,29 @@ class MPLengthHypothesis:
 
 
 class GaussianProcessHypothesis:
-    def __init__(self, meta_paths, **hypothesis_params):
+    def __init__(self, meta_paths, tf_logger, **hypothesis_params):
         self.logger = logging.getLogger('MetaExp.{}'.format(__class__.__name__))
-        kernel = 1.0 * RBF(length_scale=1.0, length_scale_bounds=(1e-1, 10.0))
-        self.gp = GaussianProcessRegressor(kernel=kernel, optimizer=None)
+        self._tf_logger = tf_logger
+        kernel = DotProduct()
+        self.gp = GaussianProcessRegressor(kernel=kernel,optimizer=None)
         if not 'embedding_strategy' in hypothesis_params:
             self.meta_paths = np.array([mp.get_representation('embedding') for mp in meta_paths])
             self.logger.debug(self.meta_paths)
         else:
             self.meta_paths = hypothesis_params['embedding_strategy'](meta_paths)
-        self.similarity = kernel(self.meta_paths,self.meta_paths)
+        self.similarity = kernel(self.meta_paths, self.meta_paths)
+
+    def plot_prior(self):
+        X_ = self.meta_paths[:100]
+        y_mean, y_std = self.gp.predict(X_, return_std=True)
+        plt.plot(X_, y_mean, 'k', lw=3, zorder=9)
+        y_samples = self.gp.sample_y(X_, 10)
+        plt.plot(X_, y_samples, lw=1)
+        plt.xlim(-1, 1)
+        plt.ylim(-3, 3)
+        plt.title("Prior of GP", fontsize=12)
+        plt.savefig('prior.png', facecolor='w', edgecolor='w')
+        plt.savefig('prior.png', facecolor='w', edgecolor='w')
 
     def __getstate__(self):
         # Copy the object's state from self.__dict__ which contains
@@ -82,15 +98,18 @@ class GaussianProcessHypothesis:
         if len(idx) == 0:
             return []
         self.logger.debug("Fitting Gaussian process to new ratings...")
+        self.logger.debug("Metapaths {} where rated {}".format(self.meta_paths[idx], ratings))
         self.gp.fit(self.meta_paths[idx], ratings)
 
     def predict_rating(self, idx):
         prediction = self.gp.predict(self.meta_paths[idx])
-        self.logger.debug("prediction for {} is {}", self.meta_paths[idx], prediction)
-        return self.gp.predict(self.meta_paths[idx])
+        tf_log.get_logger('evaluator').update('rating', prediction)
+        self.logger.debug("prediction for {} is {}".format(self.meta_paths[idx], prediction))
+        return prediction
 
     def get_uncertainty(self, idx):
         uncertainty_all_meta_paths = self.gp.predict(self.meta_paths[idx], return_std=True)[1]
+        # tf_log.get_logger('evaluator').update('uncertainty', uncertainty_all_meta_paths)
         self.logger.debug("The uncertainty for the meta paths is: {}".format(uncertainty_all_meta_paths))
         return uncertainty_all_meta_paths
 
