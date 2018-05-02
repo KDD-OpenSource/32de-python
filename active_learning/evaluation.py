@@ -5,6 +5,8 @@ from util.meta_path_loader_dispatcher import MetaPathLoaderDispatcher
 
 import logging
 import pandas as pd
+import util.tensor_logging as tf_log
+import embeddings.meta2vec
 
 # Set up logging
 logger = logging.getLogger()
@@ -22,12 +24,29 @@ class Evaluator:
                  algorithm,
                  oracle,
                  seed: int = 42, **evaluator_params):
+        # add tf logging
+        self._tf_logger = tf_log.get_logger('evaluator')
+        self._tf_logger.track_scalar('mse')
+        self._tf_logger.track_scalar('abs')
+        self._tf_logger.track_histogram('uncertainty')
+        self._tf_logger.start_writer()
 
         self.batch_size = batch_size
 
         meta_path_loader = MetaPathLoaderDispatcher().get_loader(dataset_name)
         meta_paths = meta_path_loader.load_meta_paths()
 
+        # TODO find unique names
+        # create maps
+
+        mp_list = [[hash(i) for i in mp.as_list()] for mp in meta_paths]
+        # [
+        print('run metapath-embedding')
+        embed = embeddings.meta2vec.calculate_metapath_embeddings(mp_list, metapath_embedding_size=10)
+        [mp.store_embedding(embed[i][1]) for i, mp in enumerate(meta_paths)]
+        print('end metapath-embedding')
+
+        print(meta_paths)
         self.algorithm = algorithm(meta_paths=meta_paths, seed=seed, **evaluator_params)
         self.oracle = oracle
 
@@ -40,8 +59,7 @@ class Evaluator:
         """
         statistics = []
         is_last_batch = False
-
-        while self.oracle._wants_to_continue() == True and not is_last_batch:
+        while self.oracle._wants_to_continue() is True and not is_last_batch:
             # Retrieve next batch
             next_metapaths, is_last_batch, ref_paths = self.algorithm.get_next(batch_size=self.batch_size)
             ids_to_be_rated = [mp['id'] for mp in next_metapaths]
@@ -57,6 +75,9 @@ class Evaluator:
             stats = {'mse': mse,
                      'absolute_error': abs_diff}
             statistics.append(stats)
+            self._tf_logger.update('mse', mse)
+            self._tf_logger.update('abs', abs_diff)
+            self._tf_logger.write_summary()
 
             logger.info('\n'.join(["\t{}:\t{}".format(key, value) for key, value in stats.items()]))
             logger.info("")
