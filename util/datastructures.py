@@ -78,18 +78,3 @@ class MetaPath:
             return '-'.join(mp_query)
         else:
             raise ValueError("Representation type is not available {}".format(representation_type))
-
-
-class MetaPathRating:
-    # TODO: Define methods
-    meta_path = None
-    structural_value = None
-    domain_value = None
-
-    def __init__(self, meta_path: MetaPath):
-        self.meta_path = meta_path
-
-    def __init__(self, meta_path: MetaPath, structural_value: float, domain_value: float):
-        self.meta_path = meta_path
-        self.structural_value = structural_value
-        self.domain_value = domain_value
