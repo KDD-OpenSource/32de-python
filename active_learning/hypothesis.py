@@ -9,7 +9,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from matplotlib import pyplot as plt
 import numpy as np
 import logging
-import util.tensor_logging as tl
+import util.tensor_logging as tf_log
 
 class MPLengthHypothesis:
     """
@@ -50,7 +50,9 @@ class GaussianProcessHypothesis:
         #kernel = PairwiseKernel(cosine_similarity)
         print(kernel)
         self._tf_logger = tf_logger
-        self.gp = GaussianProcessRegressor(kernel=kernel)
+        kernel = PairwiseKernel(cosine_similarity)
+        kernel = DotProduct()
+        self.gp = GaussianProcessRegressor(kernel=kernel,optimizer=None)
         if not 'embedding_strategy' in hypothesis_params:
             self.meta_paths = np.array([mp.get_representation('embedding') for mp in meta_paths])
             self.logger.debug(self.meta_paths)
@@ -106,6 +108,7 @@ class GaussianProcessHypothesis:
 
     def predict_rating(self, idx):
         prediction = self.gp.predict(self.meta_paths[idx])
+        tf_log.get_logger('evaluator').update('rating', prediction)
         self.logger.debug("prediction for {} is {}", self.meta_paths[idx], prediction)
         return prediction
         self.logger.debug("prediction for {} is {}".format(self.meta_paths[idx], prediction))
@@ -113,7 +116,7 @@ class GaussianProcessHypothesis:
 
     def get_uncertainty(self, idx):
         uncertainty_all_meta_paths = self.gp.predict(self.meta_paths[idx], return_std=True)[1]
-        tl.get_logger(self._tf_logger).update('uncertainty',uncertainty_all_meta_paths)
+        tf_log.get_logger('evaluator').update('uncertainty', uncertainty_all_meta_paths)
         self.logger.debug("The uncertainty for the meta paths is: {}".format(uncertainty_all_meta_paths))
         return uncertainty_all_meta_paths
 

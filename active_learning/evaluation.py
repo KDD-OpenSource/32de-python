@@ -29,6 +29,7 @@ class Evaluator:
         self._tf_logger.track_scalar('mse')
         self._tf_logger.track_scalar('abs')
         self._tf_logger.track_histogram('uncertainty')
+        self._tf_logger.track_histogram('rating')
         self._tf_logger.start_writer()
 
         self.batch_size = batch_size
@@ -47,7 +48,7 @@ class Evaluator:
         print('end metapath-embedding')
 
         print(meta_paths)
-        self.algorithm = algorithm(meta_paths=meta_paths, seed=seed, **evaluator_params)
+        self.algorithm = algorithm(meta_paths=meta_paths, seed=seed, tf_logger=self._tf_logger,**evaluator_params)
         self.oracle = oracle
 
     def compute(self) -> pd.DataFrame:

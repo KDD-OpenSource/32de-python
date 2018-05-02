@@ -6,32 +6,23 @@ import unittest
 
 
 class ActiveLearningExperimentsTest(unittest.TestCase):
-    def test_UserOracle(self):
-        """
-        An example for using the UserOracle with a file generated from the OpenKDD day on the Rotten Tomato dataset.
-        """
-        print("Hear, hear!"
-              "The Oracle of Merlin and Felix ... ")
 
-        merlin_eval = Evaluator('Rotten Tomato', 5, UncertaintySamplingAlgorithm,
-                                UserOracle('rated_datasets/Rotten Tomato_Merlin_1519148528.2417703.json'))
-        felix_eval = Evaluator('Rotten Tomato', 5, UncertaintySamplingAlgorithm,
-                               UserOracle('rated_datasets/Rotten Tomato_mcfelix_1519142949.904623.json'))
-        stats = merlin_eval.compute()
-        stats = felix_eval.compute()
-        print(stats)
+    def test_evaluator(self):
+        algorithm = UncertaintySamplingAlgorithm
+        algo_params_length = {'hypothesis': 'Gaussian Process', 'hypothesis_params': {'transformation': 'length'}}
+        algo_params_tfidf = {'hypothesis': 'Gaussian Process', 'hypothesis_params': {'transformation': 'tfidf'}}
 
-    def test_randomSelection(self):
-        """
-        An example for using the MockOracle on the Rotten Tomato dataset.
-        """
-        eval = Evaluator('Rotten Tomato', 5, RandomSelectionAlgorithm, FunctionalOracle())
-        stats = eval.compute()
+        logs_path = '/home/freya/BP/32de-python/notebooks/active_learning/logs/testrun/f'
 
+        def rating_func_constant(c):
+            return lambda x: c
 
-    def test_gp_select(self):
-        eval = Evaluator('Rotten Tomato', 5, GPSelect_Algorithm, FunctionalOracle(rating_func= length_based), beta=0.12)
-        eval.compute()
+        rating_func = rating_func_constant(1)
+        oracle = FunctionalOracle(**{'rating_func': rating_func})
+
+        res = Evaluator(algorithm=algorithm, algo_params=algo_params_tfidf,
+                  oracle=oracle,
+                  batch_size=1, dataset_name='Rotten Tomato', logs_path=logs_path).compute()
 
 
 if __name__ == '__main__':
