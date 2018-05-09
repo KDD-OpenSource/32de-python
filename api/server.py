@@ -309,6 +309,8 @@ def receive_rated_metapaths():
         if "time" in session.keys():
             data['time_to_rate'] = (time_results_received - session['time']).total_seconds()
 
+    tl.get_logger(session['logger']).write_summary()
+
     return jsonify({'status': 200})
 
 

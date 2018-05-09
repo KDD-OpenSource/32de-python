@@ -24,8 +24,8 @@ class TensorboardLogger:
     def __init__(self, logs_path):
         self._graph = tf.Graph()
         self._logs_path = logs_path + str(int(time.time()))
-        self._writer = tf.summary.FileWriter(self._logs_path, graph=self._graph)
         self._sess = tf.Session(graph=self._graph)
+        print("Start this tensorboard with \n\ttensorboard --logdir={}".format(self._logs_path))
 
     # Functions for setting up which variables should be tracked
 
@@ -62,6 +62,8 @@ class TensorboardLogger:
     # Functions for updating and writing the summaries
 
     def start_writer(self):
+
+        self._writer = tf.summary.FileWriter(self._logs_path, graph=self._graph,flush_secs=1)
         with self._graph.as_default():
             self._sess.run(tf.global_variables_initializer())
         self._is_in_setup_phase = False
@@ -73,6 +75,7 @@ class TensorboardLogger:
         with self._graph.as_default():
             summary_op = tf.summary.merge_all()
             summary = self._sess.run(summary_op, feed_dict=self._feed_dict())
+            print(summary)
             self._writer.add_summary(summary, self._iteration)
             self._iteration = 1 + self._iteration
 

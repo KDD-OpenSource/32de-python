@@ -103,13 +103,14 @@ class GaussianProcessHypothesis:
 
     def predict_rating(self, idx):
         prediction = self.gp.predict(self.meta_paths[idx])
-        tf_log.get_logger('evaluator').update('rating', prediction)
+        tf_log.get_logger(self._tf_logger).update('rating', prediction)
         self.logger.debug("prediction for {} is {}".format(self.meta_paths[idx], prediction))
         return prediction
 
     def get_uncertainty(self, idx):
+        self.predict_rating(idx)
         uncertainty_all_meta_paths = self.gp.predict(self.meta_paths[idx], return_std=True)[1]
-        # tf_log.get_logger('evaluator').update('uncertainty', uncertainty_all_meta_paths)
+        tf_log.get_logger(self._tf_logger).update('uncertainty', uncertainty_all_meta_paths)
         self.logger.debug("The uncertainty for the meta paths is: {}".format(uncertainty_all_meta_paths))
         return uncertainty_all_meta_paths
 
