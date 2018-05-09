@@ -136,7 +136,7 @@ def receive_meta_path_start_and_end_label():
 
     session['active_learning_algorithm'] = UncertaintySamplingAlgorithm(
         redis.meta_paths(start_type, end_type),
-        hypothesis='Gaussian Process', tf_logger=session['logger'])
+        hypothesis='Gaussian Process')
     session['similarity_score'] = SimilarityScore(session['active_learning_algorithm'].get_complete_rating,
                                                   session['dataset'],
                                                   start_node_ids,

@@ -42,9 +42,8 @@ class MPLengthHypothesis:
 
 
 class GaussianProcessHypothesis:
-    def __init__(self, meta_paths, tf_logger, **hypothesis_params):
+    def __init__(self, meta_paths, **hypothesis_params):
         self.logger = logging.getLogger('MetaExp.{}'.format(__class__.__name__))
-        self._tf_logger = tf_logger
         kernel = DotProduct()
         self.gp = GaussianProcessRegressor(kernel=kernel,optimizer=None)
         if not 'embedding_strategy' in hypothesis_params:
