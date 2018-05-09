@@ -1,6 +1,7 @@
 import tensorflow as tf
 import os
 import time
+import logging
 from util.config import LOG_DIR
 
 TF_LOG_DIR = os.path.join(LOG_DIR, 'tensorboard')
@@ -101,4 +102,6 @@ def get_logger(name):
     if name in loggers.keys():
         return loggers[name]
     else:
+        logger = logging.getLogger('MetaExp.TL')
+        logger.debug("Creted new Logger Instance")
         return new_logger(name)
