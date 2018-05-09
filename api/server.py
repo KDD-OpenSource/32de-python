@@ -15,7 +15,7 @@ from active_learning.active_learner import UncertaintySamplingAlgorithm
 from explanation.explanation import SimilarityScore, Explanation
 from api.redis_own import Redis
 from util.metapaths_database_importer import RedisImporter
-import util.tensor_logging as tl
+
 
 app = Flask(__name__)
 ask = Ask(app, '/alexa')
@@ -56,6 +56,7 @@ def test_import():
          'password': ''})
     return jsonify({'status': 200})
 
+
 @app.route('/train-embeddings/<string:database>', methods=['GET'])
 def train_embedding(database):
     redis = Redis(database)
@@ -65,6 +66,7 @@ def train_embedding(database):
     logger.debug("Received embeddings {}".format(meta_path_list_embeddings))
     redis.store_embeddings(meta_path_list_embeddings)
     return jsonify({'status': 200})
+
 
 @app.route('/login', methods=["POST"])
 def login():
@@ -83,11 +85,6 @@ def login():
     if not chosen_dataset:
         logger.error('Dataset {} not available'.format(data['dataset']))
     session['dataset'] = chosen_dataset
-
-    session['logger'] = session['username'] + str(int(time.time()))
-    tl.get_logger(session['logger']).track_histogram('uncertainty')
-    tl.get_logger(session['logger']).track_histogram('rating')
-    tl.get_logger(session['logger']).start_writer()
 
     # setup data
     session['meta_path_id'] = 1
@@ -308,8 +305,6 @@ def receive_rated_metapaths():
     else:
         if "time" in session.keys():
             data['time_to_rate'] = (time_results_received - session['time']).total_seconds()
-
-    tl.get_logger(session['logger']).write_summary()
 
     return jsonify({'status': 200})
 
