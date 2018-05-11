@@ -6,7 +6,7 @@ MetaExp is an open-source, interactive framework for graph exploration that can 
 It incorporates the domain knowledge of the user to define a unique and personalized view on the graph.
 
 ## Contact and citation
-> Behrens, F., Bischoff, S., Ladenburger, P., Rückin, J., Seidel, L., Stolp, F., Vaichenker, M.,  Ziegler, A., Mottin, D., Aghaei, F., Müller, E., Preisse, M., Müller, N. & Hunger, M. (2018). MetaExp: Interactive Explanation and Exploration of Large Knowledge Graphs. *WWW*
+> Behrens, F., Bischoff, S., Ladenburger, P., Rückin, J., Seidel, L., Stolp, F., Vaichenker, M.,  Ziegler, A., Mottin, D., Aghaei, F., Müller, E., Preusse, M., Müller, N. & Hunger, M. (2018). MetaExp: Interactive Explanation and Exploration of Large Knowledge Graphs. *WWW*
 
 ## Description
 We present MetaExp, a system that assists the user during the exploration of large knowledge graphs, given two sets of initial nodes.
