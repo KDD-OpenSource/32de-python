@@ -349,7 +349,7 @@ def send_similar_nodes():
 # Self defined intents
 @ask.intent('HelloIntent')
 def hello(firstname):
-        speech_text = "Hello {}".format(firstname)
+        speech_text = "Hello {}, Good Evening".format(firstname)
         return statement(speech_text).simple_card('Hello', speech_text)
 
 
