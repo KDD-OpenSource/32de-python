@@ -5,7 +5,7 @@ import json
 import os
 import time
 import datetime
-from flask_ask import Ask
+from flask_ask import Ask, statement
 import logging
 from typing import Dict
 
@@ -347,9 +347,10 @@ def send_similar_nodes():
 
 
 # Self defined intents
-@ask.intent('ChooseDataset')
-def choose_dataset(dataset):
-    raise NotImplementedError()
+@ask.intent('HelloIntent')
+def hello(firstname):
+        speech_text = "Hello {}".format(firstname)
+        return statement(speech_text).simple_card('Hello', speech_text)
 
 
 @ask.intent('RateMetapath')
