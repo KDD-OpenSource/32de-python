@@ -2,7 +2,8 @@
 
 docker rm neo4j-graph-algo-container
 docker rm server-container
-docker rm ui-container
+docker rm ui-production-container
+docker rm ui-dev-container
 
 mkdir tmp/
 cd tmp/
@@ -12,6 +13,9 @@ git clone https://github.com/KDD-OpenSource/32de-python.git
 cd 32de-python/
 deployment/build-server.sh .
 deployment/run-server.sh
+
+## run redis
+deployment/run-redis.sh
 
 cd ..
 
@@ -27,21 +31,24 @@ cd ..
 git clone https://github.com/KDD-OpenSource/32de-UI.git
 cd 32de-UI/
 
-export REACT_APP_API_HOST=${1:http://localhost:8000/}
+export REACT_APP_API_HOST=http://localhost:8000/
 deployment/build-dev-ui.sh .
-deployment/build-production-ui.sh . ${1:http://localhost:8000/}
-deployment/run-production-ui.sh
+#deployment/build-production-ui.sh . http://localhost:8000/
+#deployment/run-production-ui.sh
+deployment/run-dev-ui.sh
 
 cd ..
 
 read -p "Press enter to terminate the containers"
 cd ..
-rm -rf tmp/
+#rm -rf tmp/
 
 docker stop neo4j-graph-algo-container
 docker stop server-container
-docker stop ui-container
+docker stop ui-production-container
+docker stop ui-dev-container
 
-docker rm neo4j-graph-algo-container
-docker rm server-container
-docker rm ui-container
+#docker rm neo4j-graph-algo-container
+#docker rm server-container
+#docker rm ui-production-container
+#docker rm ui-dev-container
