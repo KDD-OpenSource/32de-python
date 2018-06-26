@@ -2,7 +2,8 @@
 
 docker rm neo4j-graph-algo-container
 docker rm server-container
-docker rm ui-container
+docker rm ui-production-container
+docker rm ui-dev-container
 
 mkdir tmp/
 cd tmp/
@@ -40,8 +41,10 @@ cd ..
 
 docker stop neo4j-graph-algo-container
 docker stop server-container
-docker stop ui-container
+docker stop ui-production-container
+docker stop ui-dev-container
 
 #docker rm neo4j-graph-algo-container
 #docker rm server-container
-#docker rm ui-container
+#docker rm ui-production-container
+#docker rm ui-dev-container
