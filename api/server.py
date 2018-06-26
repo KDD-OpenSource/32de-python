@@ -134,6 +134,7 @@ def receive_meta_path_start_and_end_label():
     start_node_ids = json_response['start_node_ids']
     end_node_ids = json_response['end_node_ids']
 
+    logger.debug("Recieved following meta-paths from redis: {}".format(redis.meta_paths(start_type, end_type)))
     session['active_learning_algorithm'] = UncertaintySamplingAlgorithm(
         redis.meta_paths(start_type, end_type),
         hypothesis='Gaussian Process')
