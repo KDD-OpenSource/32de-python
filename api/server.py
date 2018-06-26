@@ -145,55 +145,6 @@ def receive_meta_path_start_and_end_label():
     return jsonify({'status': 200})
 
 
-@app.route("/set-edge-types", methods=["POST"])
-def receive_edge_types():
-    """
-    Receives edge types which are selected on the Config page
-    """
-
-    # TODO: Check if necessary information is in request object
-    if not request.json:
-        abort(400)
-
-    edge_types = request.get_json()
-    session['selected_edge_types'] = edge_types
-
-    return jsonify({'edge_types': edge_types})
-
-
-@app.route("/set-node-types", methods=["POST"])
-def receive_node_types():
-    """
-    Receives node types which are selected on the Config page
-    """
-
-    # TODO: Check if necessary information is in request object
-    if not request.json:
-        abort(400)
-
-    node_types = request.get_json()
-    session['selected_node_types'] = node_types
-
-    return jsonify({'node_types': node_types})
-
-
-@app.route("/get-edge-types", methods=["GET"])
-def send_edge_types():
-    """
-    :return: Array of available edge types for the Config page
-    """
-
-    return jsonify(session['selected_edge_types'])
-
-
-@app.route("/get-node-types", methods=["GET"])
-def send_node_types():
-    """
-    :return: Array of available node types for the Config page
-    """
-    return jsonify(session['selected_node_types'])
-
-
 @app.route("/next-meta-paths/<int:batch_size>", methods=["GET"])
 def send_next_metapaths_to_rate(batch_size):
     """
