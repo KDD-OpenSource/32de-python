@@ -36,12 +36,12 @@ cd ..
 
 read -p "Press enter to terminate the containers"
 cd ..
-rm -rf tmp/
+#rm -rf tmp/
 
 docker stop neo4j-graph-algo-container
 docker stop server-container
 docker stop ui-container
 
-docker rm neo4j-graph-algo-container
-docker rm server-container
-docker rm ui-container
+#docker rm neo4j-graph-algo-container
+#docker rm server-container
+#docker rm ui-container
