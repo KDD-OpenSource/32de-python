@@ -14,6 +14,9 @@ cd 32de-python/
 deployment/build-server.sh .
 deployment/run-server.sh
 
+## run redis
+deployment/run-redis.sh
+
 cd ..
 
 ########### neo4j-graph-algorithms
@@ -28,10 +31,18 @@ cd ..
 git clone https://github.com/KDD-OpenSource/32de-UI.git
 cd 32de-UI/
 
+<<<<<<< Updated upstream
 export REACT_APP_API_HOST=${1:-http://localhost:8000/}
 deployment/build-dev-ui.sh .
 deployment/build-production-ui.sh . ${1:-http://localhost:8000/}
 deployment/run-production-ui.sh
+=======
+export REACT_APP_API_HOST=http://localhost:8000/
+deployment/build-dev-ui.sh .
+#deployment/build-production-ui.sh . http://localhost:8000/
+#deployment/run-production-ui.sh
+deployment/run-dev-ui.sh
+>>>>>>> Stashed changes
 
 cd ..
 
