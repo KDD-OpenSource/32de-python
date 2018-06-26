@@ -41,8 +41,8 @@ MAX_META_PATH_LENGTH = 6
 AVAILABLE_DATA_SETS = [
     {
         'name': 'Helmholtz',
-        'url': 'http://localhost:7474',
-        'bolt-url': 'bolt://localhost:7687',
+        'url': 'http://172.16.74.65:7474',
+        'bolt-url': 'bolt://172.16.74.65:7687',
         'username': 'neo4j',
         'password': 'test'
     }
