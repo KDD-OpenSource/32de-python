@@ -8,7 +8,7 @@ mkdir tmp/
 cd tmp/
 
 ########### 32de-python
-git clone -b configure-docker https://github.com/KDD-OpenSource/32de-python.git
+git clone https://github.com/KDD-OpenSource/32de-python.git
 cd 32de-python/
 deployment/build-server.sh .
 deployment/run-server.sh
@@ -27,8 +27,8 @@ cd ..
 git clone https://github.com/KDD-OpenSource/32de-UI.git
 cd 32de-UI/
 
-../32de-python/deployment/build-ui.sh . https://hpi.de/mueller/metaexp-demo-api/
-../32de-python/deployment/run-ui.sh
+deployment/build-ui.sh . https://hpi.de/mueller/metaexp-demo-api/
+deployment/run-ui.sh
 
 cd ..
 
