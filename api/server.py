@@ -145,6 +145,12 @@ def receive_meta_path_start_and_end_label():
 
     return jsonify({'status': 200})
 
+@app.route("/get-node-types", methods=["GET"])		
+def send_node_types():		
+    """		
+    :return: Array of available node types for the Config page		
+    """		
+    return jsonify(session['selected_node_types'])
 
 @app.route("/next-meta-paths/<int:batch_size>", methods=["GET"])
 def send_next_metapaths_to_rate(batch_size):
